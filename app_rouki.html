@@ -137,26 +137,8 @@
         <div class="p-4 md:p-6 bg-white border-b border-slate-200 shrink-0">
             <div class="flex items-start">
                 <div class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-pink-100 border-2 border-white shadow-sm overflow-hidden shrink-0 flex items-center justify-center">
-                    <!-- 18歳の可愛らしい女性アイコン（前髪・ロング・チークあり）に修正 -->
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="w-full h-full">
-                        <rect width="100" height="100" fill="#fce7f3"/>
-                        <!-- 後ろ髪 -->
-                        <path d="M 20 40 Q 20 80 25 100 L 75 100 Q 80 80 80 40 Z" fill="#4a3b31" />
-                        <!-- 顔 -->
-                        <circle cx="50" cy="55" r="22" fill="#ffceb4" />
-                        <!-- 前髪 -->
-                        <path d="M 25 50 Q 30 20 50 20 Q 70 20 75 50 Q 60 40 50 35 Q 40 40 25 50 Z" fill="#4a3b31" />
-                        <path d="M 45 20 L 50 40 L 55 20 Z" fill="#4a3b31" />
-                        <path d="M 35 25 L 35 43 L 43 25 Z" fill="#4a3b31" />
-                        <!-- 目 -->
-                        <circle cx="41" cy="54" r="3" fill="#2d1b13" />
-                        <circle cx="59" cy="54" r="3" fill="#2d1b13" />
-                        <!-- チーク -->
-                        <circle cx="36" cy="58" r="3" fill="#fb7185" opacity="0.6" />
-                        <circle cx="64" cy="58" r="3" fill="#fb7185" opacity="0.6" />
-                        <!-- 口 -->
-                        <path d="M 46 63 Q 50 67 54 63" stroke="#e11d48" stroke-width="2" fill="none" stroke-linecap="round" />
-                    </svg>
+                    <!-- 画像ファイル（coach.jpg）を直接読み込む設定に変更 -->
+                    <img src="coach.jpg" alt="AIコーチ" class="w-full h-full object-cover">
                 </div>
                 <div class="ml-3 md:ml-4 flex-grow">
                     <div class="bg-pink-50 rounded-2xl rounded-tl-none p-3 md:p-4 shadow-sm border border-pink-100 relative" id="ai-message-box">
@@ -274,6 +256,8 @@
             } else {
                 btn.innerHTML = "🔊 音声オン";
                 btn.className = "bg-green-600 hover:bg-green-500 text-white text-xs md:text-sm font-bold px-3 py-1 rounded border border-green-500 transition-colors";
+                // 【追加】音声をオンにした瞬間に無音を再生し、スマホの音声制限を解除する
+                window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
             }
         }
 
@@ -306,9 +290,7 @@
             return '普通';
         }
 
-        // 離席（一時停止）機能
         function pauseTimer() {
-            // 解説画面が出ている時は一時停止不要
             if (!document.getElementById('explanation-area').classList.contains('hidden')) return;
             
             isPaused = true;
@@ -323,7 +305,6 @@
             document.getElementById('pause-overlay').classList.add('flex');
         }
 
-        // 再開機能
         function resumeTimer() {
             isPaused = false;
             document.getElementById('pause-overlay').classList.add('hidden');
@@ -332,14 +313,12 @@
             const timerBar = document.getElementById('timer-bar');
             if(timerBar) timerBar.style.animationPlayState = 'running';
 
-            // 問題用タイマー再開
             timerInterval = setInterval(() => {
                 timeLeft--;
                 document.getElementById('time-display').textContent = `⏳ ${timeLeft}秒`;
                 if (timeLeft <= 0) clearInterval(timerInterval);
             }, 1000);
 
-            // 全体タイマー再開
             if (globalTimeLeftSeconds !== null && !isTimeUp) {
                 globalTimerInterval = setInterval(() => {
                     globalTimeLeftSeconds--;
@@ -355,7 +334,6 @@
             }
         }
 
-        // 中断機能
         function stopTraining() {
             if(confirm("特訓を中断してスタート画面に戻りますか？")) {
                 location.reload();
@@ -455,6 +433,9 @@
             localStorage.setItem('gemini_api_key', userApiKey);
 
             if(validDatabase.length === 0) { alert("問題データがありません。スプレッドシートの読み込みをお待ちください。"); return; }
+
+            // 【追加】スタートボタンを押した瞬間にも音声エンジンをアンロックする
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
 
             userCondition = document.getElementById('condition-select').value;
             document.getElementById('in-game-condition').value = userCondition;
