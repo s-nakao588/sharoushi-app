@@ -19,6 +19,16 @@
 </head>
 <body class="bg-slate-100 text-slate-800 h-screen flex flex-col md:flex-row overflow-hidden relative">
 
+    <!-- 離席用オーバーレイ -->
+    <div id="pause-overlay" class="absolute inset-0 bg-slate-900/90 z-[100] hidden flex-col items-center justify-center text-white backdrop-blur-sm p-6 text-center">
+        <span class="text-6xl md:text-8xl mb-6 animate-bounce">☕</span>
+        <h2 class="text-3xl md:text-5xl font-black mb-4">ちょっと離席中...</h2>
+        <p class="text-lg md:text-xl mb-12 text-slate-300">タイマーは一時停止しています。</p>
+        <button onclick="resumeTimer()" class="w-full max-w-md bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-black py-5 rounded-2xl text-2xl shadow-[0_6px_0_#166534] active:shadow-[0_2px_0_#166534] active:translate-y-[4px] transition-all">
+            ▶ 戻ったよ！（再開）
+        </button>
+    </div>
+
     <!-- スタート画面 -->
     <div id="start-screen" class="absolute inset-0 bg-indigo-900 z-50 flex flex-col items-center justify-center text-white p-6 overflow-y-auto">
         <h1 class="text-3xl md:text-5xl font-black mb-8 mt-10">社労士 過去問トレーニング</h1>
@@ -78,6 +88,14 @@
         <div class="bg-indigo-900 text-white sticky top-0 shadow-md z-20">
             <div class="p-3 md:p-4 flex justify-between items-center flex-wrap gap-2">
                 <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                    <button onclick="stopTraining()" class="flex items-center gap-1 text-slate-300 hover:text-white font-bold active:scale-95 transition-transform bg-white/10 px-2 py-1 rounded">
+                        <span class="text-base md:text-lg">⏸️</span>
+                        <span class="hidden sm:inline text-xs md:text-sm">中断</span>
+                    </button>
+                    <button onclick="pauseTimer()" class="flex items-center gap-1 text-orange-300 hover:text-orange-400 font-bold active:scale-95 transition-transform bg-white/10 px-2 py-1 rounded">
+                        <span class="text-base md:text-lg">☕</span>
+                        <span class="hidden sm:inline text-xs md:text-sm">離席</span>
+                    </button>
                     <select id="in-game-condition" onchange="changeCondition(this.value)" class="bg-pink-100 text-pink-800 text-xs md:text-sm font-bold px-2 py-1 rounded border border-pink-300 focus:outline-none cursor-pointer">
                         <option value="自動">AI: 自動</option>
                         <option value="普通">AI: 普通</option>
@@ -119,13 +137,25 @@
         <div class="p-4 md:p-6 bg-white border-b border-slate-200 shrink-0">
             <div class="flex items-start">
                 <div class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-pink-100 border-2 border-white shadow-sm overflow-hidden shrink-0 flex items-center justify-center">
+                    <!-- 18歳の可愛らしい女性アイコン（前髪・ロング・チークあり）に修正 -->
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" class="w-full h-full">
                         <rect width="100" height="100" fill="#fce7f3"/>
-                        <path d="M 65 30 C 90 20, 100 60, 80 85 C 70 95, 55 75, 60 50 Z" fill="#4a3b31" />
-                        <circle cx="50" cy="52" r="23" fill="#ffceb4" />
-                        <path d="M 37 49 Q 41.5 44 46 49" stroke="#4a3b31" stroke-width="2.5" fill="none" />
-                        <path d="M 54 49 Q 58.5 44 63 49" stroke="#4a3b31" stroke-width="2.5" fill="none" />
-                        <path d="M 44 60 Q 50 68 56 60 Z" fill="#e11d48" />
+                        <!-- 後ろ髪 -->
+                        <path d="M 20 40 Q 20 80 25 100 L 75 100 Q 80 80 80 40 Z" fill="#4a3b31" />
+                        <!-- 顔 -->
+                        <circle cx="50" cy="55" r="22" fill="#ffceb4" />
+                        <!-- 前髪 -->
+                        <path d="M 25 50 Q 30 20 50 20 Q 70 20 75 50 Q 60 40 50 35 Q 40 40 25 50 Z" fill="#4a3b31" />
+                        <path d="M 45 20 L 50 40 L 55 20 Z" fill="#4a3b31" />
+                        <path d="M 35 25 L 35 43 L 43 25 Z" fill="#4a3b31" />
+                        <!-- 目 -->
+                        <circle cx="41" cy="54" r="3" fill="#2d1b13" />
+                        <circle cx="59" cy="54" r="3" fill="#2d1b13" />
+                        <!-- チーク -->
+                        <circle cx="36" cy="58" r="3" fill="#fb7185" opacity="0.6" />
+                        <circle cx="64" cy="58" r="3" fill="#fb7185" opacity="0.6" />
+                        <!-- 口 -->
+                        <path d="M 46 63 Q 50 67 54 63" stroke="#e11d48" stroke-width="2" fill="none" stroke-linecap="round" />
                     </svg>
                 </div>
                 <div class="ml-3 md:ml-4 flex-grow">
@@ -179,6 +209,7 @@
         let globalTimerInterval = null;
         let globalTimeLeftSeconds = null; 
         let isMuted = true;
+        let isPaused = false;
         
         let sessionQuestionCount = 0;
         let isTimeUp = false;         
@@ -273,6 +304,62 @@
             if (userHealth === '元気') return '熱血';   
             if (hour >= 22 || hour <= 4) return 'Sっ気'; 
             return '普通';
+        }
+
+        // 離席（一時停止）機能
+        function pauseTimer() {
+            // 解説画面が出ている時は一時停止不要
+            if (!document.getElementById('explanation-area').classList.contains('hidden')) return;
+            
+            isPaused = true;
+            clearInterval(timerInterval);
+            clearInterval(globalTimerInterval);
+            clearTimeout(idleTimeout);
+            
+            const timerBar = document.getElementById('timer-bar');
+            if(timerBar) timerBar.style.animationPlayState = 'paused';
+            
+            document.getElementById('pause-overlay').classList.remove('hidden');
+            document.getElementById('pause-overlay').classList.add('flex');
+        }
+
+        // 再開機能
+        function resumeTimer() {
+            isPaused = false;
+            document.getElementById('pause-overlay').classList.add('hidden');
+            document.getElementById('pause-overlay').classList.remove('flex');
+            
+            const timerBar = document.getElementById('timer-bar');
+            if(timerBar) timerBar.style.animationPlayState = 'running';
+
+            // 問題用タイマー再開
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time-display').textContent = `⏳ ${timeLeft}秒`;
+                if (timeLeft <= 0) clearInterval(timerInterval);
+            }, 1000);
+
+            // 全体タイマー再開
+            if (globalTimeLeftSeconds !== null && !isTimeUp) {
+                globalTimerInterval = setInterval(() => {
+                    globalTimeLeftSeconds--;
+                    if (globalTimeLeftSeconds > 0) {
+                        updateGlobalTimer();
+                    } else {
+                        isTimeUp = true;
+                        clearInterval(globalTimerInterval);
+                        document.getElementById('global-timer-display').textContent = '🏁 目標時間到達 (セット完了待ち)';
+                        document.getElementById('global-timer-display').className = "text-xs font-bold bg-red-600 px-3 py-1 rounded-full border border-red-800 animate-pulse";
+                    }
+                }, 1000);
+            }
+        }
+
+        // 中断機能
+        function stopTraining() {
+            if(confirm("特訓を中断してスタート画面に戻りますか？")) {
+                location.reload();
+            }
         }
 
         async function generateAiMessage(situation, extraData = {}) {
