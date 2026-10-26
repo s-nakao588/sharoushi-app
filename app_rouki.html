@@ -887,8 +887,8 @@
             else if (situation === "give_up_s") prompt += `【状況】サドンデスの途中でユーザーがギブアップ。「情けないですね」と毒を吐きつつ裏に優しさを滲ませて許可して。`;
             else if (situation === "give_up_n") prompt += `【状況】延長戦の途中でユーザーがギブアップ。限界まで食らいついた労いと明るい激励で締めて。`;
 
-            // ▼ 日常の会話・煽りなどは最速の Flash モデル（安定版に統一）
-            callGeminiAPI('gemini-1.5-flash', prompt, (text) => {
+            // ▼ 日常の会話・煽りなどは最速の 2.5 Flash モデル
+            callGeminiAPI('gemini-2.5-flash', prompt, (text) => {
                 aiMessageEl.innerHTML = text;
                 speakText(text); 
             });
@@ -898,8 +898,8 @@
             if (q._verified) return; 
             const prompt = `あなたはデータ検証プロです。以下の過去問データに矛盾がないか検証して。\n問題文: ${q.問題文}\nデータ正誤: ${q.正誤}\n解説: ${q.解説}\n問題なければ「OK」、矛盾があれば「NG | 〇か✖ | 理由」の形式で回答。`;
             
-            // ▼ 裏側でのデータ正誤検証もテストのため Flash モデルで代用
-            callGeminiAPI('gemini-1.5-flash', prompt, (text) => {
+            // ▼ 裏側でのデータ正誤検証は賢い 2.5 Pro モデル
+            callGeminiAPI('gemini-2.5-pro', prompt, (text) => {
                 q._verified = true; 
                 if (text.startsWith("NG")) {
                     const parts = text.split("|");
@@ -928,17 +928,17 @@
 
         function askProDeeply() {
             const q = currentQuestions[currentIndex];
-            document.getElementById('ai-message').innerHTML = '<span class="typing">🔥 AIが深い背景を整理中...</span>';
+            document.getElementById('ai-message').innerHTML = '<span class="typing">🔥 Pro先生が深い背景を整理中...</span>';
             const prompt = `あなたは最高峰講師です。以下の問題の背景や立法趣旨を深く分かりやすく解説して。\n条文: ${q.根拠条文}\n問題文: ${q.問題文}\n解説: ${q.解説}`;
             
-            // ▼ 深掘り解説もテストのため Flash モデルで代用
-            callGeminiAPI('gemini-1.5-flash', prompt, (text) => { document.getElementById('ai-message').innerHTML = `🎓 <b>AI講義</b><br>${text}`; });
+            // ▼ ユーザーからの深掘り解説要請は賢い 2.5 Pro モデル
+            callGeminiAPI('gemini-2.5-pro', prompt, (text) => { document.getElementById('ai-message').innerHTML = `🎓 <b>Pro講義</b><br>${text}`; });
         }
 
         async function callGeminiAPI(model, prompt, callback) {
             try {
-                // 通信URLを「v1beta」から「v1」に変更
-                const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${userApiKey}`, {
+                // モデル一覧確認時と同じ v1beta エンドポイントを使用
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
                 
