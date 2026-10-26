@@ -887,8 +887,8 @@
             else if (situation === "give_up_s") prompt += `【状況】サドンデスの途中でユーザーがギブアップ。「情けないですね」と毒を吐きつつ裏に優しさを滲ませて許可して。`;
             else if (situation === "give_up_n") prompt += `【状況】延長戦の途中でユーザーがギブアップ。限界まで食らいついた労いと明るい激励で締めて。`;
 
-            // ▼ ここを最新のモデル名(gemini-1.5-flash-latest)に変更しました！
-            callGeminiAPI('gemini-1.5-flash-latest', prompt, (text) => {
+            // ▼ 日常の会話・煽りなどは最速の Flash モデル
+            callGeminiAPI('gemini-1.5-flash', prompt, (text) => {
                 aiMessageEl.innerHTML = text;
                 speakText(text); 
             });
@@ -898,8 +898,8 @@
             if (q._verified) return; 
             const prompt = `あなたはデータ検証プロです。以下の過去問データに矛盾がないか検証して。\n問題文: ${q.問題文}\nデータ正誤: ${q.正誤}\n解説: ${q.解説}\n問題なければ「OK」、矛盾があれば「NG | 〇か✖ | 理由」の形式で回答。`;
             
-            // ▼ ここを最新のモデル名(gemini-1.5-pro-latest)に変更しました！
-            callGeminiAPI('gemini-1.5-pro-latest', prompt, (text) => {
+            // ▼ 裏側でのデータ正誤検証は賢い Pro モデル
+            callGeminiAPI('gemini-1.5-pro', prompt, (text) => {
                 q._verified = true; 
                 if (text.startsWith("NG")) {
                     const parts = text.split("|");
@@ -931,8 +931,8 @@
             document.getElementById('ai-message').innerHTML = '<span class="typing">🔥 Pro先生が深い背景を整理中...</span>';
             const prompt = `あなたは最高峰講師です。以下の問題の背景や立法趣旨を深く分かりやすく解説して。\n条文: ${q.根拠条文}\n問題文: ${q.問題文}\n解説: ${q.解説}`;
             
-            // ▼ ここを最新のモデル名(gemini-1.5-pro-latest)に変更しました！
-            callGeminiAPI('gemini-1.5-pro-latest', prompt, (text) => { document.getElementById('ai-message').innerHTML = `🎓 <b>Pro講義</b><br>${text}`; });
+            // ▼ ユーザーからの深掘り解説要請は賢い Pro モデル
+            callGeminiAPI('gemini-1.5-pro', prompt, (text) => { document.getElementById('ai-message').innerHTML = `🎓 <b>Pro講義</b><br>${text}`; });
         }
 
         async function callGeminiAPI(model, prompt, callback) {
