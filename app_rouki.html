@@ -15,36 +15,62 @@
         }
         .typing { animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.3; } }
+        /* アコーディオン開閉用 */
+        .accordion-content { transition: max-height 0.3s ease-in-out; overflow: hidden; max-height: 0; }
+        .accordion-content.open { max-height: 1000px; }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 h-screen flex flex-col md:flex-row overflow-hidden relative">
 
-    <!-- 離席用オーバーレイ -->
+    <!-- ⏸️ 離席用オーバーレイ（ペナルティなし） -->
     <div id="pause-overlay" class="absolute inset-0 bg-slate-900/90 z-[100] hidden flex-col items-center justify-center text-white backdrop-blur-sm p-6 text-center">
-        <span class="text-6xl md:text-8xl mb-6 animate-bounce">☕</span>
+        <span class="text-6xl md:text-8xl mb-6 animate-bounce">⏸️</span>
         <h2 class="text-3xl md:text-5xl font-black mb-4">ちょっと離席中...</h2>
-        <p class="text-lg md:text-xl mb-12 text-slate-300">タイマーは一時停止しています。</p>
+        <p class="text-lg md:text-xl mb-4 text-slate-300">タイマーは完全に一時停止しています。</p>
+        <p class="text-pink-300 font-bold mb-12" id="leave-ai-comment">「サボりじゃないよね？信じてるよ」</p>
         <button onclick="resumeTimer()" class="w-full max-w-md bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-black py-5 rounded-2xl text-2xl shadow-[0_6px_0_#166534] active:shadow-[0_2px_0_#166534] active:translate-y-[4px] transition-all">
             ▶ 戻ったよ！（再開）
         </button>
     </div>
 
+    <!-- ☕ 休憩・ペナルティ用オーバーレイ（5分/10分など） -->
+    <div id="break-overlay" class="absolute inset-0 bg-slate-900/95 z-[110] hidden flex-col items-center justify-center text-white backdrop-blur-md p-6 text-center">
+        <span class="text-6xl md:text-8xl mb-4">☕</span>
+        <h2 class="text-3xl md:text-5xl font-black mb-2" id="break-title">休憩タイム！</h2>
+        <p class="text-lg md:text-xl mb-8 text-slate-300" id="break-message">目を閉じてしっかり休んでください。</p>
+        <div class="text-7xl md:text-9xl font-black mb-4 font-mono tracking-wider" id="break-countdown">05:00</div>
+        <p class="text-red-400 font-bold mb-12 h-6" id="break-penalty-msg"></p>
+        
+        <button onclick="endBreak()" class="w-full max-w-md bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-black py-5 rounded-2xl text-2xl shadow-[0_6px_0_#1e3a8a] active:shadow-[0_2px_0_#1e3a8a] active:translate-y-[4px] transition-all">
+            ▶ 休憩おわり！（再開）
+        </button>
+    </div>
+
     <!-- スタート画面 -->
-    <div id="start-screen" class="absolute inset-0 bg-indigo-900 z-50 flex flex-col items-center justify-center text-white p-6 overflow-y-auto">
-        <h1 class="text-3xl md:text-5xl font-black mb-8 mt-10">社労士 過去問トレーニング</h1>
-        <div class="bg-white text-slate-800 p-8 rounded-2xl shadow-2xl max-w-lg w-full mb-10">
+    <div id="start-screen" class="absolute inset-0 bg-indigo-900 z-50 flex flex-col items-center justify-center text-white p-4 md:p-6 overflow-y-auto">
+        <h1 class="text-3xl md:text-5xl font-black mb-8 mt-10 text-center">社労士 過去問トレーニング</h1>
+        <div class="bg-white text-slate-800 p-6 md:p-8 rounded-2xl shadow-2xl max-w-2xl w-full mb-10">
             
             <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-xl">
                 <h2 class="text-sm font-bold mb-2 text-yellow-800">🔑 Gemini APIキー</h2>
                 <input type="password" id="api-key-input" placeholder="AI Studioで取得したキーを入力" class="w-full border-2 border-yellow-300 p-2 rounded text-sm focus:outline-none focus:border-yellow-500">
             </div>
 
-            <h2 class="text-xl font-bold mb-3">📚 学習メニュー</h2>
-            <select id="chapter-select" class="w-full bg-slate-100 border-2 border-slate-200 text-lg font-bold p-3 rounded-xl mb-6 focus:outline-none focus:border-indigo-500">
-                <option value="">☁️ スプレッドシートから読み込み中...</option>
-            </select>
+            <!-- 科目・項目選択（アコーディオン＆チェックボックス） -->
+            <h2 class="text-xl font-bold mb-3 flex justify-between items-end">
+                <span>📚 今日のプレイリスト作成</span>
+                <span class="text-sm font-normal text-slate-500" id="loading-status">☁️ 読み込み中...</span>
+            </h2>
+            <div class="flex gap-2 mb-2">
+                <button onclick="checkAllChapters(true)" class="text-xs bg-indigo-100 hover:bg-indigo-200 text-indigo-700 px-3 py-1 rounded font-bold">☑ すべて選択</button>
+                <button onclick="checkAllChapters(false)" class="text-xs bg-slate-100 hover:bg-slate-200 text-slate-600 px-3 py-1 rounded font-bold">☐ すべて解除</button>
+            </div>
+            
+            <div id="subject-accordion-container" class="w-full border-2 border-slate-200 rounded-xl mb-6 bg-slate-50 overflow-hidden">
+                <!-- ここにJavaScriptで科目ごとのアコーディオンが生成されます -->
+            </div>
 
-            <div class="flex gap-4 mb-6">
+            <div class="flex flex-col md:flex-row gap-4 mb-6">
                 <div class="flex-1">
                     <h2 class="text-xl font-bold mb-3">🧘 AIのモード</h2>
                     <select id="condition-select" class="w-full bg-pink-50 border-2 border-pink-200 text-lg font-bold p-3 rounded-xl focus:outline-none focus:border-pink-500">
@@ -89,14 +115,20 @@
             <div class="p-3 md:p-4 flex justify-between items-center flex-wrap gap-2">
                 <div class="flex items-center gap-2 shrink-0 flex-wrap">
                     <button onclick="stopTraining()" class="flex items-center gap-1 text-slate-300 hover:text-white font-bold active:scale-95 transition-transform bg-white/10 px-2 py-1 rounded">
-                        <span class="text-base md:text-lg">⏸️</span>
-                        <span class="hidden sm:inline text-xs md:text-sm">中断</span>
+                        <span class="text-base md:text-lg">🚪</span>
+                        <span class="hidden sm:inline text-xs md:text-sm">終了</span>
                     </button>
-                    <button onclick="pauseTimer()" class="flex items-center gap-1 text-orange-300 hover:text-orange-400 font-bold active:scale-95 transition-transform bg-white/10 px-2 py-1 rounded">
-                        <span class="text-base md:text-lg">☕</span>
+                    <!-- 離席ボタン（一時停止・ペナルティなし） -->
+                    <button onclick="pauseTimer()" class="flex items-center gap-1 text-slate-300 hover:text-white font-bold active:scale-95 transition-transform bg-white/10 px-2 py-1 rounded border border-slate-500">
+                        <span class="text-base md:text-lg">⏸️</span>
                         <span class="hidden sm:inline text-xs md:text-sm">離席</span>
                     </button>
-                    <select id="in-game-condition" onchange="changeCondition(this.value)" class="bg-pink-100 text-pink-800 text-xs md:text-sm font-bold px-2 py-1 rounded border border-pink-300 focus:outline-none cursor-pointer">
+                    <!-- 手動5分休憩ボタン（ペナルティあり） -->
+                    <button onclick="startManualBreak()" class="flex items-center gap-1 text-orange-300 hover:text-orange-400 font-bold active:scale-95 transition-transform bg-orange-900/50 px-2 py-1 rounded border border-orange-500">
+                        <span class="text-base md:text-lg">☕</span>
+                        <span class="hidden sm:inline text-xs md:text-sm">5分休憩</span>
+                    </button>
+                    <select id="in-game-condition" onchange="changeCondition(this.value)" class="bg-pink-100 text-pink-800 text-xs md:text-sm font-bold px-2 py-1 rounded border border-pink-300 focus:outline-none cursor-pointer hidden lg:block">
                         <option value="自動">AI: 自動</option>
                         <option value="普通">AI: 普通</option>
                         <option value="Sっ気">AI: Sっ気</option>
@@ -112,6 +144,10 @@
                     <span id="question-progress" class="text-xs md:text-sm font-bold bg-indigo-800 px-3 py-1 rounded-full border border-indigo-600">1 / 10問</span>
                     <span id="time-display" class="text-xs md:text-sm font-bold bg-slate-800 text-yellow-400 px-3 py-1 rounded-full border border-slate-600 w-20 text-center">⏳ 60秒</span>
                 </div>
+            </div>
+            <!-- 現在のプレイリスト（項目）表示 -->
+            <div class="bg-indigo-950 text-indigo-200 text-xs px-4 py-1 text-center font-bold" id="current-playlist-title">
+                プレイリスト: 準備中
             </div>
             <div class="w-full h-2 bg-indigo-950 overflow-hidden"><div id="timer-bar" class="h-full w-full"></div></div>
         </div>
@@ -137,7 +173,6 @@
         <div class="p-4 md:p-6 bg-white border-b border-slate-200 shrink-0">
             <div class="flex items-start">
                 <div class="w-14 h-14 md:w-16 md:h-16 rounded-full bg-pink-100 border-2 border-white shadow-sm overflow-hidden shrink-0 flex items-center justify-center">
-                    <!-- 画像ファイル（coach.jpg）を直接読み込む設定に変更 -->
                     <img src="coach.jpg" alt="AIコーチ" class="w-full h-full object-cover">
                 </div>
                 <div class="ml-3 md:ml-4 flex-grow">
@@ -167,23 +202,44 @@
             </div>
 
             <div id="self-eval-area" class="absolute bottom-0 left-0 w-full p-2 md:p-4 bg-white/95 backdrop-blur-md border-t border-slate-200">
-                <div class="flex gap-2 justify-center">
-                    <button onclick="nextQuestion()" class="flex-1 bg-green-50 hover:bg-green-500 hover:text-white text-green-700 font-bold py-3 rounded-xl border border-green-200">🟢 次へ進む</button>
+                <div class="flex gap-2 justify-center" id="action-buttons-container">
+                    <button id="btn-next-question" onclick="nextQuestion()" class="flex-1 bg-green-50 hover:bg-green-500 hover:text-white text-green-700 font-bold py-3 rounded-xl border border-green-200">🟢 次へ進む</button>
+                    
+                    <!-- プレイリスト終了時の選択肢（動的に切り替え） -->
+                    <button id="btn-another-round" onclick="startAnotherRound()" class="hidden flex-1 bg-blue-50 hover:bg-blue-500 hover:text-white text-blue-700 font-bold py-3 rounded-xl border border-blue-200">🔁 もう1周する</button>
+                    <button id="btn-ai-spurt" onclick="startAiSpurt()" class="hidden flex-1 bg-gradient-to-r from-pink-500 to-red-500 text-white font-bold py-3 rounded-xl shadow hover:from-pink-600 hover:to-red-600">🔥 AIおまかせラストスパート</button>
                 </div>
             </div>
         </div>
     </aside>
 
     <script>
-        const SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?output=csv";
-        let database = []; 
+        // 💡 科目別のCSV URL設定（安衛法のURLを反映済。労基のURLを専用URLに取り直した場合はここを書き換えてください）
+        const SUBJECTS = [
+            { id: "rouki", name: "労働基準法", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?output=csv" },
+            { id: "anei", name: "安全衛生法", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=340566361&single=true&output=csv" }
+        ];
+
+        let allDatabase = []; // 全科目の読み込みデータ
+        let parsedSubjectsCount = 0;
+
+        // プレイリスト関連
+        let selectedChaptersGlobal = []; // 選択された全項目名
+        let playlistQueue = []; // [ { subjectName: "労基", chapterName: "総則", questions: [...] }, ... ]
+        let currentPlaylistIndex = 0;
+        let cumulativeQuestions = 0; // 休憩判定用の累計解答数
+
         let currentQuestions = [];
         let currentIndex = 0;
-        let validDatabase = []; 
+        
         let timerInterval = null;
         let timeLeft = 60;
-        let idleTimeout = null; 
         
+        // 休憩タイマー関連
+        let breakInterval = null;
+        let breakSecondsLeft = 0;
+        let isBreakMode = false;
+
         let userCondition = '自動'; 
         let userHealth = '普通';       
         let userApiKey = '';
@@ -202,41 +258,105 @@
         window.onload = function() {
             const savedKey = localStorage.getItem('gemini_api_key');
             if(savedKey) document.getElementById('api-key-input').value = savedKey;
-            loadDataFromSpreadsheet();
+            loadAllSubjects();
         };
 
-        async function loadDataFromSpreadsheet() {
-            try {
-                const response = await fetch(SHEET_CSV_URL);
-                const csvText = await response.text();
-                Papa.parse(csvText, {
-                    header: true, skipEmptyLines: true,
-                    complete: function(results) {
-                        database = results.data;
-                        console.log("🎉 スプレッドシートから読み込み成功！", database.length, "問");
-                        initApp(); 
-                    }
-                });
-            } catch (error) {
-                console.error("エラー:", error);
-                alert("データの読み込みに失敗しました。インターネット接続を確認してください。");
-                document.getElementById('chapter-select').innerHTML = '<option value="">⚠️ 読み込みエラー</option>';
+        // 全科目のCSVを非同期で読み込む
+        async function loadAllSubjects() {
+            document.getElementById('loading-status').textContent = "☁️ 読み込み中...";
+            allDatabase = [];
+            parsedSubjectsCount = 0;
+
+            for (const subject of SUBJECTS) {
+                if (!subject.url || subject.url.includes("※")) {
+                    parsedSubjectsCount++;
+                    checkAllLoaded();
+                    continue; // URL未設定はスキップ
+                }
+                
+                try {
+                    const response = await fetch(subject.url);
+                    const csvText = await response.text();
+                    Papa.parse(csvText, {
+                        header: true, skipEmptyLines: true,
+                        complete: function(results) {
+                            let data = results.data.filter(q => q && q.問題文 && String(q.問題文).trim() !== "");
+                            // どの科目のデータか判別できるようにプロパティを追加
+                            data.forEach(q => {
+                                q._subjectName = subject.name;
+                                q.項目 = q.項目 || "分類なし";
+                            });
+                            allDatabase = allDatabase.concat(data);
+                            parsedSubjectsCount++;
+                            checkAllLoaded();
+                        }
+                    });
+                } catch (error) {
+                    console.error("読込エラー:", subject.name, error);
+                    parsedSubjectsCount++;
+                    checkAllLoaded();
+                }
             }
         }
 
-        function initApp() {
-            const selectEl = document.getElementById('chapter-select');
-            if (typeof database !== 'undefined' && database.length > 0) {
-                validDatabase = (Array.isArray(database) ? database.flat(Infinity) : [database]).filter(q => q && typeof q === 'object' && q.問題文 && String(q.問題文).trim() !== "");
-                selectEl.innerHTML = "";
-                if(validDatabase.length === 0) {
-                    selectEl.innerHTML = '<option value="">データが空です</option>';
-                    return;
-                }
-                const chapters = [...new Set(validDatabase.map(q => q.項目 || "分類なし"))];
-                chapters.forEach(c => { selectEl.appendChild(new Option(c, c)); });
-                selectEl.appendChild(new Option("🔥 全項目ミックス（ランダム）", "ALL"));
+        function checkAllLoaded() {
+            if (parsedSubjectsCount === SUBJECTS.length) {
+                document.getElementById('loading-status').textContent = `✅ 読込完了 (${allDatabase.length}問)`;
+                buildSubjectAccordionUI();
             }
+        }
+
+        // アコーディオンUIの生成
+        function buildSubjectAccordionUI() {
+            const container = document.getElementById('subject-accordion-container');
+            container.innerHTML = "";
+            
+            // 科目ごとに項目をグループ化
+            const subjectMap = {};
+            allDatabase.forEach(q => {
+                if (!subjectMap[q._subjectName]) subjectMap[q._subjectName] = new Set();
+                subjectMap[q._subjectName].add(q.項目);
+            });
+
+            if (Object.keys(subjectMap).length === 0) {
+                container.innerHTML = "<div class='p-4 text-red-500 font-bold'>データがありません。URLを確認してください。</div>";
+                return;
+            }
+
+            for (const [subjectName, chaptersSet] of Object.entries(subjectMap)) {
+                const chapters = Array.from(chaptersSet);
+                
+                const header = document.createElement('div');
+                header.className = "bg-slate-200 p-3 font-bold cursor-pointer border-b border-white hover:bg-slate-300 flex justify-between";
+                header.innerHTML = `<span>${subjectName}</span> <span>▼</span>`;
+                header.onclick = function() {
+                    const content = this.nextElementSibling;
+                    content.classList.toggle('open');
+                };
+
+                const content = document.createElement('div');
+                content.className = "accordion-content bg-white";
+                
+                let checkboxHTML = `<div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-2">`;
+                chapters.forEach(c => {
+                    const val = `${subjectName}::${c}`;
+                    checkboxHTML += `
+                        <label class="flex items-center space-x-2 cursor-pointer p-2 hover:bg-indigo-50 rounded">
+                            <input type="checkbox" name="chapter-check" value="${val}" class="w-5 h-5 text-indigo-600 rounded">
+                            <span class="text-sm font-medium">${c}</span>
+                        </label>`;
+                });
+                checkboxHTML += `</div>`;
+                content.innerHTML = checkboxHTML;
+
+                container.appendChild(header);
+                container.appendChild(content);
+            }
+        }
+
+        function checkAllChapters(check) {
+            const checkboxes = document.querySelectorAll('input[name="chapter-check"]');
+            checkboxes.forEach(cb => cb.checked = check);
         }
 
         function toggleCustomTime() {
@@ -256,7 +376,6 @@
             } else {
                 btn.innerHTML = "🔊 音声オン";
                 btn.className = "bg-green-600 hover:bg-green-500 text-white text-xs md:text-sm font-bold px-3 py-1 rounded border border-green-500 transition-colors";
-                // 【追加】音声をオンにした瞬間に無音を再生し、スマホの音声制限を解除する
                 window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
             }
         }
@@ -290,21 +409,25 @@
             return '普通';
         }
 
+        // ⏸️ 離席処理（ペナルティなし）
         function pauseTimer() {
             if (!document.getElementById('explanation-area').classList.contains('hidden')) return;
-            
             isPaused = true;
             clearInterval(timerInterval);
             clearInterval(globalTimerInterval);
-            clearTimeout(idleTimeout);
             
             const timerBar = document.getElementById('timer-bar');
             if(timerBar) timerBar.style.animationPlayState = 'paused';
             
+            // AIの一言ランダム
+            const comments = ["サボりじゃないよね？信じてるよ", "早く戻ってきなさいよ", "急いでね！待ってるから"];
+            document.getElementById('leave-ai-comment').textContent = `「${comments[Math.floor(Math.random() * comments.length)]}」`;
+
             document.getElementById('pause-overlay').classList.remove('hidden');
             document.getElementById('pause-overlay').classList.add('flex');
         }
 
+        // ▶ 離席・休憩からの復帰
         function resumeTimer() {
             isPaused = false;
             document.getElementById('pause-overlay').classList.add('hidden');
@@ -320,24 +443,428 @@
             }, 1000);
 
             if (globalTimeLeftSeconds !== null && !isTimeUp) {
-                globalTimerInterval = setInterval(() => {
-                    globalTimeLeftSeconds--;
-                    if (globalTimeLeftSeconds > 0) {
-                        updateGlobalTimer();
-                    } else {
-                        isTimeUp = true;
-                        clearInterval(globalTimerInterval);
-                        document.getElementById('global-timer-display').textContent = '🏁 目標時間到達 (セット完了待ち)';
-                        document.getElementById('global-timer-display').className = "text-xs font-bold bg-red-600 px-3 py-1 rounded-full border border-red-800 animate-pulse";
-                    }
-                }, 1000);
+                globalTimerInterval = setInterval(globalTimerTick, 1000);
             }
+        }
+
+        // ☕ 手動5分休憩（ペナルティあり）
+        function startManualBreak() {
+            if (!document.getElementById('explanation-area').classList.contains('hidden')) return;
+            executeBreak(5, false);
+        }
+
+        // ☕ 自動休憩（ペナルティあり）
+        function startAutoBreak(minutes) {
+            executeBreak(minutes, true);
+        }
+
+        function executeBreak(minutes, isAuto) {
+            isPaused = true;
+            isBreakMode = true;
+            clearInterval(timerInterval);
+            clearInterval(globalTimerInterval);
+            const timerBar = document.getElementById('timer-bar');
+            if(timerBar) timerBar.style.animationPlayState = 'paused';
+
+            document.getElementById('break-title').textContent = isAuto ? "目標達成！自動休憩" : "☕ 手動休憩タイム";
+            document.getElementById('break-message').textContent = isAuto ? `よく頑張りました！${minutes}分間しっかり休んでください。` : `${minutes}分間のリフレッシュタイムです。`;
+            document.getElementById('break-penalty-msg').textContent = "";
+            
+            breakSecondsLeft = minutes * 60;
+            updateBreakDisplay();
+
+            document.getElementById('break-overlay').classList.remove('hidden');
+            document.getElementById('break-overlay').classList.add('flex');
+
+            breakInterval = setInterval(() => {
+                breakSecondsLeft--;
+                updateBreakDisplay();
+                // 超過ペナルティ処理
+                if (breakSecondsLeft < 0 && globalTimeLeftSeconds !== null && !isTimeUp) {
+                    globalTimeLeftSeconds--; // 全体時間を削る
+                    updateGlobalTimer();
+                    document.getElementById('break-penalty-msg').textContent = `⚠️ 超過ペナルティ中！ 全体時間が削られています！`;
+                }
+            }, 1000);
+        }
+
+        function updateBreakDisplay() {
+            let absSec = Math.abs(breakSecondsLeft);
+            let m = Math.floor(absSec / 60).toString().padStart(2, '0');
+            let s = (absSec % 60).toString().padStart(2, '0');
+            let sign = breakSecondsLeft < 0 ? "-" : "";
+            const displayEl = document.getElementById('break-countdown');
+            displayEl.textContent = `${sign}${m}:${s}`;
+            displayEl.className = breakSecondsLeft < 0 
+                ? "text-7xl md:text-9xl font-black mb-4 font-mono tracking-wider text-red-500 animate-pulse" 
+                : "text-7xl md:text-9xl font-black mb-4 font-mono tracking-wider text-emerald-400";
+        }
+
+        function endBreak() {
+            clearInterval(breakInterval);
+            isBreakMode = false;
+            document.getElementById('break-overlay').classList.add('hidden');
+            document.getElementById('break-overlay').classList.remove('flex');
+            cumulativeQuestions = 0; // 休憩したら累計リセット
+            
+            // 休憩明けに、もともと「プレイリスト終了後の画面」だった場合の処理
+            if (currentIndex >= currentQuestions.length) {
+                showEndOfPlaylistOptions();
+                return;
+            }
+            resumeTimer();
         }
 
         function stopTraining() {
             if(confirm("特訓を中断してスタート画面に戻りますか？")) {
                 location.reload();
             }
+        }
+
+        // ==========================
+        // 学習メインロジック
+        // ==========================
+
+        function startTraining() {
+            userApiKey = document.getElementById('api-key-input').value.trim();
+            if (!userApiKey) { alert("APIキーを入力してください！"); return; }
+            localStorage.setItem('gemini_api_key', userApiKey);
+
+            const checkboxes = document.querySelectorAll('input[name="chapter-check"]:checked');
+            if (checkboxes.length === 0) {
+                alert("学習する項目を最低1つは選択してください！");
+                return;
+            }
+
+            window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
+
+            userCondition = document.getElementById('condition-select').value;
+            document.getElementById('in-game-condition').value = userCondition;
+            userHealth = document.getElementById('health-select').value;
+            
+            sessionQuestionCount = 0;
+            cumulativeQuestions = 0;
+            isTimeUp = false;
+            isOvertimeTriggered = false;
+            isSuddenDeath = false;
+            todayMistakes = [];
+            document.getElementById('give-up-btn').classList.add('hidden');
+
+            // 目標時間設定
+            const timeLimitVal = document.getElementById('time-limit-select').value;
+            if (timeLimitVal === '無制限') {
+                globalTimeLeftSeconds = null;
+            } else if (timeLimitVal === 'custom') {
+                const customTimeStr = document.getElementById('custom-time-input').value;
+                if (!customTimeStr) { alert("終了時刻を入力してください！"); return; }
+                const [hours, minutes] = customTimeStr.split(':');
+                const now = new Date();
+                const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hours), parseInt(minutes), 0);
+                if (target <= now) target.setDate(target.getDate() + 1);
+                globalTimeLeftSeconds = Math.floor((target - now) / 1000);
+            } else if (timeLimitVal === '1分') {
+                globalTimeLeftSeconds = 60; 
+            } else {
+                globalTimeLeftSeconds = parseInt(timeLimitVal.replace('分','')) * 60;
+            }
+
+            if (globalTimeLeftSeconds !== null) {
+                document.getElementById('global-timer-display').classList.remove('hidden');
+                updateGlobalTimer();
+                globalTimerInterval = setInterval(globalTimerTick, 1000);
+            }
+
+            // プレイリストの構築
+            selectedChaptersGlobal = Array.from(checkboxes).map(cb => cb.value);
+            buildPlaylistQueue();
+
+            document.getElementById('start-screen').classList.add('hidden');
+            startNextPlaylistSet(true); 
+        }
+
+        function globalTimerTick() {
+            globalTimeLeftSeconds--;
+            if (globalTimeLeftSeconds > 0) {
+                updateGlobalTimer();
+            } else {
+                isTimeUp = true;
+                clearInterval(globalTimerInterval);
+                document.getElementById('global-timer-display').textContent = '🏁 目標時間到達';
+                document.getElementById('global-timer-display').className = "text-xs font-bold bg-red-600 px-3 py-1 rounded-full border border-red-800 animate-pulse";
+            }
+        }
+
+        function buildPlaylistQueue() {
+            playlistQueue = [];
+            selectedChaptersGlobal.forEach(val => {
+                const [subj, chap] = val.split("::");
+                let pool = allDatabase.filter(q => q._subjectName === subj && q.項目 === chap);
+                if(pool.length > 0) {
+                    // 10問抽出（ランダム）
+                    let questions = pool.sort(() => Math.random() - 0.5).slice(0, 10);
+                    playlistQueue.push({
+                        subjectName: subj,
+                        chapterName: chap,
+                        questions: questions
+                    });
+                }
+            });
+            currentPlaylistIndex = 0;
+        }
+
+        function startNextPlaylistSet(isVeryFirst = false) {
+            if (currentPlaylistIndex >= playlistQueue.length) {
+                // プレイリスト完走時
+                handlePlaylistComplete();
+                return;
+            }
+
+            const currentSet = playlistQueue[currentPlaylistIndex];
+            currentQuestions = currentSet.questions;
+            currentIndex = 0;
+
+            document.getElementById('current-playlist-title').textContent = `🎧 プレイリスト [${currentPlaylistIndex + 1}/${playlistQueue.length}] : ${currentSet.subjectName} - ${currentSet.chapterName}`;
+            
+            document.getElementById('btn-next-question').classList.remove('hidden');
+            document.getElementById('btn-another-round').classList.add('hidden');
+            document.getElementById('btn-ai-spurt').classList.add('hidden');
+
+            loadQuestion(isVeryFirst);
+        }
+
+        function updateGlobalTimer() {
+            if (globalTimeLeftSeconds === null) return;
+            const h = Math.floor(globalTimeLeftSeconds / 3600);
+            const m = Math.floor((globalTimeLeftSeconds % 3600) / 60);
+            const s = globalTimeLeftSeconds % 60;
+            if(h > 0) document.getElementById('global-timer-display').textContent = `🏁 残り ${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            else document.getElementById('global-timer-display').textContent = `🏁 残り ${m}:${s.toString().padStart(2, '0')}`;
+        }
+
+        function loadQuestion(isStart = false) {
+            const q = currentQuestions[currentIndex];
+            if (!q) return;
+
+            document.getElementById('question-progress').textContent = `${currentIndex + 1} / ${currentQuestions.length} 問`;
+            document.getElementById('question-text').textContent = q.問題文;
+            document.getElementById('explanation-area').classList.add('hidden');
+            
+            if (isStart) generateAiMessage("start");
+            else if (!isOvertimeTriggered) generateAiMessage("next"); 
+            
+            verifyDataWithPro(q);
+
+            clearInterval(timerInterval);
+
+            let questionTimeLimit = 60;
+            timeLeft = questionTimeLimit;
+            document.getElementById('time-display').textContent = `⏳ ${timeLeft}秒`;
+            
+            const timerBar = document.getElementById('timer-bar');
+            timerBar.style.animation = 'none';
+            void timerBar.offsetWidth; 
+            timerBar.style.animation = `timer-run ${questionTimeLimit}s linear forwards`;
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                document.getElementById('time-display').textContent = `⏳ ${timeLeft}秒`;
+                if (timeLeft <= 0) clearInterval(timerInterval);
+            }, 1000);
+        }
+
+        function showHint() {
+            const q = currentQuestions[currentIndex];
+            generateAiMessage("hint", { questionText: q.問題文, explanation: q.解説 || "" });
+        }
+
+        function answer(userAnswer) {
+            const q = currentQuestions[currentIndex];
+            clearInterval(timerInterval);
+            document.getElementById('timer-bar').style.animationPlayState = 'paused';
+
+            const correctStr = (q.正誤 || "").trim();
+            const isCorrect = (userAnswer === '〇' && (correctStr === '〇' || correctStr === '○')) || 
+                              (userAnswer === '✖' && (correctStr === '✖' || correctStr === '×'));
+
+            if (!isCorrect) todayMistakes.push(q);
+            cumulativeQuestions++; // 累計解答数プラス
+            sessionQuestionCount++;
+
+            if (isSuddenDeath && !isCorrect) {
+                alert("💀 痛恨のミス！サドンデスモードにより強制終了します。");
+                location.reload();
+                return;
+            }
+
+            document.getElementById('explanation-area').classList.remove('hidden');
+            document.getElementById('explanation-area').classList.add('flex');
+
+            const badge = document.getElementById('result-badge');
+            if (isCorrect) {
+                badge.textContent = "大正解！ 🎉";
+                badge.className = "inline-block px-6 py-2 rounded-full text-xl font-bold text-white bg-green-500 animate-bounce";
+            } else {
+                badge.textContent = "不正解... 💦";
+                badge.className = "inline-block px-6 py-2 rounded-full text-xl font-bold text-white bg-red-500";
+            }
+
+            document.getElementById('article-text').textContent = q.根拠条文 || '条文なし';
+            document.getElementById('explanation-text').innerHTML = q.解説 || '解説なし';
+
+            // ボタン表示の制御
+            if (currentIndex >= currentQuestions.length - 1) {
+                // セット完了
+                document.getElementById('btn-next-question').textContent = "🟢 次のセットへ（または判定）";
+            } else {
+                document.getElementById('btn-next-question').textContent = "🟢 次へ進む";
+            }
+
+            generateAiMessage("answer", { isCorrect: isCorrect, questionText: q.問題文 });
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            
+            if (currentIndex >= currentQuestions.length) {
+                // 1セット(1項目)終了
+                currentPlaylistIndex++;
+                startNextPlaylistSet();
+            } else {
+                loadQuestion();
+            }
+        }
+
+        // プレイリスト完走時の処理（休憩判定＆残り時間判定）
+        function handlePlaylistComplete() {
+            // まず自動休憩の判定
+            if (cumulativeQuestions >= 100) {
+                startAutoBreak(10);
+                return; // 休憩明けに showEndOfPlaylistOptions が呼ばれる
+            } else if (cumulativeQuestions >= 40) {
+                startAutoBreak(5);
+                return; // 休憩明けに showEndOfPlaylistOptions が呼ばれる
+            }
+            
+            showEndOfPlaylistOptions();
+        }
+
+        function showEndOfPlaylistOptions() {
+            document.getElementById('explanation-area').classList.remove('hidden');
+            document.getElementById('explanation-area').classList.add('flex');
+
+            if (isTimeUp && !isOvertimeTriggered) {
+                // 時間切れならルーレット
+                handleOvertimeRoulette();
+            } else if (!isTimeUp) {
+                // まだ時間がある場合
+                document.getElementById('ai-message').innerHTML = "プレイリスト完走！でもまだ時間が残ってるよ！<br>もう1周するか、アタシにおまかせするか選びな！";
+                
+                document.getElementById('btn-next-question').classList.add('hidden');
+                document.getElementById('btn-another-round').classList.remove('hidden');
+                document.getElementById('btn-ai-spurt').classList.remove('hidden');
+            } else {
+                // 時間切れ＆残業中完走
+                alert("追加の課題をすべてクリアしました！本日は終了です、お疲れ様でした！");
+                location.reload();
+            }
+        }
+
+        function startAnotherRound() {
+            buildPlaylistQueue();
+            startNextPlaylistSet(false);
+        }
+
+        function startAiSpurt() {
+            document.getElementById('current-playlist-title').textContent = `🔥 AIおまかせラストスパート！`;
+            document.getElementById('btn-next-question').classList.remove('hidden');
+            document.getElementById('btn-another-round').classList.add('hidden');
+            document.getElementById('btn-ai-spurt').classList.add('hidden');
+
+            currentQuestions = [];
+            // 間違えた問題を優先
+            if (todayMistakes.length > 0) {
+                let mistakes = todayMistakes.sort(() => Math.random() - 0.5).slice(0, 5); // 最大5問
+                currentQuestions = currentQuestions.concat(mistakes);
+            }
+            // 残りを全科目からランダム
+            let remain = 10 - currentQuestions.length;
+            if (remain > 0) {
+                let randoms = allDatabase.sort(() => Math.random() - 0.5).slice(0, remain);
+                currentQuestions = currentQuestions.concat(randoms);
+            }
+
+            // 特殊プレイリストとしてセット
+            playlistQueue = [{ subjectName: "全科目", chapterName: "AIセレクト", questions: currentQuestions }];
+            currentPlaylistIndex = 0;
+            currentIndex = 0;
+            
+            loadQuestion(false);
+        }
+
+        function handleOvertimeRoulette() {
+            isOvertimeTriggered = true; 
+            const roll = Math.floor(Math.random() * 10) + 1; 
+            const cond = getEffectiveCondition();
+
+            document.getElementById('ai-message-box').className = "bg-red-100 rounded-2xl p-4 shadow-sm border border-red-300 relative";
+            document.getElementById('give-up-btn').classList.remove('hidden'); 
+            
+            document.getElementById('btn-next-question').classList.remove('hidden');
+            document.getElementById('btn-another-round').classList.add('hidden');
+            document.getElementById('btn-ai-spurt').classList.add('hidden');
+
+            if (cond === 'Sっ気') {
+                if (roll <= 6) { 
+                    generateAiMessage("roulette_s_10");
+                    setRouletteQuestions(allDatabase, 10);
+                } else if (roll <= 9) { 
+                    generateAiMessage("roulette_s_end");
+                    setTimeout(() => { alert("今日はここまで。お疲れ様でした。"); location.reload(); }, 5000);
+                } else { 
+                    isSuddenDeath = true;
+                    generateAiMessage("roulette_s_20");
+                    setRouletteQuestions(allDatabase, 20);
+                }
+            } else if (cond === '熱血') {
+                if (roll <= 3) { 
+                    generateAiMessage("roulette_n_random");
+                    setRouletteQuestions(allDatabase, 10);
+                } else if (roll <= 6) { 
+                    generateAiMessage("roulette_n_mistake");
+                    setRouletteQuestions(todayMistakes.length > 0 ? todayMistakes : allDatabase, 10);
+                } else if (roll <= 9) { 
+                    generateAiMessage("roulette_n_weak");
+                    setRouletteQuestions(allDatabase, 10);
+                } else { 
+                    generateAiMessage("roulette_n_end");
+                    setTimeout(() => { alert("今日の特訓は終了！よく頑張ったな！"); location.reload(); }, 5000);
+                }
+            } else {
+                alert("目標時間が終了しました。今日の学習はここまでです！お疲れ様でした！");
+                location.reload();
+            }
+        }
+
+        function setRouletteQuestions(pool, count) {
+            let extra = pool.sort(() => Math.random() - 0.5).slice(0, count);
+            playlistQueue = [{ subjectName: "残業ルーレット", chapterName: "特別課題", questions: extra }];
+            currentPlaylistIndex = 0;
+            currentQuestions = extra;
+            currentIndex = -1; // 次へボタンを押させるため
+            document.getElementById('btn-next-question').textContent = "🟢 課題スタート！";
+        }
+
+        function giveUp() {
+            const cond = getEffectiveCondition();
+            if (cond === 'Sっ気') {
+                generateAiMessage("give_up_s");
+            } else {
+                generateAiMessage("give_up_n");
+            }
+            setTimeout(() => {
+                alert("学習を終了します。ゆっくり休んでください！");
+                location.reload();
+            }, 5000);
         }
 
         async function generateAiMessage(situation, extraData = {}) {
@@ -347,31 +874,25 @@
             
             const effectiveCond = getEffectiveCondition();
             
-            let prompt = `あなたは社労士試験をサポートするAIコーチです。以下の状況と性格設定を【複合的に判断】して、1〜3文の短い話し言葉でコメントしてください。（※「AIとして〜」等の機械的な前置きは絶対禁止。定型文は使わずその都度考えて発言すること）\n\n`;
+            let prompt = `あなたは社労士試験をサポートするAIコーチです。以下の状況と性格設定を判断して、1〜2文の短い話し言葉でコメントしてください。（「AIとして〜」等の前置き禁止。定型文不可）\n\n`;
             
-            if (effectiveCond === 'Sっ気') {
-                prompt += `【基本性格】タメ口でフランク、小生意気な若い後輩コーチ。上から目線で煽るが、絶対に嫌な気持ちにさせない憎めないキャラ。\n`;
-            } else if (effectiveCond === '熱血') {
-                prompt += `【基本性格】明るくて前向きな、体育会系の姉御肌（女性）コーチ。結果よりプロセスを肯定し、「〜だろ」「〜よ！」「〜しな！」という言葉遣いで引っ張る。\n`;
-            } else {
-                prompt += `【基本性格】丁寧で前向きな女性コーチとして振る舞ってください。\n`;
-            }
+            if (effectiveCond === 'Sっ気') prompt += `【性格】タメ口でフランク、小生意気な若い後輩コーチ。上から目線で煽るが嫌な気持ちにさせない。\n`;
+            else if (effectiveCond === '熱血') prompt += `【性格】明るく前向きな体育会系の姉御肌。「〜だろ」「〜よ！」「〜しな！」と引っ張る。\n`;
+            else prompt += `【性格】丁寧で前向きな女性コーチ。\n`;
 
-            if (situation === "start") prompt += `【状況】今から学習を開始します。気合を入れて！`;
-            else if (situation === "next") prompt += `【状況】次の問題へ進みました。短く言葉をかけてください。`;
-            else if (situation === "hint") prompt += `【状況】ユーザーがヒントを求めています。答えは言わず、1文で注目ポイントを示唆して！\n問題: ${extraData.questionText}\n解説: ${extraData.explanation}`;
-            else if (situation === "answer") {
-                prompt += `【状況】ユーザーが解答しました。結果: ${extraData.isCorrect ? "正解！" : "不正解..."}\n問題: ${extraData.questionText.substring(0,30)}...`;
-            }
-            else if (situation === "roulette_s_10") prompt += `【状況】ユーザーの目標時間が終了しましたが、ルーレットで【10問追加】が決定しました。時間が過ぎたことなど全く気にせず、ユーザーが休もうとしていることを見透かして、冷たく突き放すように追加の課題（10問）を命じてください。`;
-            else if (situation === "roulette_s_end") prompt += `【状況】ユーザーの目標時間が終了し、ルーレットで【今日はおしまい】が決定しました。呆れや溜息を交えつつ、ほんの少しだけ労い（言葉はキツめ）、「今日は特別に見逃してあげるからさっさと寝なさい」というスタンスで終了を告げてください。`;
-            else if (situation === "roulette_s_20") prompt += `【状況】ユーザーの目標時間が終了しましたが、ルーレットで【20問追加（無限サドンデス）】が決定しました。嗜虐心が最高潮の状態で、絶望する顔を楽しむように「あなたのためを思って特別に用意した地獄」として20問の追加（1ミスで即終了）をプレゼントしてください。`;
-            else if (situation === "roulette_n_random") prompt += `【状況】ユーザーの目標時間が終了しましたが、ルーレットで【ランダム10問追加】が決定しました。テンション高く限界を超えようとするユーザーを熱く引っ張り、「時計なんて気にするな、ここからが本当の勝負だ！」というスポ根のノリで10問追加を告げてください。`;
-            else if (situation === "roulette_n_mistake") prompt += `【状況】目標時間終了後、ルーレットで【今日間違えた問題10問】が決定しました。厳しさと愛情が混ざったコーチ目線で、「今日のミスを明日に持ち越させないための愛のムチ」として気合を入れ直させてください。`;
-            else if (situation === "roulette_n_weak") prompt += `【状況】目標時間終了後、ルーレットで【過去の正解率が低い問題10問】が決定しました。ユーザーの弱点を本気で克服させようとする真剣な態度で、「壁をぶち破れ、アタシがついている」と力強く背中を押してください。`;
-            else if (situation === "roulette_n_end") prompt += `【状況】目標時間終了後、ルーレットで【今日はおしまい】が決定しました。厳しい特訓を乗り越えたことを心から褒め称え、オンオフの切り替えを大事にしてしっかり休むよう温かく命令してください。`;
-            else if (situation === "give_up_s") prompt += `【状況】サドンデス延長戦の途中で、ユーザーが「もう勘弁して」とギブアップしました。呆れ果てた冷たい態度をとりつつも、無理をして壊れられると困るため渋々許可してください。「情けないですね」と毒を吐きつつ、裏に微かな優しさ（明日のために休ませる）を滲ませてください。`;
-            else if (situation === "give_up_n") prompt += `【状況】延長戦の途中で、ユーザーが「もう勘弁して」とギブアップしました。決して怒らず、自分の限界を自己申告できた勇気と自己管理能力を褒め、限界まで食らいついた労いと「また明日アタシについてきな！」という明るい激励で締めてください。`;
+            if (situation === "start") prompt += `【状況】学習を開始します。気合を入れて！`;
+            else if (situation === "next") prompt += `【状況】次の問題へ進みました。短く言葉をかけて。`;
+            else if (situation === "hint") prompt += `【状況】ユーザーがヒントを求めています。答えは言わず1文で注目ポイントを示唆して！\n問題: ${extraData.questionText}\n解説: ${extraData.explanation}`;
+            else if (situation === "answer") prompt += `【状況】ユーザーが解答しました。結果: ${extraData.isCorrect ? "正解！" : "不正解..."}\n問題: ${extraData.questionText.substring(0,30)}...`;
+            else if (situation === "roulette_s_10") prompt += `【状況】目標時間が終了したがルーレットで【10問追加】決定。休もうとしていることを見透かして冷たく追加課題を命じて。`;
+            else if (situation === "roulette_s_end") prompt += `【状況】目標時間が終了し【今日はおしまい】決定。呆れつつほんの少しだけ労い終了を告げて。`;
+            else if (situation === "roulette_s_20") prompt += `【状況】ルーレットで【20問追加（無限サドンデス）】決定。絶望する顔を楽しむように地獄の20問をプレゼントして。`;
+            else if (situation === "roulette_n_random") prompt += `【状況】ルーレットで【ランダム10問追加】決定。スポ根のノリで熱く追加を告げて。`;
+            else if (situation === "roulette_n_mistake") prompt += `【状況】ルーレットで【今日間違えた問題10問】決定。愛のムチとして気合を入れ直させて。`;
+            else if (situation === "roulette_n_weak") prompt += `【状況】ルーレットで【過去の正解率が低い問題10問】決定。「壁をぶち破れ」と力強く背中を押して。`;
+            else if (situation === "roulette_n_end") prompt += `【状況】ルーレットで【今日はおしまい】決定。厳しい特訓を心から褒め称え、しっかり休むよう命令して。`;
+            else if (situation === "give_up_s") prompt += `【状況】サドンデスの途中でユーザーがギブアップ。「情けないですね」と毒を吐きつつ裏に優しさを滲ませて許可して。`;
+            else if (situation === "give_up_n") prompt += `【状況】延長戦の途中でユーザーがギブアップ。限界まで食らいついた労いと明るい激励で締めて。`;
 
             callGeminiAPI('gemini-1.5-flash', prompt, (text) => {
                 aiMessageEl.innerHTML = text;
@@ -426,236 +947,6 @@
                 callback(data.candidates[0].content.parts[0].text);
             } catch (err) { console.error(err); }
         }
-
-        function startTraining() {
-            userApiKey = document.getElementById('api-key-input').value.trim();
-            if (!userApiKey) { alert("APIキーを入力してください！"); return; }
-            localStorage.setItem('gemini_api_key', userApiKey);
-
-            if(validDatabase.length === 0) { alert("問題データがありません。スプレッドシートの読み込みをお待ちください。"); return; }
-
-            // 【追加】スタートボタンを押した瞬間にも音声エンジンをアンロックする
-            window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
-
-            userCondition = document.getElementById('condition-select').value;
-            document.getElementById('in-game-condition').value = userCondition;
-            userHealth = document.getElementById('health-select').value;
-            
-            sessionQuestionCount = 0;
-            isTimeUp = false;
-            isOvertimeTriggered = false;
-            isSuddenDeath = false;
-            todayMistakes = [];
-            document.getElementById('give-up-btn').classList.add('hidden');
-
-            const timeLimitVal = document.getElementById('time-limit-select').value;
-            if (timeLimitVal === '無制限') {
-                globalTimeLeftSeconds = null;
-            } else if (timeLimitVal === 'custom') {
-                const customTimeStr = document.getElementById('custom-time-input').value;
-                if (!customTimeStr) { alert("終了時刻を入力してください！"); return; }
-                const [hours, minutes] = customTimeStr.split(':');
-                const now = new Date();
-                const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hours), parseInt(minutes), 0);
-                if (target <= now) target.setDate(target.getDate() + 1);
-                globalTimeLeftSeconds = Math.floor((target - now) / 1000);
-            } else if (timeLimitVal === '1分') {
-                globalTimeLeftSeconds = 60; 
-            } else {
-                globalTimeLeftSeconds = parseInt(timeLimitVal.replace('分','')) * 60;
-            }
-
-            if (globalTimeLeftSeconds !== null) {
-                document.getElementById('global-timer-display').classList.remove('hidden');
-                updateGlobalTimer();
-                globalTimerInterval = setInterval(() => {
-                    globalTimeLeftSeconds--;
-                    if (globalTimeLeftSeconds > 0) {
-                        updateGlobalTimer();
-                    } else {
-                        isTimeUp = true;
-                        clearInterval(globalTimerInterval);
-                        document.getElementById('global-timer-display').textContent = '🏁 目標時間到達 (セット完了待ち)';
-                        document.getElementById('global-timer-display').className = "text-xs font-bold bg-red-600 px-3 py-1 rounded-full border border-red-800 animate-pulse";
-                    }
-                }, 1000);
-            }
-
-            const selectedChapter = document.getElementById('chapter-select').value;
-            currentQuestions = selectedChapter === "ALL" ? [...validDatabase] : validDatabase.filter(q => (q.項目 || "分類なし") === selectedChapter);
-            currentQuestions.sort(() => Math.random() - 0.5);
-
-            document.getElementById('start-screen').classList.add('hidden');
-            currentIndex = 0;
-            loadQuestion(true); 
-        }
-
-        function updateGlobalTimer() {
-            const h = Math.floor(globalTimeLeftSeconds / 3600);
-            const m = Math.floor((globalTimeLeftSeconds % 3600) / 60);
-            const s = globalTimeLeftSeconds % 60;
-            if(h > 0) document.getElementById('global-timer-display').textContent = `🏁 残り ${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            else document.getElementById('global-timer-display').textContent = `🏁 残り ${m}:${s.toString().padStart(2, '0')}`;
-        }
-
-        function loadQuestion(isStart = false) {
-            const q = currentQuestions[currentIndex];
-            if (!q) return;
-
-            document.getElementById('question-progress').textContent = `${currentIndex + 1} / ${currentQuestions.length} 問`;
-            document.getElementById('question-text').textContent = q.問題文;
-            document.getElementById('explanation-area').classList.add('hidden');
-            
-            if (isStart) generateAiMessage("start");
-            else if (!isOvertimeTriggered) generateAiMessage("next"); 
-            
-            verifyDataWithPro(q);
-
-            clearInterval(timerInterval);
-            clearTimeout(idleTimeout);
-
-            let questionTimeLimit = 60;
-            timeLeft = questionTimeLimit;
-            document.getElementById('time-display').textContent = `⏳ ${timeLeft}秒`;
-            
-            const timerBar = document.getElementById('timer-bar');
-            timerBar.style.animation = 'none';
-            void timerBar.offsetWidth; 
-            timerBar.style.animation = `timer-run ${questionTimeLimit}s linear forwards`;
-            
-            timerInterval = setInterval(() => {
-                timeLeft--;
-                document.getElementById('time-display').textContent = `⏳ ${timeLeft}秒`;
-                if (timeLeft <= 0) clearInterval(timerInterval);
-            }, 1000);
-        }
-
-        function showHint() {
-            const q = currentQuestions[currentIndex];
-            generateAiMessage("hint", { questionText: q.問題文, explanation: q.解説 || "" });
-        }
-
-        function answer(userAnswer) {
-            const q = currentQuestions[currentIndex];
-            clearInterval(timerInterval);
-            document.getElementById('timer-bar').style.animationPlayState = 'paused';
-
-            const correctStr = (q.正誤 || "").trim();
-            const isCorrect = (userAnswer === '〇' && (correctStr === '〇' || correctStr === '○')) || 
-                              (userAnswer === '✖' && (correctStr === '✖' || correctStr === '×'));
-
-            if (!isCorrect) todayMistakes.push(q);
-
-            if (isSuddenDeath && !isCorrect) {
-                alert("💀 痛恨のミス！サドンデスモードにより強制終了します。");
-                location.reload();
-                return;
-            }
-
-            document.getElementById('explanation-area').classList.remove('hidden');
-            document.getElementById('explanation-area').classList.add('flex');
-
-            const badge = document.getElementById('result-badge');
-            if (isCorrect) {
-                badge.textContent = "大正解！ 🎉";
-                badge.className = "inline-block px-6 py-2 rounded-full text-xl font-bold text-white bg-green-500 animate-bounce";
-            } else {
-                badge.textContent = "不正解... 💦";
-                badge.className = "inline-block px-6 py-2 rounded-full text-xl font-bold text-white bg-red-500";
-            }
-
-            document.getElementById('article-text').textContent = q.根拠条文 || '条文なし';
-            document.getElementById('explanation-text').innerHTML = q.解説 || '解説なし';
-
-            generateAiMessage("answer", { isCorrect: isCorrect, questionText: q.問題文 });
-        }
-
-        function nextQuestion() {
-            sessionQuestionCount++;
-            currentIndex++;
-            
-            if (sessionQuestionCount % 10 === 0 && isTimeUp && !isOvertimeTriggered) {
-                handleOvertimeRoulette();
-                return;
-            }
-
-            if (currentIndex >= currentQuestions.length) {
-                alert("用意された問題をすべて解き終わりました！素晴らしい！");
-                location.reload();
-            } else {
-                loadQuestion();
-            }
-        }
-
-        function handleOvertimeRoulette() {
-            isOvertimeTriggered = true; 
-            const roll = Math.floor(Math.random() * 10) + 1; 
-            const cond = getEffectiveCondition();
-
-            document.getElementById('ai-message-box').className = "bg-red-100 rounded-2xl p-4 shadow-sm border border-red-300 relative";
-            document.getElementById('give-up-btn').classList.remove('hidden'); 
-
-            if (cond === 'Sっ気') {
-                if (roll <= 6) { 
-                    generateAiMessage("roulette_s_10");
-                    appendRandomQuestions(10);
-                } else if (roll <= 9) { 
-                    generateAiMessage("roulette_s_end");
-                    setTimeout(() => { alert("今日はここまで。お疲れ様でした。"); location.reload(); }, 5000);
-                } else { 
-                    isSuddenDeath = true;
-                    generateAiMessage("roulette_s_20");
-                    appendRandomQuestions(20);
-                }
-            } else if (cond === '熱血') {
-                if (roll <= 3) { 
-                    generateAiMessage("roulette_n_random");
-                    appendRandomQuestions(10);
-                } else if (roll <= 6) { 
-                    generateAiMessage("roulette_n_mistake");
-                    appendQuestionsFromList(todayMistakes, 10);
-                } else if (roll <= 9) { 
-                    generateAiMessage("roulette_n_weak");
-                    appendRandomQuestions(10);
-                } else { 
-                    generateAiMessage("roulette_n_end");
-                    setTimeout(() => { alert("今日の特訓は終了！よく頑張ったな！"); location.reload(); }, 5000);
-                }
-            } else {
-                alert("目標時間が終了しました。今日の学習はここまでです！お疲れ様でした！");
-                location.reload();
-            }
-        }
-
-        function appendRandomQuestions(count) {
-            let extra = validDatabase.sort(() => Math.random() - 0.5).slice(0, count);
-            currentQuestions = currentQuestions.concat(extra);
-            loadQuestion();
-        }
-
-        function appendQuestionsFromList(list, count) {
-            if (list.length === 0) {
-                appendRandomQuestions(count); 
-                return;
-            }
-            let extra = list.sort(() => Math.random() - 0.5).slice(0, count);
-            currentQuestions = currentQuestions.concat(extra);
-            loadQuestion();
-        }
-
-        function giveUp() {
-            const cond = getEffectiveCondition();
-            if (cond === 'Sっ気') {
-                generateAiMessage("give_up_s");
-            } else {
-                generateAiMessage("give_up_n");
-            }
-            setTimeout(() => {
-                alert("学習を終了します。ゆっくり休んでください！");
-                location.reload();
-            }, 5000);
-        }
-
     </script>
 </body>
 </html>
