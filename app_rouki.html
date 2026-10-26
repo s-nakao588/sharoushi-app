@@ -859,7 +859,6 @@
             }, 5000);
         }
 
-        // ▼ 今回の修正ポイント：エラーが発生した時に理由を画面に表示して止まらないようにする
         async function generateAiMessage(situation, extraData = {}) {
             const aiMessageEl = document.getElementById('ai-message');
             document.getElementById('ai-fix-action').classList.add('hidden');
@@ -888,7 +887,8 @@
             else if (situation === "give_up_s") prompt += `【状況】サドンデスの途中でユーザーがギブアップ。「情けないですね」と毒を吐きつつ裏に優しさを滲ませて許可して。`;
             else if (situation === "give_up_n") prompt += `【状況】延長戦の途中でユーザーがギブアップ。限界まで食らいついた労いと明るい激励で締めて。`;
 
-            callGeminiAPI('gemini-1.5-flash', prompt, (text) => {
+            // ▼ ここを最新のモデル名(gemini-1.5-flash-latest)に変更しました！
+            callGeminiAPI('gemini-1.5-flash-latest', prompt, (text) => {
                 aiMessageEl.innerHTML = text;
                 speakText(text); 
             });
@@ -897,7 +897,9 @@
         async function verifyDataWithPro(q) {
             if (q._verified) return; 
             const prompt = `あなたはデータ検証プロです。以下の過去問データに矛盾がないか検証して。\n問題文: ${q.問題文}\nデータ正誤: ${q.正誤}\n解説: ${q.解説}\n問題なければ「OK」、矛盾があれば「NG | 〇か✖ | 理由」の形式で回答。`;
-            callGeminiAPI('gemini-1.5-pro', prompt, (text) => {
+            
+            // ▼ ここを最新のモデル名(gemini-1.5-pro-latest)に変更しました！
+            callGeminiAPI('gemini-1.5-pro-latest', prompt, (text) => {
                 q._verified = true; 
                 if (text.startsWith("NG")) {
                     const parts = text.split("|");
@@ -928,10 +930,11 @@
             const q = currentQuestions[currentIndex];
             document.getElementById('ai-message').innerHTML = '<span class="typing">🔥 Pro先生が深い背景を整理中...</span>';
             const prompt = `あなたは最高峰講師です。以下の問題の背景や立法趣旨を深く分かりやすく解説して。\n条文: ${q.根拠条文}\n問題文: ${q.問題文}\n解説: ${q.解説}`;
-            callGeminiAPI('gemini-1.5-pro', prompt, (text) => { document.getElementById('ai-message').innerHTML = `🎓 <b>Pro講義</b><br>${text}`; });
+            
+            // ▼ ここを最新のモデル名(gemini-1.5-pro-latest)に変更しました！
+            callGeminiAPI('gemini-1.5-pro-latest', prompt, (text) => { document.getElementById('ai-message').innerHTML = `🎓 <b>Pro講義</b><br>${text}`; });
         }
 
-        // ▼ 今回の修正ポイント：通信エラー時に理由を画面に赤い文字で表示するように改良
         async function callGeminiAPI(model, prompt, callback) {
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`, {
