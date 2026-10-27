@@ -67,7 +67,7 @@
             </div>
             
             <div id="subject-accordion-container" class="w-full border-2 border-slate-200 rounded-xl mb-5 bg-slate-50 overflow-hidden max-h-56 overflow-y-auto">
-                <!-- JavaScriptで科目ごとのアコーディオンが生成されます -->
+                <!-- JavaScriptで生成 -->
             </div>
 
             <div class="flex flex-col md:flex-row gap-4 mb-5">
@@ -115,18 +115,9 @@
         <div class="bg-indigo-900 text-white shrink-0 shadow-md z-20">
             <div class="p-2 md:p-3 flex justify-between items-center flex-wrap gap-2">
                 <div class="flex items-center gap-1.5 shrink-0 flex-wrap">
-                    <button onclick="stopTraining()" class="flex items-center gap-1 text-slate-300 hover:text-white font-bold active:scale-95 transition-transform bg-white/10 px-2 py-1 rounded text-xs md:text-sm">
-                        <span>🚪</span>
-                        <span>終了</span>
-                    </button>
-                    <button onclick="pauseTimer()" class="flex items-center gap-1 text-slate-300 hover:text-white font-bold active:scale-95 transition-transform bg-white/10 px-2 py-1 rounded border border-slate-500 text-xs md:text-sm">
-                        <span>⏸️</span>
-                        <span>離席</span>
-                    </button>
-                    <button onclick="startManualBreak()" class="flex items-center gap-1 text-orange-300 hover:text-orange-400 font-bold active:scale-95 transition-transform bg-orange-900/50 px-2 py-1 rounded border border-orange-500 text-xs md:text-sm">
-                        <span>☕</span>
-                        <span>5分休憩</span>
-                    </button>
+                    <button onclick="stopTraining()" class="flex items-center gap-1 text-slate-300 hover:text-white font-bold active:scale-95 transition-transform bg-white/10 px-2 py-1 rounded text-xs md:text-sm">🚪 終了</button>
+                    <button onclick="pauseTimer()" class="flex items-center gap-1 text-slate-300 hover:text-white font-bold active:scale-95 transition-transform bg-white/10 px-2 py-1 rounded border border-slate-500 text-xs md:text-sm">⏸️ 離席</button>
+                    <button onclick="startManualBreak()" class="flex items-center gap-1 text-orange-300 hover:text-orange-400 font-bold active:scale-95 transition-transform bg-orange-900/50 px-2 py-1 rounded border border-orange-500 text-xs md:text-sm">☕ 5分休憩</button>
 
                     <!-- 🌡️ 体調変更セレクトボックス（リアルタイム反映） -->
                     <select id="in-game-health" onchange="changeHealthDuringGame(this.value)" class="bg-green-100 text-green-900 text-xs md:text-sm font-bold px-2 py-1 rounded border border-green-300 focus:outline-none cursor-pointer">
@@ -156,30 +147,23 @@
 
         <!-- 問題本文・ヒント・まるばつボタン領域 -->
         <div class="p-4 md:p-6 flex-1 flex flex-col justify-between overflow-hidden relative">
-            <button id="give-up-btn" onclick="giveUp()" class="hidden absolute top-3 right-3 bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold py-1 px-3 rounded-full shadow-sm text-xs border border-slate-300">
-                🏳️ ギブアップ
-            </button>
+            <button id="give-up-btn" onclick="giveUp()" class="hidden absolute top-3 right-3 bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold py-1 px-3 rounded-full shadow-sm text-xs border border-slate-300">🏳️ ギブアップ</button>
 
-            <!-- 問題文エリア（文字を大きく、縦スクロール可能） -->
+            <!-- 問題文エリア -->
             <div class="flex-1 overflow-y-auto pr-2 mb-3">
                 <h2 class="text-xl md:text-2xl lg:text-3xl font-extrabold leading-relaxed text-slate-800 tracking-wide" id="question-text">
                     問題文
                 </h2>
             </div>
             
-            <!-- ヒントボタン -->
             <button onclick="showHint()" class="shrink-0 mb-3 w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-800 font-bold py-2.5 md:py-3 rounded-xl border-2 border-yellow-300 active:scale-[0.98] transition-transform flex items-center justify-center text-base md:text-lg shadow-sm">
                 <span class="mr-2 text-xl">💡</span> AIにヒントをもらう
             </button>
 
-            <!-- 〇 ✖ ボタン（大型化・押しやすさ重視） -->
+            <!-- 〇 ✖ ボタン -->
             <div class="shrink-0 flex space-x-4 h-24 md:h-32">
-                <button onclick="answer('〇')" class="flex-1 bg-gradient-to-b from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 text-blue-600 font-black rounded-2xl border-4 border-blue-400 active:scale-95 text-6xl md:text-7xl shadow-md flex items-center justify-center transition-transform">
-                    〇
-                </button>
-                <button onclick="answer('✖')" class="flex-1 bg-gradient-to-b from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 text-red-500 font-black rounded-2xl border-4 border-red-400 active:scale-95 text-6xl md:text-7xl shadow-md flex items-center justify-center transition-transform">
-                    ✖
-                </button>
+                <button onclick="answer('〇')" class="flex-1 bg-gradient-to-b from-blue-50 to-blue-100 hover:from-blue-100 hover:to-blue-200 text-blue-600 font-black rounded-2xl border-4 border-blue-400 active:scale-95 text-6xl md:text-7xl shadow-md flex items-center justify-center transition-transform">〇</button>
+                <button onclick="answer('✖')" class="flex-1 bg-gradient-to-b from-red-50 to-red-100 hover:from-red-100 hover:to-red-200 text-red-500 font-black rounded-2xl border-4 border-red-400 active:scale-95 text-6xl md:text-7xl shadow-md flex items-center justify-center transition-transform">✖</button>
             </div>
         </div>
     </main>
@@ -195,15 +179,23 @@
                 <div class="ml-3 flex-grow">
                     <div class="bg-pink-50 rounded-2xl rounded-tl-none p-3 shadow-sm border border-pink-100 relative" id="ai-message-box">
                         <p class="text-slate-700 font-bold leading-relaxed text-sm md:text-base" id="ai-message">
-                            APIキーと問題データを読み込んでスタートしてね！
+                            準備ができたらスタートしてね！
                         </p>
-                        <div id="ai-fix-action" class="mt-2 hidden"></div>
+                        <!-- AI自動修正 UI -->
+                        <div id="ai-fix-action" class="mt-3 p-3 bg-white rounded-xl border-2 border-red-300 shadow-sm hidden">
+                            <p class="text-xs font-black text-red-600 mb-1">🚨 AIが間違いを発見しました！</p>
+                            <p id="ai-fix-reason" class="text-xs text-slate-700 font-bold mb-2"></p>
+                            <div class="flex gap-2">
+                                <button onclick="applyFixToGAS()" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-2 rounded-lg text-xs shadow">✅ AIの修正で上書き保存</button>
+                                <button onclick="ignoreFix()" class="bg-slate-300 hover:bg-slate-400 text-slate-700 font-bold px-3 py-2 rounded-lg text-xs">❌ 無視</button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 解説表示エリア（大きな文字・細字でゆったり読める構成） -->
+        <!-- 解説表示エリア -->
         <div id="explanation-area" class="p-3 md:p-5 hidden flex-col flex-1 overflow-y-auto relative">
             <div class="mb-3 text-center shrink-0">
                 <span id="result-badge" class="inline-block px-6 py-1.5 rounded-full text-lg md:text-xl font-bold text-white shadow-md">結果</span>
@@ -211,7 +203,9 @@
             <div class="bg-white rounded-xl p-4 md:p-5 shadow-sm border border-slate-200 mb-3 flex-1 overflow-y-auto">
                 <h3 class="text-xs md:text-sm font-bold text-slate-400 mb-1 border-b pb-1">根拠条文</h3>
                 <p class="text-indigo-700 font-black mb-3 text-base md:text-lg" id="article-text">法X条</p>
-                <h3 class="text-xs md:text-sm font-bold text-slate-400 mb-1 border-b pb-1">解説</h3>
+                <h3 class="text-xs md:text-sm font-bold text-slate-400 mb-1 border-b pb-1 flex justify-between items-center">
+                    <span>解説</span>
+                </h3>
                 <p class="text-slate-700 leading-relaxed md:leading-loose font-normal text-lg md:text-xl lg:text-2xl mb-4" id="explanation-text">解説</p>
                 
                 <button onclick="askProDeeply()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-2.5 rounded-xl shadow hover:from-purple-700 hover:to-indigo-700 transition-all flex items-center justify-center gap-2 text-sm md:text-base">
@@ -237,7 +231,6 @@
         // GAS (Google Apps Script) の連携URL
         const GAS_URL = "https://script.google.com/a/macros/sr-nakao.com/s/AKfycbyHu72D7p9XrmynRKYbt_4HOfhJ47D3xEdv-SgqTWS1iSrxWo6KuhZnzTbMvitQ7r0_Eg/exec";
 
-        // 科目別のCSV URL設定
         const SUBJECTS = [
             { id: "rouki", name: "労働基準法", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?output=csv" },
             { id: "anei", name: "安全衛生法", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=340566361&single=true&output=csv" }
@@ -250,6 +243,7 @@
         let playlistQueue = [];
         let currentPlaylistIndex = 0;
         let cumulativeQuestions = 0;
+        let totalQuestionsToPlay = 0; // 全体の問題数
 
         let currentQuestions = [];
         let currentIndex = 0;
@@ -271,6 +265,8 @@
         let isPaused = false;
         
         let sessionQuestionCount = 0;
+        let setCorrectCount = 0; // 10問ごとの正解数カウント
+        
         let isTimeUp = false;         
         let isOvertimeTriggered = false; 
         let isSuddenDeath = false;    
@@ -288,11 +284,9 @@
             }
         };
 
-        // iPad用 音声ブロック解除処理
         function unlockAudio() {
             const player = document.getElementById('tts-player');
-            // ごく短い無音のBase64データ
-            player.src = "data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
+            player.src = "data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
             player.play().catch(e => console.log("Audio unlock wait", e));
         }
 
@@ -307,7 +301,6 @@
                     checkAllLoaded();
                     continue;
                 }
-                
                 try {
                     const response = await fetch(subject.url);
                     const csvText = await response.text();
@@ -342,21 +335,13 @@
         function buildSubjectAccordionUI() {
             const container = document.getElementById('subject-accordion-container');
             container.innerHTML = "";
-            
             const subjectMap = {};
             allDatabase.forEach(q => {
                 if (!subjectMap[q._subjectName]) subjectMap[q._subjectName] = new Set();
                 subjectMap[q._subjectName].add(q.項目);
             });
-
-            if (Object.keys(subjectMap).length === 0) {
-                container.innerHTML = "<div class='p-4 text-red-500 font-bold'>データがありません。URLを確認してください。</div>";
-                return;
-            }
-
             for (const [subjectName, chaptersSet] of Object.entries(subjectMap)) {
                 const chapters = Array.from(chaptersSet);
-                
                 const header = document.createElement('div');
                 header.className = "bg-slate-200 p-3 font-bold cursor-pointer border-b border-white hover:bg-slate-300 flex justify-between";
                 header.innerHTML = `<span>${subjectName}</span> <span>▼</span>`;
@@ -364,22 +349,15 @@
                     const content = this.nextElementSibling;
                     content.classList.toggle('open');
                 };
-
                 const content = document.createElement('div');
                 content.className = "accordion-content bg-white";
-                
                 let checkboxHTML = `<div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-2">`;
                 chapters.forEach(c => {
                     const val = `${subjectName}::${c}`;
-                    checkboxHTML += `
-                        <label class="flex items-center space-x-2 cursor-pointer p-2 hover:bg-indigo-50 rounded">
-                            <input type="checkbox" name="chapter-check" value="${val}" class="w-5 h-5 text-indigo-600 rounded">
-                            <span class="text-sm font-medium">${c}</span>
-                        </label>`;
+                    checkboxHTML += `<label class="flex items-center space-x-2 cursor-pointer p-2 hover:bg-indigo-50 rounded"><input type="checkbox" name="chapter-check" value="${val}" class="w-5 h-5 text-indigo-600 rounded"><span class="text-sm font-medium">${c}</span></label>`;
                 });
                 checkboxHTML += `</div>`;
                 content.innerHTML = checkboxHTML;
-
                 container.appendChild(header);
                 container.appendChild(content);
             }
@@ -400,10 +378,7 @@
         function toggleSound() {
             isMuted = !isMuted;
             const btn = document.getElementById('sound-toggle-btn');
-            
-            // iPad対応: ボタン操作時にオーディオ制限を解除
             unlockAudio();
-
             if (isMuted) {
                 btn.innerHTML = "🔇 音声オフ";
                 btn.className = "bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold px-2 py-1 rounded border border-slate-500 transition-colors";
@@ -411,7 +386,6 @@
             } else {
                 btn.innerHTML = "🔊 音声オン";
                 btn.className = "bg-green-600 hover:bg-green-500 text-white text-xs font-bold px-2 py-1 rounded border border-green-500 transition-colors";
-                
                 const unlock = new SpeechSynthesisUtterance('');
                 unlock.lang = 'ja-JP';
                 unlock.volume = 0;
@@ -421,39 +395,26 @@
 
         async function speakText(text) {
             if (isMuted) return; 
-            
-            let cleanText = text.replace(/<[^>]+>/g, '')
-                                .replace(/[\*\_]/g, '')
-                                .replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '')
-                                .replace(/\s+/g, ' ')
-                                .trim();
+            let cleanText = text.replace(/<[^>]+>/g, '').replace(/[\*\_]/g, '').replace(/[\uD800-\uDBFF][\uDC00-\uDFFF]/g, '').replace(/\s+/g, ' ').trim();
             if (!cleanText) return;
 
             const currentMode = getEffectiveCondition();
             let voicePrompt = "若い女性の声で、少し生意気でノリ良く話してください。";
-            if (currentMode === '熱血') {
-                voicePrompt = "元気で明るい女性の声で、ハキハキと力強く話してください。";
-            } else if (currentMode === '普通') {
-                voicePrompt = "落ち着いた優しい女性の声で、丁寧に話してください。";
-            }
+            if (currentMode === '熱血') voicePrompt = "元気で明るい女性の声で、ハキハキと力強く話してください。";
+            else if (currentMode === '普通') voicePrompt = "落ち着いた優しい女性の声で、丁寧に話してください。";
 
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${userApiKey}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: [{ parts: [{ text: `${voicePrompt}「${cleanText}」` }] }]
-                    })
+                    body: JSON.stringify({ contents: [{ parts: [{ text: `${voicePrompt}「${cleanText}」` }] }] })
                 });
-                
                 if (!res.ok) throw new Error("TTS API Error");
-                
                 const data = await res.json();
                 const audioBase64 = data.candidates[0].content.parts[0].inlineData.data;
                 const player = document.getElementById('tts-player');
                 player.src = `data:audio/mp3;base64,${audioBase64}`;
                 player.play();
-                
             } catch (err) {
                 console.error("Gemini TTS エラー (代替音声を使用):", err);
                 if (!('speechSynthesis' in window)) return;
@@ -473,7 +434,6 @@
                 return modes[Math.floor(Math.random() * modes.length)];
             }
             if (userCondition !== 'おまかせ') return userCondition; 
-            
             const hour = new Date().getHours();
             if (userHealth === '眠い') return '厳しめ'; 
             if (userHealth === '病気') return '普通';   
@@ -484,10 +444,10 @@
         }
 
         function changeHealthDuringGame(newHealth) {
-            const oldHealth = userHealth;
             userHealth = newHealth;
             document.getElementById('health-select').value = newHealth;
-            generateAiMessage("health_changed", { oldHealth: oldHealth, newHealth: newHealth });
+            // 体調変更時も無駄な音声は流さずテキストのみ
+            generateAiMessage("health_changed", { textOnly: true });
         }
 
         function pauseTimer() {
@@ -495,13 +455,11 @@
             isPaused = true;
             clearInterval(timerInterval);
             clearInterval(globalTimerInterval);
-            
             const timerBar = document.getElementById('timer-bar');
             if(timerBar) timerBar.style.animationPlayState = 'paused';
             
             const comments = ["離席ですね？ 集中を切らさず、すぐに戻ってきてください。", "席を外すの？ サボりじゃないと信じてるからね。", "急ぎの用事？ 戻ったらすぐ再開するわよ！"];
             document.getElementById('leave-ai-comment').textContent = `「${comments[Math.floor(Math.random() * comments.length)]}」`;
-
             document.getElementById('pause-overlay').classList.remove('hidden');
             document.getElementById('pause-overlay').classList.add('flex');
         }
@@ -510,16 +468,13 @@
             isPaused = false;
             document.getElementById('pause-overlay').classList.add('hidden');
             document.getElementById('pause-overlay').classList.remove('flex');
-            
             const timerBar = document.getElementById('timer-bar');
             if(timerBar) timerBar.style.animationPlayState = 'running';
-
             timerInterval = setInterval(() => {
                 timeLeft--;
                 document.getElementById('time-display').textContent = `⏳ ${timeLeft}秒`;
                 if (timeLeft <= 0) clearInterval(timerInterval);
             }, 1000);
-
             if (globalTimeLeftSeconds !== null && !isTimeUp) {
                 globalTimerInterval = setInterval(globalTimerTick, 1000);
             }
@@ -530,9 +485,7 @@
             executeBreak(5, false);
         }
 
-        function startAutoBreak(minutes) {
-            executeBreak(minutes, true);
-        }
+        function startAutoBreak(minutes) { executeBreak(minutes, true); }
 
         function executeBreak(minutes, isAuto) {
             isPaused = true;
@@ -545,10 +498,8 @@
             document.getElementById('break-title').textContent = isAuto ? "目標達成！自動休憩" : "☕ 手動休憩タイム";
             document.getElementById('break-message').textContent = isAuto ? `よく頑張りました！${minutes}分間しっかり休んでください。` : `${minutes}分間のリフレッシュタイムです。`;
             document.getElementById('break-penalty-msg').textContent = "";
-            
             breakSecondsLeft = minutes * 60;
             updateBreakDisplay();
-
             document.getElementById('break-overlay').classList.remove('hidden');
             document.getElementById('break-overlay').classList.add('flex');
 
@@ -570,9 +521,7 @@
             let sign = breakSecondsLeft < 0 ? "-" : "";
             const displayEl = document.getElementById('break-countdown');
             displayEl.textContent = `${sign}${m}:${s}`;
-            displayEl.className = breakSecondsLeft < 0 
-                ? "text-7xl md:text-9xl font-black mb-4 font-mono tracking-wider text-red-500 animate-pulse" 
-                : "text-7xl md:text-9xl font-black mb-4 font-mono tracking-wider text-emerald-400";
+            displayEl.className = breakSecondsLeft < 0 ? "text-7xl md:text-9xl font-black mb-4 font-mono tracking-wider text-red-500 animate-pulse" : "text-7xl md:text-9xl font-black mb-4 font-mono tracking-wider text-emerald-400";
         }
 
         function endBreak() {
@@ -580,8 +529,6 @@
             isBreakMode = false;
             document.getElementById('break-overlay').classList.add('hidden');
             document.getElementById('break-overlay').classList.remove('flex');
-            cumulativeQuestions = 0;
-            
             if (currentIndex >= currentQuestions.length) {
                 showEndOfPlaylistOptions();
                 return;
@@ -590,9 +537,7 @@
         }
 
         function stopTraining() {
-            if(confirm("特訓を中断してスタート画面に戻りますか？")) {
-                location.reload();
-            }
+            if(confirm("特訓を中断してスタート画面に戻りますか？")) location.reload();
         }
 
         function startTraining() {
@@ -606,7 +551,6 @@
                 return;
             }
 
-            // iPad対応: スタート時にオーディオ制限を解除
             unlockAudio();
             window.speechSynthesis.speak(new SpeechSynthesisUtterance(''));
 
@@ -616,6 +560,7 @@
             
             sessionQuestionCount = 0;
             cumulativeQuestions = 0;
+            setCorrectCount = 0;
             isTimeUp = false;
             isOvertimeTriggered = false;
             isSuddenDeath = false;
@@ -623,9 +568,8 @@
             document.getElementById('give-up-btn').classList.add('hidden');
 
             const timeLimitVal = document.getElementById('time-limit-select').value;
-            if (timeLimitVal === '無制限') {
-                globalTimeLeftSeconds = null;
-            } else if (timeLimitVal === 'custom') {
+            if (timeLimitVal === '無制限') globalTimeLeftSeconds = null;
+            else if (timeLimitVal === 'custom') {
                 const customTimeStr = document.getElementById('custom-time-input').value;
                 if (!customTimeStr) { alert("終了時刻を入力してください！"); return; }
                 const [hours, minutes] = customTimeStr.split(':');
@@ -633,11 +577,8 @@
                 const target = new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hours), parseInt(minutes), 0);
                 if (target <= now) target.setDate(target.getDate() + 1);
                 globalTimeLeftSeconds = Math.floor((target - now) / 1000);
-            } else if (timeLimitVal === '1分') {
-                globalTimeLeftSeconds = 60; 
-            } else {
-                globalTimeLeftSeconds = parseInt(timeLimitVal.replace('分','')) * 60;
-            }
+            } else if (timeLimitVal === '1分') globalTimeLeftSeconds = 60; 
+            else globalTimeLeftSeconds = parseInt(timeLimitVal.replace('分','')) * 60;
 
             if (globalTimeLeftSeconds !== null) {
                 document.getElementById('global-timer-display').classList.remove('hidden');
@@ -649,14 +590,16 @@
             buildPlaylistQueue();
 
             document.getElementById('start-screen').classList.add('hidden');
-            startNextPlaylistSet(true); 
+            
+            // 初回開始時のみ、全問題数を告げるAI発声
+            generateAiMessage("start_all", { total: totalQuestionsToPlay, textOnly: false });
+            startNextPlaylistSet(); 
         }
 
         function globalTimerTick() {
             globalTimeLeftSeconds--;
-            if (globalTimeLeftSeconds > 0) {
-                updateGlobalTimer();
-            } else {
+            if (globalTimeLeftSeconds > 0) updateGlobalTimer();
+            else {
                 isTimeUp = true;
                 clearInterval(globalTimerInterval);
                 document.getElementById('global-timer-display').textContent = '🏁 目標時間到達';
@@ -666,38 +609,35 @@
 
         function buildPlaylistQueue() {
             playlistQueue = [];
+            totalQuestionsToPlay = 0;
             selectedChaptersGlobal.forEach(val => {
                 const [subj, chap] = val.split("::");
                 let pool = allDatabase.filter(q => q._subjectName === subj && q.項目 === chap);
                 if(pool.length > 0) {
                     let questions = pool.sort(() => Math.random() - 0.5).slice(0, 10);
-                    playlistQueue.push({
-                        subjectName: subj,
-                        chapterName: chap,
-                        questions: questions
-                    });
+                    playlistQueue.push({ subjectName: subj, chapterName: chap, questions: questions });
+                    totalQuestionsToPlay += questions.length;
                 }
             });
             currentPlaylistIndex = 0;
         }
 
-        function startNextPlaylistSet(isVeryFirst = false) {
+        function startNextPlaylistSet() {
             if (currentPlaylistIndex >= playlistQueue.length) {
                 handlePlaylistComplete();
                 return;
             }
-
             const currentSet = playlistQueue[currentPlaylistIndex];
             currentQuestions = currentSet.questions;
             currentIndex = 0;
+            setCorrectCount = 0;
 
             document.getElementById('current-playlist-title').textContent = `🎧 プレイリスト [${currentPlaylistIndex + 1}/${playlistQueue.length}] : ${currentSet.subjectName} - ${currentSet.chapterName}`;
-            
             document.getElementById('btn-next-question').classList.remove('hidden');
             document.getElementById('btn-another-round').classList.add('hidden');
             document.getElementById('btn-ai-spurt').classList.add('hidden');
 
-            loadQuestion(isVeryFirst);
+            loadQuestion();
         }
 
         function updateGlobalTimer() {
@@ -709,21 +649,20 @@
             else document.getElementById('global-timer-display').textContent = `🏁 残り ${m}:${s.toString().padStart(2, '0')}`;
         }
 
-        function loadQuestion(isStart = false) {
+        function loadQuestion() {
             const q = currentQuestions[currentIndex];
             if (!q) return;
 
             document.getElementById('question-progress').textContent = `${currentIndex + 1} / ${currentQuestions.length} 問`;
             document.getElementById('question-text').textContent = q.問題文;
             document.getElementById('explanation-area').classList.add('hidden');
+            document.getElementById('ai-fix-action').classList.add('hidden');
             
-            if (isStart) generateAiMessage("start");
-            else if (!isOvertimeTriggered) generateAiMessage("next"); 
-            
+            // テンポ維持のため、問題間のAIコメントはテキストのみ（声なし）
+            generateAiMessage("next", { textOnly: true }); 
             verifyDataWithPro(q);
 
             clearInterval(timerInterval);
-
             let questionTimeLimit = 60;
             timeLeft = questionTimeLimit;
             document.getElementById('time-display').textContent = `⏳ ${timeLeft}秒`;
@@ -742,7 +681,7 @@
 
         function showHint() {
             const q = currentQuestions[currentIndex];
-            generateAiMessage("hint", { questionText: q.問題文, explanation: q.解説 || "" });
+            generateAiMessage("hint", { questionText: q.問題文, explanation: q.解説 || "", textOnly: false });
         }
 
         function answer(userAnswer) {
@@ -754,7 +693,9 @@
             const isCorrect = (userAnswer === '〇' && (correctStr === '〇' || correctStr === '○')) || 
                               (userAnswer === '✖' && (correctStr === '✖' || correctStr === '×'));
 
-            if (!isCorrect) todayMistakes.push(q);
+            if (isCorrect) setCorrectCount++;
+            else todayMistakes.push(q);
+            
             cumulativeQuestions++;
             sessionQuestionCount++;
 
@@ -781,13 +722,14 @@
             document.getElementById('article-text').textContent = q.根拠条文 || '条文なし';
             document.getElementById('explanation-text').innerHTML = q.解説 || '解説なし';
 
+            // AIの解説フィードバックは文字のみ（※ご要望の「解答解説コメント声なし」に従う）
+            generateAiMessage("answer", { isCorrect: isCorrect, explanation: q.解説, textOnly: true });
+
             if (currentIndex >= currentQuestions.length - 1) {
-                document.getElementById('btn-next-question').textContent = "🟢 次のセットへ（または判定）";
+                document.getElementById('btn-next-question').textContent = "🟢 10問判定へ";
             } else {
                 document.getElementById('btn-next-question').textContent = "🟢 次へ進む";
             }
-
-            generateAiMessage("answer", { isCorrect: isCorrect, questionText: q.問題文, explanation: q.解説 });
         }
 
         async function saveAnswerToGAS(qText, isCorrect) {
@@ -797,54 +739,49 @@
                     method: 'POST',
                     body: JSON.stringify({ action: 'save_answer', q_id: q_id, is_correct: isCorrect })
                 });
-            } catch(e) {
-                console.error("GAS保存エラー:", e);
-            }
+            } catch(e) { console.error("GAS保存エラー:", e); }
         }
 
         function nextQuestion() {
             currentIndex++;
-            
             if (currentIndex >= currentQuestions.length) {
+                // 10問区切りの時だけ声を出してフィードバックする
+                generateAiMessage("end_set", { 
+                    totalInSet: currentQuestions.length, 
+                    correctInSet: setCorrectCount, 
+                    cumulative: cumulativeQuestions, 
+                    totalAll: totalQuestionsToPlay,
+                    textOnly: false 
+                });
+                
                 currentPlaylistIndex++;
-                startNextPlaylistSet();
+                setTimeout(() => {
+                    startNextPlaylistSet();
+                }, 1000); // メッセージ更新から遷移まで少しだけ待つ
             } else {
                 loadQuestion();
             }
         }
 
         function handlePlaylistComplete() {
-            if (cumulativeQuestions >= 100) {
-                startAutoBreak(10);
-                return;
-            } else if (cumulativeQuestions >= 40) {
-                startAutoBreak(5);
-                return;
-            }
-            showEndOfPlaylistOptions();
-        }
+            // 全てのプレイリストが完了した時の処理（声出し）
+            generateAiMessage("end_all", { 
+                totalPlayed: cumulativeQuestions, 
+                mistakes: todayMistakes.length,
+                textOnly: false 
+            });
 
-        function showEndOfPlaylistOptions() {
             document.getElementById('explanation-area').classList.remove('hidden');
             document.getElementById('explanation-area').classList.add('flex');
-
-            if (isTimeUp && !isOvertimeTriggered) {
-                handleOvertimeRoulette();
-            } else if (!isTimeUp) {
-                document.getElementById('ai-message').innerHTML = "今日のプレイリストは完走よ！でもまだ目標時間が残ってるわ。<br>もう1周するか、私のセレクトでラストスパートをかけるか選びなさい！";
-                
-                document.getElementById('btn-next-question').classList.add('hidden');
-                document.getElementById('btn-another-round').classList.remove('hidden');
-                document.getElementById('btn-ai-spurt').classList.remove('hidden');
-            } else {
-                alert("追加の課題をすべてクリアしました！本日は終了です、お疲れ様でした！");
-                location.reload();
-            }
+            
+            document.getElementById('btn-next-question').classList.add('hidden');
+            document.getElementById('btn-another-round').classList.remove('hidden');
+            document.getElementById('btn-ai-spurt').classList.remove('hidden');
         }
 
         function startAnotherRound() {
             buildPlaylistQueue();
-            startNextPlaylistSet(false);
+            startNextPlaylistSet();
         }
 
         function startAiSpurt() {
@@ -863,152 +800,141 @@
                 let randoms = allDatabase.sort(() => Math.random() - 0.5).slice(0, remain);
                 currentQuestions = currentQuestions.concat(randoms);
             }
-
             playlistQueue = [{ subjectName: "全科目", chapterName: "AIセレクト", questions: currentQuestions }];
             currentPlaylistIndex = 0;
             currentIndex = 0;
-            
-            loadQuestion(false);
-        }
-
-        function handleOvertimeRoulette() {
-            isOvertimeTriggered = true; 
-            const roll = Math.floor(Math.random() * 10) + 1; 
-            const cond = getEffectiveCondition();
-
-            document.getElementById('ai-message-box').className = "bg-red-100 rounded-2xl p-4 shadow-sm border border-red-300 relative";
-            document.getElementById('give-up-btn').classList.remove('hidden'); 
-            
-            document.getElementById('btn-next-question').classList.remove('hidden');
-            document.getElementById('btn-another-round').classList.add('hidden');
-            document.getElementById('btn-ai-spurt').classList.add('hidden');
-
-            if (cond === '厳しめ') {
-                if (roll <= 6) { 
-                    generateAiMessage("roulette_s_10");
-                    setRouletteQuestions(allDatabase, 10);
-                } else if (roll <= 9) { 
-                    generateAiMessage("roulette_s_end");
-                    setTimeout(() => { alert("今日はここまで。よく頑張りましたね。"); location.reload(); }, 5000);
-                } else { 
-                    isSuddenDeath = true;
-                    generateAiMessage("roulette_s_20");
-                    setRouletteQuestions(allDatabase, 20);
-                }
-            } else if (cond === '熱血') {
-                if (roll <= 3) { 
-                    generateAiMessage("roulette_n_random");
-                    setRouletteQuestions(allDatabase, 10);
-                } else if (roll <= 6) { 
-                    generateAiMessage("roulette_n_mistake");
-                    setRouletteQuestions(todayMistakes.length > 0 ? todayMistakes : allDatabase, 10);
-                } else if (roll <= 9) { 
-                    generateAiMessage("roulette_n_weak");
-                    setRouletteQuestions(allDatabase, 10);
-                } else { 
-                    generateAiMessage("roulette_n_end");
-                    setTimeout(() => { alert("今日の特訓は終了！よくやり切ったぞ！"); location.reload(); }, 5000);
-                }
-            } else {
-                alert("目標時間が終了しました。今日の学習はここまでです！お疲れ様でした！");
-                location.reload();
-            }
-        }
-
-        function setRouletteQuestions(pool, count) {
-            let extra = pool.sort(() => Math.random() - 0.5).slice(0, count);
-            playlistQueue = [{ subjectName: "残業ルーレット", chapterName: "特別課題", questions: extra }];
-            currentPlaylistIndex = 0;
-            currentQuestions = extra;
-            currentIndex = -1;
-            document.getElementById('btn-next-question').textContent = "🟢 課題スタート！";
+            loadQuestion();
         }
 
         function giveUp() {
-            const cond = getEffectiveCondition();
-            if (cond === '厳しめ') {
-                generateAiMessage("give_up_s");
-            } else {
-                generateAiMessage("give_up_n");
-            }
-            setTimeout(() => {
-                alert("学習を終了します。ゆっくり休んでください！");
-                location.reload();
-            }, 5000);
+            generateAiMessage("give_up", { textOnly: false });
+            setTimeout(() => { alert("学習を終了します。ゆっくり休んでください！"); location.reload(); }, 5000);
         }
 
-        // プロンプトを厳格化＆問題間の音声オフ処理を追加
+        // ==========================================
+        // 🤖 新AIプロンプト・発声制御ロジック
+        // ==========================================
         async function generateAiMessage(situation, extraData = {}) {
             const aiMessageEl = document.getElementById('ai-message');
-            document.getElementById('ai-fix-action').classList.add('hidden');
-            aiMessageEl.innerHTML = '<span class="typing">💬 考えてるよ...</span>';
+            aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
             
             const effectiveCond = getEffectiveCondition();
-            
             let prompt = `あなたは社労士試験の専属講師です。以下の状況に合わせセリフを生成してください。
 【厳守ルール】
-・絶対にセリフのみを出力し、自己紹介、「AIとして」「〜という設定ですね」などの前置き、カッコ（）などは一切含めないでください。
-・定型文は避けてください。\n`;
+・絶対にセリフのみを出力し、自己紹介、前置き、カッコ（）などは一切含めないでください。
+・機械的な定型文は避けてください。\n`;
             
             if (effectiveCond === '厳しめ') prompt += `【性格】明るく元気な女子高生風。少し厳しめにハッパをかけるが、親しみやすい。「〜だよ」「〜だよね」「しっかりね！」等\n`;
             else if (effectiveCond === '熱血') prompt += `【性格】熱血。元気でハキハキした姉御肌。「〜だぞ！」「気合入れな！」等\n`;
             else prompt += `【性格】丁寧。優しく聡明。「〜ですね」「頑張りましょう」等\n`;
 
-            if (situation === "start") prompt += `【状況】学習開始。体調は${userHealth}。短く気合を入れて（1文）。`;
-            else if (situation === "health_changed") prompt += `【状況】受講生が体調を${extraData.newHealth}に変更した。短く声をかけて（1文）。`;
-            else if (situation === "next") prompt += `【状況】次の問題へ進んだ。短く一言で促して（1文）。`;
-            else if (situation === "hint") prompt += `【状況】受講生がヒントを求めている。答えは言わず着眼点だけ短く示して。\n問題: ${extraData.questionText}\n解説: ${extraData.explanation}`;
-            else if (situation === "answer") prompt += `【状況】受講生が解答し【${extraData.isCorrect ? "正解" : "不正解"}】だった。
-【指示】解説（${extraData.explanation}）の中で最も重要な法的ポイントを1つだけピックアップし、一言で要約して教えて。特筆すべきポイントが全くなければ、正誤に対する一言だけのリアクションでOK。`;
-            else if (situation === "roulette_s_10") prompt += `【状況】延長で10問追加。ビシッと課題を命じて。`;
-            else if (situation === "roulette_s_end") prompt += `【状況】今日は終了。呆れつつも褒めて解散を命じて。`;
-            else if (situation === "roulette_s_20") prompt += `【状況】サドンデス20問追加。「特訓よ」と突きつけて。`;
-            else if (situation === "roulette_n_random") prompt += `【状況】10問追加。「ここからが本番だ」と引っ張って。`;
-            else if (situation === "roulette_n_mistake") prompt += `【状況】間違えた問題の復習。「弱点を潰すチャンスだ」と励まして。`;
-            else if (situation === "roulette_n_weak") prompt += `【状況】苦手問題。「乗り越えれば合格が見える」と押して。`;
-            else if (situation === "roulette_n_end") prompt += `【状況】今日は終了。奮闘を称えて終了を告げて。`;
-            else if (situation === "give_up_s") prompt += `【状況】ギブアップ。「仕方ないわね」と呆れつつ休ませて。`;
-            else if (situation === "give_up_n") prompt += `【状況】ギブアップ。限界まで挑んだ姿勢を称え休ませて。`;
+            // フロー制御
+            if (situation === "start_all") {
+                prompt += `【状況】全${extraData.total}問の学習を開始します。全問題数に触れて、短く気合を入れて（1文）。`;
+            } else if (situation === "end_set") {
+                const mistakes = extraData.totalInSet - extraData.correctInSet;
+                const remain = extraData.totalAll - extraData.cumulative;
+                prompt += `【状況】10問ごとの区切りです。結果は「10問中${extraData.correctInSet}問正解（${mistakes}問間違い）」でした。全体の残りは${remain}問です。
+【指示】間違いの数に対して一言コメントし、「準備ができたら次へ進もう」と促す短い発言を作成して（2文程度）。`;
+            } else if (situation === "end_all") {
+                prompt += `【状況】今日の全${extraData.totalPlayed}問が終了しました。合計${extraData.mistakes}問間違えました。
+【指示】全体を労い、間違いの数に触れつつ、今後の復習を促す総括の反省コメントを作成して（2文程度）。`;
+            } else if (situation === "answer") {
+                prompt += `【状況】受講生が解答し【${extraData.isCorrect ? "正解" : "不正解"}】だった。
+【指示】解説（${extraData.explanation}）の中で最も重要な法的ポイントを1つだけピックアップし、一言で要約して教えて（声に出さないテキスト表示専用なので簡潔に）。`;
+            } else if (situation === "health_changed") {
+                prompt = ""; // API通信を省くため、ここではデフォルト文を使う
+                aiMessageEl.innerHTML = "体調が変わったみたいだけど、無理しないでね！";
+                return;
+            } else if (situation === "next") {
+                prompt = ""; // API通信を省く
+                aiMessageEl.innerHTML = "よし、次の問題だよ！";
+                return;
+            } else if (situation === "give_up") {
+                prompt += `【状況】受講生がギブアップしました。限界まで挑んだ姿勢を称え休ませて。`;
+            } else if (situation === "hint") {
+                prompt += `【状況】受講生がヒントを求めている。答えは言わず着眼点だけ短く示して。\n問題: ${extraData.questionText}\n解説: ${extraData.explanation}`;
+            }
 
-            callGeminiAPI('gemini-2.5-flash', prompt, (text) => {
-                aiMessageEl.innerHTML = text;
-                
-                // 次の問題へ進む時（next）は喋らせずに文字だけ更新する（テンポ優先）
-                if (situation !== "next") {
-                    speakText(text); 
-                }
-            });
+            if (prompt !== "") {
+                callGeminiAPI('gemini-2.5-flash', prompt, (text) => {
+                    aiMessageEl.innerHTML = text;
+                    // extraData.textOnly が true の場合（問題間や解答直後）は声を出さない
+                    if (!extraData.textOnly) {
+                        speakText(text); 
+                    }
+                });
+            }
         }
 
+        // ==========================================
+        // 🚨 Pro検証 ＆ スプレッドシート自動修正
+        // ==========================================
         async function verifyDataWithPro(q) {
             if (q._verified) return; 
-            const prompt = `あなたはデータ検証プロです。以下の過去問データに矛盾がないか検証して。\n問題文: ${q.問題文}\nデータ正誤: ${q.正誤}\n解説: ${q.解説}\n問題なければ「OK」、矛盾があれば「NG | 〇か✖ | 理由」の形式で回答。`;
+            const prompt = `あなたはデータ検証プロです。以下の過去問データに矛盾や法改正による古い情報がないか検証してください。
+問題文: ${q.問題文}
+データ正誤: ${q.正誤}
+解説: ${q.解説}
+問題なければ「OK」のみ出力。
+間違いや不適切な箇所があれば、以下の形式で修正案を出力してください。
+NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理由（短く）`;
             
             callGeminiAPI('gemini-3.1-pro-preview', prompt, (text) => {
                 q._verified = true; 
                 if (text.startsWith("NG")) {
                     const parts = text.split("|");
-                    pendingFixData = { question: q, correctChoice: (parts[1] || "").trim() };
-                    document.getElementById('ai-message').innerHTML = `⚠️ <b>Pro検証アラート！</b><br>${(parts[2] || "").trim()}<br>正誤を<b>【${pendingFixData.correctChoice}】</b>に修正しますか？`;
-                    document.getElementById('ai-fix-action').innerHTML = `
-                        <div class="flex gap-2"><button onclick="applyFix()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-3 py-1 rounded text-xs">✅ 修正する</button><button onclick="ignoreFix()" class="bg-slate-400 hover:bg-slate-500 text-white font-bold px-3 py-1 rounded text-xs">❌ そのまま</button></div>
-                    `;
+                    pendingFixData = { 
+                        question: q, 
+                        correctChoice: (parts[1] || "").trim(),
+                        newExplanation: (parts[2] || "").trim(),
+                        reason: (parts[3] || "").trim()
+                    };
+                    document.getElementById('ai-fix-reason').textContent = pendingFixData.reason;
                     document.getElementById('ai-fix-action').classList.remove('hidden');
                 }
             });
         }
 
-        function applyFix() {
-            if (pendingFixData) {
-                pendingFixData.question.正誤 = pendingFixData.correctChoice;
-                document.getElementById('ai-fix-action').classList.add('hidden');
-                document.getElementById('ai-message').innerHTML = "修正を反映したわ。続けましょう！";
+        // ワンタップで修正内容をGASへ送信
+        async function applyFixToGAS() {
+            if (!pendingFixData) return;
+            const q = pendingFixData.question;
+            const originalQ = q.問題文;
+            const newAns = pendingFixData.correctChoice;
+            const newExp = pendingFixData.newExplanation;
+
+            // アプリ上のデータを修正
+            q.正誤 = newAns;
+            q.解説 = newExp;
+            
+            document.getElementById('ai-fix-action').innerHTML = `<p class="text-xs font-bold text-green-600">クラウドのデータを上書き修正しています...</p>`;
+            
+            try {
+                // GASへ上書きリクエストを送信
+                const res = await fetch(GAS_URL, {
+                    method: 'POST',
+                    body: JSON.stringify({ 
+                        action: 'update_question', 
+                        original_q: originalQ, 
+                        new_ans: newAns, 
+                        new_exp: newExp 
+                    })
+                });
+                const data = await res.json();
+                if(data.success) {
+                    document.getElementById('ai-fix-action').innerHTML = `<p class="text-xs font-bold text-green-600">✅ スプレッドシートのデータを自動修正しました！</p>`;
+                    setTimeout(() => { document.getElementById('ai-fix-action').classList.add('hidden'); }, 3000);
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch(e) {
+                document.getElementById('ai-fix-action').innerHTML = `<p class="text-xs font-bold text-red-600">❌ 保存失敗: ${e.message}</p>`;
             }
         }
 
         function ignoreFix() {
             document.getElementById('ai-fix-action').classList.add('hidden');
-            document.getElementById('ai-message').innerHTML = "了解よ。元のデータ通りに進めるわね。";
         }
 
         function askProDeeply() {
@@ -1026,19 +952,17 @@
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-                
                 if (!response.ok) {
                     const errData = await response.json();
                     throw new Error(errData.error?.message || `通信エラー (HTTP ${response.status})`);
                 }
-                
                 const data = await response.json();
                 callback(data.candidates[0].content.parts[0].text);
             } catch (err) { 
                 console.error("Gemini API エラー:", err);
                 const aiMessageEl = document.getElementById('ai-message');
                 if (aiMessageEl && !aiMessageEl.innerHTML.includes('正解') && !aiMessageEl.innerHTML.includes('不正解')) {
-                    aiMessageEl.innerHTML = `⚠️ <b>API通信エラーが発生しました</b><br><span class="text-xs text-red-500">${err.message}</span><br>APIキーが間違っているか、残高切れの可能性があります。`;
+                    aiMessageEl.innerHTML = `⚠️ <b>API通信エラーが発生しました</b><br><span class="text-xs text-red-500">${err.message}</span>`;
                 }
             }
         }
