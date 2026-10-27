@@ -74,10 +74,10 @@
                 <div class="flex-1">
                     <h2 class="text-lg font-black mb-2">🧘 専属講師の指導モード</h2>
                     <select id="condition-select" class="w-full bg-pink-50 border-2 border-pink-200 text-base font-bold p-3 rounded-xl focus:outline-none focus:border-pink-500">
-                        <option value="自動" selected>🤖 自動おまかせ</option>
-                        <option value="普通">普通（優しく的確な講師）</option>
-                        <option value="Sっ気">S気質（小生意気な天才年下講師）</option>
-                        <option value="熱血">熱血（熱く引っ張る姉御肌講師）</option>
+                        <option value="おまかせ" selected>🤖 おまかせ</option>
+                        <option value="普通">普通</option>
+                        <option value="厳しめ">厳しめ</option>
+                        <option value="熱血">熱血</option>
                         <option value="ルーレット">🎲 ルーレット</option>
                     </select>
                 </div>
@@ -261,7 +261,7 @@
         let breakSecondsLeft = 0;
         let isBreakMode = false;
 
-        let userCondition = '自動'; 
+        let userCondition = 'おまかせ'; 
         let userHealth = '普通';       
         let userApiKey = '';
         let pendingFixData = null; 
@@ -459,7 +459,7 @@
                 if (!('speechSynthesis' in window)) return;
                 const utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.lang = 'ja-JP';
-                if (currentMode === 'Sっ気') { utterance.pitch = 1.15; utterance.rate = 1.1; }
+                if (currentMode === '厳しめ') { utterance.pitch = 1.15; utterance.rate = 1.1; }
                 else if (currentMode === '熱血') { utterance.pitch = 1.05; utterance.rate = 1.15; }
                 else { utterance.pitch = 1.0; utterance.rate = 1.05; }
                 window.speechSynthesis.cancel();
@@ -469,17 +469,17 @@
 
         function getEffectiveCondition() {
             if (userCondition === 'ルーレット') {
-                const modes = ['普通', 'Sっ気', '熱血'];
+                const modes = ['普通', '厳しめ', '熱血'];
                 return modes[Math.floor(Math.random() * modes.length)];
             }
-            if (userCondition !== '自動') return userCondition; 
+            if (userCondition !== 'おまかせ') return userCondition; 
             
             const hour = new Date().getHours();
-            if (userHealth === '眠い') return 'Sっ気'; 
+            if (userHealth === '眠い') return '厳しめ'; 
             if (userHealth === '病気') return '普通';   
-            if (userHealth === '疲れ気味') return 'Sっ気'; 
+            if (userHealth === '疲れ気味') return '厳しめ'; 
             if (userHealth === '元気') return '熱血';   
-            if (hour >= 22 || hour <= 4) return 'Sっ気'; 
+            if (hour >= 22 || hour <= 4) return '厳しめ'; 
             return '普通';
         }
 
@@ -883,7 +883,7 @@
             document.getElementById('btn-another-round').classList.add('hidden');
             document.getElementById('btn-ai-spurt').classList.add('hidden');
 
-            if (cond === 'Sっ気') {
+            if (cond === '厳しめ') {
                 if (roll <= 6) { 
                     generateAiMessage("roulette_s_10");
                     setRouletteQuestions(allDatabase, 10);
@@ -926,7 +926,7 @@
 
         function giveUp() {
             const cond = getEffectiveCondition();
-            if (cond === 'Sっ気') {
+            if (cond === '厳しめ') {
                 generateAiMessage("give_up_s");
             } else {
                 generateAiMessage("give_up_n");
@@ -937,7 +937,7 @@
             }, 5000);
         }
 
-        // 高速化のためプロンプトを大幅に短縮化
+        // プロンプトを厳格化＆問題間の音声オフ処理を追加
         async function generateAiMessage(situation, extraData = {}) {
             const aiMessageEl = document.getElementById('ai-message');
             document.getElementById('ai-fix-action').classList.add('hidden');
@@ -945,21 +945,21 @@
             
             const effectiveCond = getEffectiveCondition();
             
-            let prompt = `あなたは社労士試験の専属講師（18歳前後の天才女性）です。以下の状況に合わせ音声用のセリフを生成して。
-【ルール】
-・定型文は使わず毎回少し変える。
-・基本は1文（10〜20文字）の超短文のみ。\n`;
+            let prompt = `あなたは社労士試験の専属講師です。以下の状況に合わせセリフを生成してください。
+【厳守ルール】
+・絶対にセリフのみを出力し、自己紹介、「AIとして」「〜という設定ですね」などの前置き、カッコ（）などは一切含めないでください。
+・定型文は避けてください。\n`;
             
-            if (effectiveCond === 'Sっ気') prompt += `【性格】S気質。生意気でツンデレな年下講師。語尾「〜よ」「〜じゃないの？」等\n`;
+            if (effectiveCond === '厳しめ') prompt += `【性格】明るく元気な女子高生風。少し厳しめにハッパをかけるが、親しみやすい。「〜だよ」「〜だよね」「しっかりね！」等\n`;
             else if (effectiveCond === '熱血') prompt += `【性格】熱血。元気でハキハキした姉御肌。「〜だぞ！」「気合入れな！」等\n`;
             else prompt += `【性格】丁寧。優しく聡明。「〜ですね」「頑張りましょう」等\n`;
 
-            if (situation === "start") prompt += `【状況】学習開始。体調は${userHealth}。短く気合を入れて。`;
-            else if (situation === "health_changed") prompt += `【状況】受講生が体調を${extraData.newHealth}に変更した。短く声をかけて。`;
-            else if (situation === "next") prompt += `【状況】次の問題へ。短く促して。`;
+            if (situation === "start") prompt += `【状況】学習開始。体調は${userHealth}。短く気合を入れて（1文）。`;
+            else if (situation === "health_changed") prompt += `【状況】受講生が体調を${extraData.newHealth}に変更した。短く声をかけて（1文）。`;
+            else if (situation === "next") prompt += `【状況】次の問題へ進んだ。短く一言で促して（1文）。`;
             else if (situation === "hint") prompt += `【状況】受講生がヒントを求めている。答えは言わず着眼点だけ短く示して。\n問題: ${extraData.questionText}\n解説: ${extraData.explanation}`;
             else if (situation === "answer") prompt += `【状況】受講生が解答し【${extraData.isCorrect ? "正解" : "不正解"}】だった。
-【指示】正誤への短いリアクションを1文で。ただし、解説（${extraData.explanation}）の中に重要な法的ポイントがあれば、それに触れる一言をもう1文だけ追加してよい。`;
+【指示】解説（${extraData.explanation}）の中で最も重要な法的ポイントを1つだけピックアップし、一言で要約して教えて。特筆すべきポイントが全くなければ、正誤に対する一言だけのリアクションでOK。`;
             else if (situation === "roulette_s_10") prompt += `【状況】延長で10問追加。ビシッと課題を命じて。`;
             else if (situation === "roulette_s_end") prompt += `【状況】今日は終了。呆れつつも褒めて解散を命じて。`;
             else if (situation === "roulette_s_20") prompt += `【状況】サドンデス20問追加。「特訓よ」と突きつけて。`;
@@ -972,7 +972,11 @@
 
             callGeminiAPI('gemini-2.5-flash', prompt, (text) => {
                 aiMessageEl.innerHTML = text;
-                speakText(text); 
+                
+                // 次の問題へ進む時（next）は喋らせずに文字だけ更新する（テンポ優先）
+                if (situation !== "next") {
+                    speakText(text); 
+                }
             });
         }
 
