@@ -243,7 +243,7 @@
         let playlistQueue = [];
         let currentPlaylistIndex = 0;
         let cumulativeQuestions = 0;
-        let totalQuestionsToPlay = 0; // 全体の問題数
+        let totalQuestionsToPlay = 0; 
 
         let currentQuestions = [];
         let currentIndex = 0;
@@ -265,7 +265,7 @@
         let isPaused = false;
         
         let sessionQuestionCount = 0;
-        let setCorrectCount = 0; // 10問ごとの正解数カウント
+        let setCorrectCount = 0; 
         
         let isTimeUp = false;         
         let isOvertimeTriggered = false; 
@@ -400,8 +400,14 @@
 
             const currentMode = getEffectiveCondition();
             let voicePrompt = "若い女性の声で、少し生意気でノリ良く話してください。";
-            if (currentMode === '熱血') voicePrompt = "元気で明るい女性の声で、ハキハキと力強く話してください。";
-            else if (currentMode === '普通') voicePrompt = "落ち着いた優しい女性の声で、丁寧に話してください。";
+            // ★音声指示の調整（よりハキハキと、熱血は若く爽やかに）
+            if (currentMode === '厳しめ') {
+                voicePrompt = "若い女性の声で、少し生意気だけど明るくハキハキとノリ良く話してください。";
+            } else if (currentMode === '熱血') {
+                voicePrompt = "若くて爽やかな女性の声で、元気よくハキハキと励ますように話してください。";
+            } else if (currentMode === '普通') {
+                voicePrompt = "落ち着いた優しい女性の声で、丁寧に話してください。";
+            }
 
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${userApiKey}`, {
@@ -421,7 +427,7 @@
                 const utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.lang = 'ja-JP';
                 if (currentMode === '厳しめ') { utterance.pitch = 1.15; utterance.rate = 1.1; }
-                else if (currentMode === '熱血') { utterance.pitch = 1.05; utterance.rate = 1.15; }
+                else if (currentMode === '熱血') { utterance.pitch = 1.1; utterance.rate = 1.1; }
                 else { utterance.pitch = 1.0; utterance.rate = 1.05; }
                 window.speechSynthesis.cancel();
                 window.speechSynthesis.speak(utterance);
@@ -446,7 +452,6 @@
         function changeHealthDuringGame(newHealth) {
             userHealth = newHealth;
             document.getElementById('health-select').value = newHealth;
-            // 体調変更時も無駄な音声は流さずテキストのみ
             generateAiMessage("health_changed", { textOnly: true });
         }
 
@@ -591,7 +596,6 @@
 
             document.getElementById('start-screen').classList.add('hidden');
             
-            // 初回開始時のみ、全問題数を告げるAI発声
             generateAiMessage("start_all", { total: totalQuestionsToPlay, textOnly: false });
             startNextPlaylistSet(); 
         }
@@ -658,7 +662,6 @@
             document.getElementById('explanation-area').classList.add('hidden');
             document.getElementById('ai-fix-action').classList.add('hidden');
             
-            // テンポ維持のため、問題間のAIコメントはテキストのみ（声なし）
             generateAiMessage("next", { textOnly: true }); 
             verifyDataWithPro(q);
 
@@ -722,7 +725,6 @@
             document.getElementById('article-text').textContent = q.根拠条文 || '条文なし';
             document.getElementById('explanation-text').innerHTML = q.解説 || '解説なし';
 
-            // AIの解説フィードバックは文字のみ（※ご要望の「解答解説コメント声なし」に従う）
             generateAiMessage("answer", { isCorrect: isCorrect, explanation: q.解説, textOnly: true });
 
             if (currentIndex >= currentQuestions.length - 1) {
@@ -745,7 +747,6 @@
         function nextQuestion() {
             currentIndex++;
             if (currentIndex >= currentQuestions.length) {
-                // 10問区切りの時だけ声を出してフィードバックする
                 generateAiMessage("end_set", { 
                     totalInSet: currentQuestions.length, 
                     correctInSet: setCorrectCount, 
@@ -757,14 +758,13 @@
                 currentPlaylistIndex++;
                 setTimeout(() => {
                     startNextPlaylistSet();
-                }, 1000); // メッセージ更新から遷移まで少しだけ待つ
+                }, 1000); 
             } else {
                 loadQuestion();
             }
         }
 
         function handlePlaylistComplete() {
-            // 全てのプレイリストが完了した時の処理（声出し）
             generateAiMessage("end_all", { 
                 totalPlayed: cumulativeQuestions, 
                 mistakes: todayMistakes.length,
@@ -824,11 +824,11 @@
 ・絶対にセリフのみを出力し、自己紹介、前置き、カッコ（）などは一切含めないでください。
 ・機械的な定型文は避けてください。\n`;
             
-            if (effectiveCond === '厳しめ') prompt += `【性格】明るく元気な女子高生風。少し厳しめにハッパをかけるが、親しみやすい。「〜だよ」「〜だよね」「しっかりね！」等\n`;
-            else if (effectiveCond === '熱血') prompt += `【性格】熱血。元気でハキハキした姉御肌。「〜だぞ！」「気合入れな！」等\n`;
+            // ★プロンプトの調整（よりハキハキと、熱血は爽やかに）
+            if (effectiveCond === '厳しめ') prompt += `【性格】明るく元気な女子高生風。少し厳しめにハッパをかけるが親しみやすく、ハキハキとした話し方。「〜だよ」「〜だよね」「しっかりね！」等\n`;
+            else if (effectiveCond === '熱血') prompt += `【性格】明るく爽やかで前向きな若い女性。元気よくハキハキと励ます口調。「〜しましょう！」「頑張って！」等\n`;
             else prompt += `【性格】丁寧。優しく聡明。「〜ですね」「頑張りましょう」等\n`;
 
-            // フロー制御
             if (situation === "start_all") {
                 prompt += `【状況】全${extraData.total}問の学習を開始します。全問題数に触れて、短く気合を入れて（1文）。`;
             } else if (situation === "end_set") {
@@ -843,11 +843,11 @@
                 prompt += `【状況】受講生が解答し【${extraData.isCorrect ? "正解" : "不正解"}】だった。
 【指示】解説（${extraData.explanation}）の中で最も重要な法的ポイントを1つだけピックアップし、一言で要約して教えて（声に出さないテキスト表示専用なので簡潔に）。`;
             } else if (situation === "health_changed") {
-                prompt = ""; // API通信を省くため、ここではデフォルト文を使う
+                prompt = ""; 
                 aiMessageEl.innerHTML = "体調が変わったみたいだけど、無理しないでね！";
                 return;
             } else if (situation === "next") {
-                prompt = ""; // API通信を省く
+                prompt = ""; 
                 aiMessageEl.innerHTML = "よし、次の問題だよ！";
                 return;
             } else if (situation === "give_up") {
@@ -859,7 +859,6 @@
             if (prompt !== "") {
                 callGeminiAPI('gemini-2.5-flash', prompt, (text) => {
                     aiMessageEl.innerHTML = text;
-                    // extraData.textOnly が true の場合（問題間や解答直後）は声を出さない
                     if (!extraData.textOnly) {
                         speakText(text); 
                     }
@@ -896,7 +895,6 @@ NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理
             });
         }
 
-        // ワンタップで修正内容をGASへ送信
         async function applyFixToGAS() {
             if (!pendingFixData) return;
             const q = pendingFixData.question;
@@ -904,14 +902,12 @@ NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理
             const newAns = pendingFixData.correctChoice;
             const newExp = pendingFixData.newExplanation;
 
-            // アプリ上のデータを修正
             q.正誤 = newAns;
             q.解説 = newExp;
             
             document.getElementById('ai-fix-action').innerHTML = `<p class="text-xs font-bold text-green-600">クラウドのデータを上書き修正しています...</p>`;
             
             try {
-                // GASへ上書きリクエストを送信
                 const res = await fetch(GAS_URL, {
                     method: 'POST',
                     body: JSON.stringify({ 
