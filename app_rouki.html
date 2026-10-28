@@ -120,7 +120,6 @@
             <div class="w-full h-2 bg-indigo-950 overflow-hidden"><div id="timer-bar" class="h-full w-full"></div></div>
         </div>
 
-        <!-- ★修正：min-h-0を追加し、Flexbox内で子要素（問題文）がスクロール可能になり、ボタンが押し出されないようにする -->
         <div class="p-5 md:p-8 flex-1 flex flex-col min-h-0 relative">
             <div class="mb-4 text-sm md:text-lg text-slate-500 font-black flex gap-3 shrink-0">
                 <span class="bg-slate-100 px-3 py-1.5 rounded-lg">挑戦: <span id="stat-play">0</span>回</span>
@@ -133,7 +132,7 @@
                 <h2 class="text-2xl md:text-4xl lg:text-5xl font-extrabold leading-relaxed md:leading-loose text-slate-800 tracking-wide" id="question-text">問題文</h2>
             </div>
             
-            <!-- 〇 ✖ ボタン（限界まで巨大化。高さを固定せずpaddingで確保） -->
+            <!-- 〇 ✖ ボタン -->
             <div class="shrink-0 flex space-x-6 pb-4 md:pb-8">
                 <button onclick="answer('〇')" class="flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-3xl border-8 border-blue-400 active:scale-95 text-6xl md:text-8xl shadow-xl flex items-center justify-center transition-transform py-12 md:py-20 leading-none">〇</button>
                 <button onclick="answer('✖')" class="flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-3xl border-8 border-red-400 active:scale-95 text-6xl md:text-8xl shadow-xl flex items-center justify-center transition-transform py-12 md:py-20 leading-none">✖</button>
@@ -150,7 +149,7 @@
                 </div>
                 <div class="ml-5 flex-grow">
                     <div class="bg-pink-50 rounded-3xl rounded-tl-none p-5 md:p-6 shadow-md border-4 border-pink-100 relative">
-                        <p class="text-slate-800 font-bold leading-relaxed text-lg md:text-2xl" id="ai-message">準備ができたらスタートしてね！</p>
+                        <p class="text-slate-800 font-bold leading-relaxed text-2xl md:text-3xl lg:text-4xl" id="ai-message">準備ができたらスタートしてね！</p>
                         <div id="ai-fix-action" class="mt-4 p-4 bg-white rounded-xl border-4 border-red-300 shadow-sm hidden">
                             <p class="text-sm md:text-lg font-black text-red-600 mb-2">🚨 AIが矛盾・法改正を発見！</p>
                             <p id="ai-fix-reason" class="text-sm md:text-base text-slate-700 font-bold mb-3"></p>
@@ -169,15 +168,15 @@
                 <div class="flex-1"></div>
                 <span id="result-badge" class="inline-block px-8 py-3 rounded-full text-xl md:text-3xl font-black text-white shadow-xl">結果</span>
                 <div class="flex-1 text-right">
-                    <button onclick="cancelMistake()" class="bg-slate-200 text-slate-600 font-bold py-3 px-5 rounded-xl text-sm md:text-lg border-2 border-slate-300 active:scale-95">⚠️ 取消</button>
+                    <button onclick="cancelMistake()" class="bg-slate-200 text-slate-600 font-bold py-3 px-6 rounded-xl text-base md:text-xl border-2 border-slate-300 active:scale-95 shadow-sm">⚠️ 押し間違い</button>
                 </div>
             </div>
             
             <div class="bg-white rounded-3xl p-6 md:p-8 shadow-md border-2 border-slate-200 mb-6 flex-1">
                 <h3 class="text-base md:text-xl font-black text-slate-400 mb-3 border-b-2 pb-2">根拠条文</h3>
-                <p class="text-indigo-700 font-black mb-6 text-xl md:text-2xl" id="article-text">法X条</p>
+                <p class="text-indigo-700 font-bold mb-6 text-xl md:text-3xl" id="article-text">法X条</p>
                 <h3 class="text-base md:text-xl font-black text-slate-400 mb-3 border-b-2 pb-2">解説</h3>
-                <p class="text-slate-800 leading-relaxed font-medium text-xl md:text-3xl mb-8" id="explanation-text">解説</p>
+                <p class="text-slate-700 leading-loose font-normal text-2xl md:text-4xl mb-8" id="explanation-text">解説</p>
             </div>
 
             <div id="self-eval-area" class="shrink-0 p-4 bg-white/95 rounded-3xl border-2 border-slate-200 shadow-md">
@@ -305,6 +304,7 @@
             try { localStorage.setItem('gemini_api_key', userApiKey); } catch(e) {}
             
             unlockAudio();
+            userCondition = document.getElementById('condition-select').value;
             cumulativeQuestions = 0; setCorrectCount = 0; todayMistakes = []; usedQuestionIds = new Set(); cancelPenaltyCount = 0;
             playlistQueue = []; totalQuestionsToPlay = 0;
 
@@ -341,7 +341,6 @@
 
         function startEbbinghausReview() { startTraining('ebbinghaus'); }
         async function startAiWeaknessAnalysis() {
-            // 省略（前回と同じ弱点分析の処理）
             alert("弱点分析は現在準備中です。通常特訓をご利用ください。");
         }
 
@@ -382,11 +381,6 @@
             }, 1000);
         }
 
-        function showHint() {
-            const q = currentQuestions[currentIndex];
-            generateAiMessage("hint", { questionText: q.問題文, explanation: q.解説 || "", textOnly: false });
-        }
-
         let lastAnswerWasCorrect = false;
         function answer(userAnswer) {
             const q = currentQuestions[currentIndex];
@@ -416,10 +410,11 @@
             try {
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_answer', q_id: q._id, is_correct: isCorrect }) });
                 const data = await res.json();
-                if(data.success) userHistory[q._id] = { playCount: data.playCount, correctCount: data.correctCount, historyStr: data.histStr };
-            } catch(e) {
-                document.getElementById('ai-message').innerHTML = `<span class="text-red-500 font-bold text-sm">⚠️ GAS保存エラー: シートIDを確認してください。</span>`;
-            }
+                if(data.success) {
+                    userHistory[q._id] = { playCount: data.playCount, correctCount: data.correctCount, historyStr: data.histStr };
+                    document.getElementById('stat-history').textContent = data.histStr || "未挑戦";
+                }
+            } catch(e) { }
         }
 
         async function cancelMistake() {
@@ -451,17 +446,14 @@
         function pauseTimer() { clearInterval(timerInterval); document.getElementById('pause-overlay').classList.remove('hidden'); document.getElementById('pause-overlay').classList.add('flex'); }
         function resumeTimer() { document.getElementById('pause-overlay').classList.add('hidden'); document.getElementById('pause-overlay').classList.remove('flex'); timerInterval = setInterval(() => { timeLeft--; document.getElementById('time-display').textContent = `⏳ ${timeLeft}秒`; if (timeLeft <= 0) clearInterval(timerInterval); }, 1000); }
 
-        // ★修正: TTSでの定型文読み上げエラーを解消（純粋にセリフだけを渡す）
         async function speakText(text) {
             if (isMuted || !text) return; 
             let cleanText = text.replace(/<[^>]+>/g, '').trim();
             if (!cleanText) return;
 
             try {
-                // モデル指定ルール: 3.8-flash-tts
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    // ※ ここに「以下の文章を読んでください」と入れるとそのまま喋ってしまうため、生テキストのみ渡す
                     body: JSON.stringify({ contents: [{ parts: [{ text: cleanText }] }] })
                 });
                 if (!res.ok) throw new Error("TTS API Error");
@@ -471,7 +463,6 @@
                 player.src = `data:audio/mp3;base64,${audioBase64}`;
                 player.play();
             } catch (err) {
-                // エラー時はiPad内蔵音声で代用
                 if ('speechSynthesis' in window) {
                     const utterance = new SpeechSynthesisUtterance(cleanText); utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance);
                 }
@@ -490,7 +481,6 @@
             else if (situation === "answer") prompt += `解答は【${extraData.isCorrect ? "正解" : "不正解"}】。解説（${extraData.explanation}）から最重要ポイントを1文で要約して。`;
 
             try {
-                // モデル指定ルール: 2.5-flash
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
@@ -515,7 +505,6 @@
 問題文: ${q.問題文}\n正誤: ${q.正誤}\n解説: ${q.解説}`;
             
             try {
-                // モデル指定ルール: 3.1-pro-preview
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
@@ -530,29 +519,6 @@
                     document.getElementById('ai-fix-action').classList.remove('hidden');
                 }
             } catch(e) {}
-        }
-
-        function askProDeeply() {
-            const q = currentQuestions[currentIndex];
-            const aiMessageEl = document.getElementById('ai-message');
-            if (aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">🔥 講師が背景を整理中...</span>';
-            const prompt = `最高峰の社労士講師として、以下の問題の背景や立法趣旨を分かりやすく講義して。\n条文: ${q.根拠条文}\n問題: ${q.問題文}\n解説: ${q.解説}`;
-            
-            // モデル指定ルール: 3.1-pro-preview
-            callGeminiAPI('gemini-3.1-pro-preview', prompt, (text) => { 
-                if (aiMessageEl) aiMessageEl.innerHTML = `🎓 <b>特別講義</b><br>${text}`; 
-            });
-        }
-        
-        async function callGeminiAPI(model, prompt, callback) {
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                });
-                if (!res.ok) throw new Error("APIエラー");
-                const data = await res.json();
-                callback(data.candidates[0].content.parts[0].text);
-            } catch (err) { }
         }
     </script>
 </body>
