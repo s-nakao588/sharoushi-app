@@ -127,7 +127,7 @@
                 <span class="bg-slate-100 px-3 py-1.5 rounded-lg tracking-widest text-slate-400" id="stat-history">-</span>
             </div>
 
-            <!-- ★修正: 文字サイズをさらに大きく（text-3xl/5xl/6xl）し、font-normal（細字）に変更 -->
+            <!-- 問題文エリア -->
             <div class="flex-1 overflow-y-auto mb-6 pr-4">
                 <h2 class="text-3xl md:text-5xl lg:text-6xl font-normal leading-relaxed md:leading-loose text-slate-800 tracking-wide" id="question-text">問題文</h2>
             </div>
@@ -190,9 +190,13 @@
 
     <script>
         const GAS_URL = "https://script.google.com/a/macros/sr-nakao.com/s/AKfycbyHu72D7p9XrmynRKYbt_4HOfhJ47D3xEdv-SgqTWS1iSrxWo6KuhZnzTbMvitQ7r0_Eg/exec";
+        
+        // ★ 今回追加していただいた厚生年金・健康保険のURLを適用済み！
         const SUBJECTS = [
             { id: "rouki", name: "労働基準法", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?output=csv" },
-            { id: "anei", name: "安全衛生法", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=340566361&single=true&output=csv" }
+            { id: "anei", name: "安全衛生法", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=340566361&single=true&output=csv" },
+            { id: "kounen", name: "厚生年金保険法", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=485008277&single=true&output=csv" },
+            { id: "kenpo", name: "健康保険法", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=1543277211&single=true&output=csv" }
         ];
 
         let allDatabase = [], userHistory = {}, playlistQueue = [], currentQuestions = [];
