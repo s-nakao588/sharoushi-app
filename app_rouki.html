@@ -18,91 +18,91 @@
         .accordion-content { transition: max-height 0.3s ease-in-out; overflow: hidden; max-height: 0; }
         .accordion-content.open { max-height: 1000px; }
         button { -webkit-tap-highlight-color: transparent; }
-        /* iPad用のスクロールバー非表示調整など */
+        /* iPad・スマホ用スクロールバー調整 */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 h-screen w-screen flex flex-col lg:flex-row overflow-hidden relative select-none font-sans">
+<!-- ★修正：モバイル・iPad縦向き時は自然スクロールを許可し、見切れや潰れを防止 -->
+<body class="bg-slate-100 text-slate-800 min-h-screen w-full flex flex-col lg:flex-row overflow-x-hidden font-sans">
 
-    <!-- ⏸️ 離席用オーバーレイ -->
-    <div id="pause-overlay" class="absolute inset-0 bg-slate-900/90 z-[100] hidden flex-col items-center justify-center text-white backdrop-blur-sm p-6 text-center">
+    <!-- ⏸️ 離席用オーバーレイ（fixedに変更して確実に全画面を覆う） -->
+    <div id="pause-overlay" class="fixed inset-0 bg-slate-900/90 z-[100] hidden flex-col items-center justify-center text-white backdrop-blur-sm p-6 text-center">
         <span class="text-7xl md:text-9xl mb-6 animate-bounce">⏸️</span>
-        <h2 class="text-4xl md:text-6xl font-black mb-4">ちょっと離席中...</h2>
-        <p class="text-xl md:text-2xl mb-4 text-slate-300">タイマーは完全に一時停止しています。</p>
-        <p class="text-pink-300 font-bold mb-12 text-2xl" id="leave-ai-comment">「サボりじゃないよね？信じてるよ」</p>
-        <button onclick="resumeTimer()" class="w-full max-w-2xl bg-gradient-to-r from-green-500 to-green-600 text-white font-black py-6 rounded-2xl text-3xl shadow-[0_8px_0_#166534] active:translate-y-[6px]">
+        <h2 class="text-5xl md:text-7xl font-black mb-6">ちょっと離席中...</h2>
+        <p class="text-2xl md:text-3xl mb-6 text-slate-300">タイマーは完全に一時停止しています。</p>
+        <p class="text-pink-300 font-bold mb-12 text-3xl md:text-4xl" id="leave-ai-comment">「サボりじゃないよね？信じてるよ」</p>
+        <button onclick="resumeTimer()" class="w-full max-w-2xl bg-gradient-to-r from-green-500 to-green-600 text-white font-black py-8 rounded-3xl text-4xl shadow-[0_8px_0_#166534] active:translate-y-[6px]">
             ▶ 戻ったよ！（再開）
         </button>
     </div>
 
     <!-- ☕ 休憩用オーバーレイ -->
-    <div id="break-overlay" class="absolute inset-0 bg-slate-900/95 z-[110] hidden flex-col items-center justify-center text-white backdrop-blur-md p-6 text-center">
+    <div id="break-overlay" class="fixed inset-0 bg-slate-900/95 z-[110] hidden flex-col items-center justify-center text-white backdrop-blur-md p-6 text-center">
         <span class="text-7xl md:text-9xl mb-6">☕</span>
-        <h2 class="text-4xl md:text-6xl font-black mb-4" id="break-title">休憩タイム！</h2>
-        <p class="text-xl md:text-2xl mb-10 text-slate-300" id="break-message">目を閉じてしっかり休んでください。</p>
-        <div class="text-8xl md:text-9xl font-black mb-6 font-mono tracking-wider" id="break-countdown">05:00</div>
-        <p class="text-red-400 font-bold mb-12 h-8 text-2xl" id="break-penalty-msg"></p>
-        
-        <button onclick="endBreak()" class="w-full max-w-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-black py-6 rounded-2xl text-3xl shadow-[0_8px_0_#1e3a8a] active:translate-y-[6px]">
+        <h2 class="text-5xl md:text-7xl font-black mb-6" id="break-title">休憩タイム！</h2>
+        <p class="text-2xl md:text-3xl mb-12 text-slate-300" id="break-message">目を閉じてしっかり休んでください。</p>
+        <div class="text-[6rem] md:text-[8rem] font-black mb-8 font-mono tracking-wider" id="break-countdown">05:00</div>
+        <p class="text-red-400 font-bold mb-12 h-10 text-3xl" id="break-penalty-msg"></p>
+        <button onclick="endBreak()" class="w-full max-w-2xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-black py-8 rounded-3xl text-4xl shadow-[0_8px_0_#1e3a8a] active:translate-y-[6px]">
             ▶ 休憩おわり！（再開）
         </button>
     </div>
 
-    <!-- スタート画面（ワイド＆巨大化） -->
-    <div id="start-screen" class="absolute inset-0 bg-indigo-900 z-50 flex flex-col items-center justify-start text-white p-6 md:p-10 overflow-y-auto">
-        <div class="flex justify-between items-center w-full max-w-5xl mb-6 mt-4">
+    <!-- スタート画面 -->
+    <div id="start-screen" class="fixed inset-0 bg-indigo-900 z-50 flex flex-col items-center justify-start text-white p-6 md:p-10 overflow-y-auto">
+        <div class="flex justify-between items-center w-full max-w-5xl mb-8 mt-6">
             <h1 class="text-4xl md:text-6xl font-black tracking-wider">社労士 過去問トレーニング</h1>
-            <button id="sound-toggle-start-btn" onclick="toggleSound()" class="bg-slate-700 hover:bg-slate-600 text-white text-lg md:text-xl font-bold px-6 py-3 rounded-xl border-2 border-slate-500 transition-colors shadow-lg">
+            <button id="sound-toggle-start-btn" onclick="toggleSound()" class="bg-slate-700 hover:bg-slate-600 text-white text-xl md:text-2xl font-bold px-8 py-4 rounded-2xl border-2 border-slate-500 transition-colors shadow-lg">
                 🔇 音声オフ
             </button>
         </div>
         
-        <div class="bg-white text-slate-800 p-8 md:p-10 rounded-3xl shadow-2xl max-w-5xl w-full mb-10">
+        <div class="bg-white text-slate-800 p-8 md:p-12 rounded-[2rem] shadow-2xl max-w-5xl w-full mb-12">
             
-            <div id="api-key-container" class="mb-6 p-5 bg-yellow-50 border-2 border-yellow-200 rounded-xl">
-                <h2 class="text-lg md:text-xl font-bold mb-2 text-yellow-800">🔑 Gemini APIキー</h2>
-                <input type="password" id="api-key-input" placeholder="AI Studioで取得したキーを入力" class="w-full border-2 border-yellow-300 p-4 rounded-xl text-lg focus:outline-none focus:border-yellow-500">
+            <div id="api-key-container" class="mb-8 p-6 bg-yellow-50 border-4 border-yellow-200 rounded-2xl">
+                <h2 class="text-xl md:text-2xl font-bold mb-3 text-yellow-800">🔑 Gemini APIキー</h2>
+                <input type="password" id="api-key-input" placeholder="AI Studioで取得したキーを入力" class="w-full border-2 border-yellow-300 p-5 rounded-xl text-xl focus:outline-none focus:border-yellow-500">
             </div>
-            <button id="show-api-btn" onclick="document.getElementById('api-key-container').classList.remove('hidden'); this.classList.add('hidden');" class="hidden mb-6 text-sm text-slate-400 underline">APIキーを再設定する</button>
+            <button id="show-api-btn" onclick="document.getElementById('api-key-container').classList.remove('hidden'); this.classList.add('hidden');" class="hidden mb-8 text-lg text-slate-400 underline font-bold">APIキーを再設定する</button>
 
             <!-- 弱点分析＆忘却曲線モードボタン -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-                <button onclick="startAiWeaknessAnalysis()" class="bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-indigo-300 hover:border-indigo-500 p-6 rounded-2xl text-left transition-all active:scale-95 shadow-md">
-                    <h3 class="text-2xl font-black text-indigo-800 mb-2">📊 AI分析＆弱点特訓</h3>
-                    <p class="text-indigo-600 font-bold text-sm md:text-base">履歴を分析し、苦手な科目に絞って10問の専用プレイリストを作成します。</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                <button onclick="startAiWeaknessAnalysis()" class="bg-gradient-to-br from-purple-100 to-indigo-100 border-4 border-indigo-300 hover:border-indigo-500 p-8 rounded-3xl text-left transition-all active:scale-95 shadow-lg">
+                    <h3 class="text-3xl font-black text-indigo-800 mb-3">📊 AI分析＆弱点特訓</h3>
+                    <p class="text-indigo-600 font-bold text-lg md:text-xl leading-relaxed">履歴を分析し、苦手な科目に絞って10問の専用プレイリストを作成します。</p>
                 </button>
-                <button onclick="startEbbinghausReview()" class="bg-gradient-to-br from-emerald-100 to-teal-100 border-2 border-teal-300 hover:border-teal-500 p-6 rounded-2xl text-left transition-all active:scale-95 shadow-md">
-                    <h3 class="text-2xl font-black text-teal-800 mb-2">🧠 忘却曲線ベース復習</h3>
-                    <p class="text-teal-600 font-bold text-sm md:text-base">時間が経過した問題や、未解答・正解率が低い問題を優先して抽出します。</p>
+                <button onclick="startEbbinghausReview()" class="bg-gradient-to-br from-emerald-100 to-teal-100 border-4 border-teal-300 hover:border-teal-500 p-8 rounded-3xl text-left transition-all active:scale-95 shadow-lg">
+                    <h3 class="text-3xl font-black text-teal-800 mb-3">🧠 忘却曲線ベース復習</h3>
+                    <p class="text-teal-600 font-bold text-lg md:text-xl leading-relaxed">時間が経過した問題や、未解答・正解率が低い問題を優先して抽出します。</p>
                 </button>
             </div>
             
-            <div id="ai-analysis-result" class="hidden mb-8 p-6 bg-indigo-50 rounded-2xl border-2 border-indigo-200">
-                <h3 class="text-xl font-black text-indigo-800 mb-3">👨‍🏫 AI講師のアドバイス</h3>
-                <p id="ai-analysis-text" class="text-lg text-slate-700 font-bold leading-relaxed">分析中...</p>
-                <button id="start-weakness-btn" class="hidden mt-4 w-full bg-indigo-600 text-white font-bold py-4 rounded-xl text-xl shadow-md active:scale-95">弱点克服特訓をスタート</button>
+            <div id="ai-analysis-result" class="hidden mb-10 p-8 bg-indigo-50 rounded-3xl border-4 border-indigo-200">
+                <h3 class="text-2xl font-black text-indigo-800 mb-4">👨‍🏫 AI講師のアドバイス</h3>
+                <p id="ai-analysis-text" class="text-xl md:text-2xl text-slate-700 font-bold leading-loose">分析中...</p>
+                <button id="start-weakness-btn" class="hidden mt-6 w-full bg-indigo-600 text-white font-black py-6 rounded-2xl text-2xl shadow-lg active:scale-95">弱点克服特訓をスタート</button>
             </div>
 
             <!-- 通常のプレイリスト作成 -->
-            <h2 class="text-2xl md:text-3xl font-black mb-4 flex justify-between items-end">
+            <h2 class="text-3xl md:text-4xl font-black mb-6 flex justify-between items-end">
                 <span>📚 通常プレイリスト作成</span>
-                <span class="text-base font-bold text-slate-500" id="loading-status">☁️ 読み込み中...</span>
+                <span class="text-xl font-bold text-slate-500" id="loading-status">☁️ 読み込み中...</span>
             </h2>
-            <div class="flex gap-3 mb-4">
-                <button onclick="checkAllChapters(true)" class="text-sm md:text-base bg-indigo-100 text-indigo-700 px-4 py-2 rounded-xl font-bold shadow-sm">☑ すべて選択</button>
-                <button onclick="checkAllChapters(false)" class="text-sm md:text-base bg-slate-100 text-slate-600 px-4 py-2 rounded-xl font-bold shadow-sm">☐ すべて解除</button>
+            <div class="flex gap-4 mb-6">
+                <button onclick="checkAllChapters(true)" class="text-lg md:text-xl bg-indigo-100 text-indigo-700 px-6 py-3 rounded-xl font-black shadow-sm">☑ すべて選択</button>
+                <button onclick="checkAllChapters(false)" class="text-lg md:text-xl bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-black shadow-sm">☐ すべて解除</button>
             </div>
             
-            <div id="subject-accordion-container" class="w-full border-2 border-slate-200 rounded-2xl mb-8 bg-slate-50 overflow-hidden max-h-72 overflow-y-auto">
+            <div id="subject-accordion-container" class="w-full border-4 border-slate-200 rounded-3xl mb-10 bg-slate-50 overflow-hidden max-h-96 overflow-y-auto">
                 <!-- JavaScriptで生成 -->
             </div>
 
-            <div class="flex flex-col md:flex-row gap-6 mb-8">
+            <div class="flex flex-col md:flex-row gap-8 mb-10">
                 <div class="flex-1">
-                    <h2 class="text-xl font-black mb-3">🧘 講師の指導モード</h2>
-                    <select id="condition-select" class="w-full bg-pink-50 border-2 border-pink-200 text-xl font-bold p-4 rounded-2xl focus:outline-none">
+                    <h2 class="text-2xl font-black mb-4">🧘 講師の指導モード</h2>
+                    <select id="condition-select" class="w-full bg-pink-50 border-4 border-pink-200 text-2xl font-black p-5 rounded-2xl focus:outline-none">
                         <option value="おまかせ" selected>🤖 おまかせ</option>
                         <option value="普通">普通</option>
                         <option value="厳しめ">厳しめ</option>
@@ -111,8 +111,8 @@
                     </select>
                 </div>
                 <div class="flex-1">
-                    <h2 class="text-xl font-black mb-3">🌡️ あなたの体調</h2>
-                    <select id="health-select" class="w-full bg-green-50 border-2 border-green-200 text-xl font-bold p-4 rounded-2xl focus:outline-none">
+                    <h2 class="text-2xl font-black mb-4">🌡️ あなたの体調</h2>
+                    <select id="health-select" class="w-full bg-green-50 border-4 border-green-200 text-2xl font-black p-5 rounded-2xl focus:outline-none">
                         <option value="元気">元気</option>
                         <option value="普通" selected>普通</option>
                         <option value="疲れ気味">疲れ気味</option>
@@ -122,92 +122,93 @@
                 </div>
             </div>
 
-            <h2 class="text-xl font-black mb-3">⏱️ 全体の目標時間</h2>
-            <select id="time-limit-select" onchange="toggleCustomTime()" class="w-full bg-blue-50 border-2 border-blue-200 text-xl font-bold p-4 rounded-2xl mb-4 focus:outline-none">
+            <h2 class="text-2xl font-black mb-4">⏱️ 全体の目標時間</h2>
+            <select id="time-limit-select" onchange="toggleCustomTime()" class="w-full bg-blue-50 border-4 border-blue-200 text-2xl font-black p-5 rounded-2xl mb-6 focus:outline-none">
                 <option value="無制限">無制限（限界までやる）</option>
                 <option value="1分">テスト用: 1分</option>
                 <option value="15分">15分（スキマ時間）</option>
                 <option value="30分">30分（集中）</option>
                 <option value="custom">⏰ 自分で終了時刻を指定</option>
             </select>
-            <input type="time" id="custom-time-input" class="hidden w-full border-2 border-blue-300 p-4 rounded-2xl text-xl font-bold mb-6 focus:outline-none text-center">
+            <input type="time" id="custom-time-input" class="hidden w-full border-4 border-blue-300 p-5 rounded-2xl text-2xl font-black mb-8 focus:outline-none text-center">
 
-            <button onclick="startTraining('normal')" class="mt-4 w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-black py-6 rounded-2xl text-3xl shadow-xl active:scale-95 transition-transform">
+            <button onclick="startTraining('normal')" class="mt-6 w-full bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-black py-8 rounded-[2rem] text-4xl shadow-2xl active:scale-95 transition-transform">
                 🚀 通常特訓スタート！！
             </button>
         </div>
     </div>
 
     <!-- メイン画面（左側：問題表示領域） -->
-    <main class="w-full lg:w-1/2 h-[55vh] lg:h-screen flex flex-col bg-white shadow-xl z-10 shrink-0">
-        <!-- ヘッダー（巨大化・操作しやすく） -->
+    <!-- ★修正：lg未満（スマホ・iPad縦）では固定高さを解除し、コンテンツに合わせて伸びるように変更 -->
+    <main class="w-full lg:w-3/5 lg:h-screen lg:sticky lg:top-0 flex flex-col bg-white shadow-2xl z-10">
+        <!-- ヘッダー -->
         <div class="bg-indigo-900 text-white shrink-0 shadow-md z-20">
-            <div class="p-3 md:p-5 flex justify-between items-center flex-wrap gap-3">
-                <div class="flex items-center gap-2 md:gap-3 shrink-0 flex-wrap">
-                    <button onclick="stopTraining()" class="flex items-center gap-1 text-slate-200 hover:text-white font-bold active:scale-95 bg-white/10 px-4 py-2.5 rounded-lg text-sm md:text-lg border border-transparent hover:border-slate-400 transition-all">🚪 終了</button>
-                    <button onclick="pauseTimer()" class="flex items-center gap-1 text-slate-200 hover:text-white font-bold active:scale-95 bg-white/10 px-4 py-2.5 rounded-lg border border-slate-500 text-sm md:text-lg">⏸️ 離席</button>
-                    <button onclick="startManualBreak()" class="flex items-center gap-1 text-orange-200 hover:text-orange-300 font-bold active:scale-95 bg-orange-900/60 px-4 py-2.5 rounded-lg border border-orange-500 text-sm md:text-lg">☕ 5分休憩</button>
-                    <button id="sound-toggle-in-btn" onclick="toggleSound()" class="bg-slate-700 hover:bg-slate-600 text-white text-sm md:text-lg font-bold px-4 py-2.5 rounded-lg border border-slate-500 transition-colors">🔇 音声オフ</button>
+            <div class="p-4 md:p-6 flex justify-between items-center flex-wrap gap-4">
+                <div class="flex items-center gap-3 shrink-0 flex-wrap">
+                    <button onclick="stopTraining()" class="flex items-center gap-2 text-slate-200 hover:text-white font-black active:scale-95 bg-white/10 px-5 py-3 rounded-xl text-lg md:text-xl border border-transparent hover:border-slate-400 transition-all">🚪 終了</button>
+                    <button onclick="pauseTimer()" class="flex items-center gap-2 text-slate-200 hover:text-white font-black active:scale-95 bg-white/10 px-5 py-3 rounded-xl border border-slate-500 text-lg md:text-xl">⏸️ 離席</button>
+                    <button onclick="startManualBreak()" class="flex items-center gap-2 text-orange-200 hover:text-orange-300 font-black active:scale-95 bg-orange-900/60 px-5 py-3 rounded-xl border border-orange-500 text-lg md:text-xl">☕ 5分休憩</button>
+                    <button id="sound-toggle-in-btn" onclick="toggleSound()" class="bg-slate-700 hover:bg-slate-600 text-white text-lg md:text-xl font-black px-5 py-3 rounded-xl border border-slate-500 transition-colors">🔇 音声オフ</button>
                 </div>
-                <div class="flex items-center gap-2 justify-end ml-auto">
-                    <span id="global-timer-display" class="hidden text-sm md:text-lg font-bold bg-blue-800 px-4 py-2 rounded-full border border-blue-600">🏁 00:00</span>
-                    <span id="question-progress" class="text-sm md:text-lg font-bold bg-indigo-800 px-4 py-2 rounded-full border border-indigo-600">1 / 10問</span>
-                    <span id="time-display" class="text-sm md:text-lg font-bold bg-slate-800 text-yellow-400 px-4 py-2 rounded-full border border-slate-600 w-20 text-center">⏳ 60秒</span>
+                <div class="flex items-center gap-4 justify-end ml-auto">
+                    <span id="global-timer-display" class="hidden text-lg md:text-xl font-black bg-blue-800 px-6 py-3 rounded-full border-2 border-blue-600">🏁 00:00</span>
+                    <span id="question-progress" class="text-lg md:text-xl font-black bg-indigo-800 px-6 py-3 rounded-full border-2 border-indigo-600">1 / 10問</span>
+                    <span id="time-display" class="text-lg md:text-xl font-black bg-slate-800 text-yellow-400 px-6 py-3 rounded-full border-2 border-slate-600 w-32 text-center">⏳ 60秒</span>
                 </div>
             </div>
-            <div class="bg-indigo-950 text-indigo-200 text-sm md:text-base px-4 py-2 text-center font-bold truncate" id="current-playlist-title">プレイリスト: 準備中</div>
-            <div class="w-full h-2 bg-indigo-950 overflow-hidden"><div id="timer-bar" class="h-full w-full"></div></div>
+            <div class="bg-indigo-950 text-indigo-200 text-base md:text-lg px-6 py-3 text-center font-black truncate" id="current-playlist-title">プレイリスト: 準備中</div>
+            <div class="w-full h-3 bg-indigo-950 overflow-hidden"><div id="timer-bar" class="h-full w-full"></div></div>
         </div>
 
         <!-- 問題本文・ボタン領域 -->
-        <div class="p-5 md:p-8 flex-1 flex flex-col justify-between overflow-hidden relative">
-            <button id="give-up-btn" onclick="giveUp()" class="hidden absolute top-4 right-4 bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold py-2 px-4 rounded-full shadow-sm text-sm md:text-base border border-slate-300">🏳️ ギブアップ</button>
+        <div class="p-6 md:p-10 flex-1 flex flex-col justify-between relative">
+            <button id="give-up-btn" onclick="giveUp()" class="hidden absolute top-6 right-6 bg-slate-200 hover:bg-slate-300 text-slate-600 font-black py-3 px-6 rounded-full shadow-md text-base md:text-lg border-2 border-slate-300">🏳️ ギブアップ</button>
 
             <!-- ステータス表示 -->
-            <div class="mb-2 text-sm md:text-base text-slate-500 font-bold flex gap-3">
-                <span class="bg-slate-100 px-3 py-1 rounded-md">挑戦: <span id="stat-play">0</span>回</span>
-                <span class="bg-slate-100 px-3 py-1 rounded-md">正解率: <span id="stat-rate">0</span>%</span>
-                <span class="bg-slate-100 px-3 py-1 rounded-md tracking-widest text-slate-400" id="stat-history">-</span>
+            <div class="mb-4 text-base md:text-xl text-slate-500 font-black flex gap-4">
+                <span class="bg-slate-100 px-4 py-2 rounded-lg">挑戦: <span id="stat-play">0</span>回</span>
+                <span class="bg-slate-100 px-4 py-2 rounded-lg">正解率: <span id="stat-rate">0</span>%</span>
+                <span class="bg-slate-100 px-4 py-2 rounded-lg tracking-widest text-slate-400" id="stat-history">-</span>
             </div>
 
             <!-- 問題文エリア -->
-            <div class="flex-1 overflow-y-auto pr-3 mb-4">
-                <h2 class="text-2xl md:text-3xl lg:text-4xl font-extrabold leading-relaxed text-slate-800 tracking-wide" id="question-text">問題文</h2>
+            <div class="flex-1 lg:overflow-y-auto mb-8 min-h-[30vh]">
+                <h2 class="text-3xl md:text-4xl lg:text-5xl font-extrabold leading-relaxed md:leading-loose text-slate-800 tracking-wide" id="question-text">問題文</h2>
             </div>
             
-            <button onclick="showHint()" class="shrink-0 mb-4 w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-800 font-bold py-4 rounded-2xl border-2 border-yellow-300 active:scale-[0.98] transition-transform flex items-center justify-center text-xl md:text-2xl shadow-sm">
-                <span class="mr-2 text-2xl">💡</span> AIにヒントをもらう
+            <button onclick="showHint()" class="shrink-0 mb-8 w-full bg-yellow-50 hover:bg-yellow-100 text-yellow-800 font-black py-6 rounded-3xl border-4 border-yellow-300 active:scale-[0.98] transition-transform flex items-center justify-center text-2xl md:text-3xl shadow-md">
+                <span class="mr-3 text-3xl">💡</span> AIにヒントをもらう
             </button>
 
-            <!-- 〇 ✖ ボタン（巨大化） -->
-            <div class="shrink-0 flex space-x-6 h-32 md:h-40">
-                <button onclick="answer('〇')" class="flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-3xl border-4 border-blue-400 active:scale-95 text-7xl md:text-8xl shadow-lg flex items-center justify-center transition-transform">〇</button>
-                <button onclick="answer('✖')" class="flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-3xl border-4 border-red-400 active:scale-95 text-7xl md:text-8xl shadow-lg flex items-center justify-center transition-transform">✖</button>
+            <!-- 〇 ✖ ボタン（限界まで巨大化） -->
+            <div class="shrink-0 flex space-x-8 h-40 md:h-56 lg:h-64">
+                <button onclick="answer('〇')" class="flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-[2.5rem] border-8 border-blue-400 active:scale-95 text-[6rem] md:text-[8rem] lg:text-[10rem] shadow-xl flex items-center justify-center transition-transform leading-none">〇</button>
+                <button onclick="answer('✖')" class="flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-[2.5rem] border-8 border-red-400 active:scale-95 text-[6rem] md:text-[8rem] lg:text-[10rem] shadow-xl flex items-center justify-center transition-transform leading-none">✖</button>
             </div>
         </div>
     </main>
 
     <!-- 右側：AIコーチ・解説エリア -->
-    <aside class="w-full lg:w-1/2 h-[45vh] lg:h-screen bg-slate-50 flex flex-col border-t-4 lg:border-t-0 lg:border-l-4 border-slate-200 overflow-hidden">
+    <aside class="w-full lg:w-2/5 lg:h-screen flex flex-col bg-slate-50 border-t-8 lg:border-t-0 lg:border-l-8 border-slate-200">
         <!-- AIコメント枠 -->
-        <div class="p-4 md:p-6 bg-white border-b border-slate-200 shrink-0 shadow-sm">
+        <div class="p-6 md:p-8 bg-white border-b border-slate-200 shrink-0 shadow-sm min-h-[8rem]">
             <div class="flex items-start">
-                <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-pink-100 border-4 border-white shadow-md overflow-hidden shrink-0 flex items-center justify-center">
+                <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-pink-100 border-4 border-white shadow-lg overflow-hidden shrink-0 flex items-center justify-center">
                     <img src="coach.jpg" alt="AI講師" class="w-full h-full object-cover">
                 </div>
-                <div class="ml-4 flex-grow">
-                    <div class="bg-pink-50 rounded-3xl rounded-tl-none p-4 md:p-5 shadow-sm border-2 border-pink-100 relative">
-                        <p class="text-slate-800 font-bold leading-relaxed text-base md:text-xl" id="ai-message">
+                <div class="ml-5 flex-grow">
+                    <div class="bg-pink-50 rounded-[2rem] rounded-tl-none p-5 md:p-6 shadow-md border-4 border-pink-100 relative min-h-[5rem]">
+                        <p class="text-slate-800 font-bold leading-relaxed text-xl md:text-2xl" id="ai-message">
                             準備ができたら特訓をスタートしよう！
                         </p>
                         
                         <!-- AI自動修正 UI -->
-                        <div id="ai-fix-action" class="mt-4 p-4 bg-white rounded-2xl border-2 border-red-300 shadow-sm hidden">
-                            <p class="text-sm md:text-base font-black text-red-600 mb-2">🚨 AIが問題の矛盾・法改正の古さを発見しました！</p>
-                            <p id="ai-fix-reason" class="text-sm md:text-base text-slate-700 font-bold mb-3"></p>
-                            <div class="flex gap-3">
-                                <button onclick="applyFixToGAS()" class="flex-1 bg-green-500 text-white font-bold py-3 rounded-xl text-sm md:text-base shadow">✅ 自動修正で上書き保存</button>
-                                <button onclick="ignoreFix()" class="bg-slate-300 text-slate-700 font-bold px-4 py-3 rounded-xl text-sm md:text-base">❌ 無視</button>
+                        <div id="ai-fix-action" class="mt-5 p-5 bg-white rounded-2xl border-4 border-red-300 shadow-sm hidden">
+                            <p class="text-lg md:text-xl font-black text-red-600 mb-3">🚨 問題の矛盾・法改正の古さを発見！</p>
+                            <p id="ai-fix-reason" class="text-base md:text-lg text-slate-700 font-bold mb-4"></p>
+                            <div class="flex gap-4">
+                                <button onclick="applyFixToGAS()" class="flex-1 bg-green-500 text-white font-black py-4 rounded-xl text-base md:text-lg shadow">✅ 上書き修正する</button>
+                                <button onclick="ignoreFix()" class="bg-slate-300 text-slate-700 font-black px-5 py-4 rounded-xl text-base md:text-lg">❌ 無視</button>
                             </div>
                         </div>
                     </div>
@@ -216,32 +217,32 @@
         </div>
 
         <!-- 解説表示エリア -->
-        <div id="explanation-area" class="p-4 md:p-6 hidden flex-col flex-1 overflow-y-auto relative">
-            <div class="mb-4 text-center shrink-0 flex justify-between items-center">
+        <div id="explanation-area" class="p-6 md:p-8 hidden flex-col flex-1 lg:overflow-y-auto relative">
+            <div class="mb-6 text-center shrink-0 flex justify-between items-center">
                 <div class="flex-1"></div>
-                <span id="result-badge" class="inline-block px-8 py-2 rounded-full text-xl md:text-2xl font-black text-white shadow-lg">結果</span>
+                <span id="result-badge" class="inline-block px-10 py-3 rounded-full text-2xl md:text-3xl font-black text-white shadow-xl">結果</span>
                 <!-- 押し間違い取消ボタン -->
                 <div class="flex-1 text-right">
-                    <button onclick="cancelMistake()" class="bg-slate-200 hover:bg-slate-300 text-slate-600 font-bold py-2 px-4 rounded-xl text-sm md:text-base shadow border border-slate-300 active:scale-95 transition-transform">⚠️ 押し間違い取消</button>
+                    <button onclick="cancelMistake()" class="bg-slate-200 hover:bg-slate-300 text-slate-600 font-black py-3 px-5 rounded-2xl text-base md:text-lg shadow-md border-2 border-slate-300 active:scale-95 transition-transform">⚠️ 押し間違い取消</button>
                 </div>
             </div>
             
-            <div class="bg-white rounded-2xl p-5 md:p-8 shadow-sm border border-slate-200 mb-4 flex-1 overflow-y-auto">
-                <h3 class="text-sm md:text-base font-bold text-slate-400 mb-2 border-b pb-2">根拠条文</h3>
-                <p class="text-indigo-700 font-black mb-4 text-lg md:text-xl" id="article-text">法X条</p>
-                <h3 class="text-sm md:text-base font-bold text-slate-400 mb-2 border-b pb-2">解説</h3>
-                <p class="text-slate-800 leading-relaxed md:leading-loose font-medium text-xl md:text-2xl lg:text-3xl mb-6" id="explanation-text">解説</p>
+            <div class="bg-white rounded-3xl p-6 md:p-10 shadow-md border-2 border-slate-200 mb-6 flex-1">
+                <h3 class="text-lg md:text-xl font-black text-slate-400 mb-3 border-b-2 pb-2">根拠条文</h3>
+                <p class="text-indigo-700 font-black mb-6 text-xl md:text-2xl" id="article-text">法X条</p>
+                <h3 class="text-lg md:text-xl font-black text-slate-400 mb-3 border-b-2 pb-2">解説</h3>
+                <p class="text-slate-800 leading-relaxed md:leading-loose font-medium text-2xl md:text-3xl mb-8" id="explanation-text">解説</p>
                 
-                <button onclick="askProDeeply()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold py-4 rounded-xl shadow-lg hover:from-purple-700 hover:to-indigo-700 transition-all text-lg md:text-xl">
+                <button onclick="askProDeeply()" class="w-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-black py-6 rounded-2xl shadow-xl hover:from-purple-700 hover:to-indigo-700 transition-all text-xl md:text-2xl">
                     🔥 Pro先生に深掘り質問する
                 </button>
             </div>
 
             <!-- 次へ進む／プレイリスト終了操作ボタン -->
-            <div id="self-eval-area" class="shrink-0 p-3 bg-white/95 backdrop-blur-md rounded-2xl border border-slate-200 shadow-sm">
-                <div class="flex gap-3 justify-center" id="action-buttons-container">
-                    <button id="btn-next-question" onclick="nextQuestion()" class="flex-1 bg-green-500 hover:bg-green-600 active:scale-95 text-white font-black py-5 rounded-2xl shadow-lg text-xl md:text-2xl transition-transform">🟢 次へ進む</button>
-                    <button id="btn-another-round" onclick="startAnotherRound()" class="hidden flex-1 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-black py-5 rounded-2xl shadow-lg text-xl md:text-2xl transition-transform">🔁 もう1周する</button>
+            <div id="self-eval-area" class="shrink-0 p-4 bg-white/95 backdrop-blur-md rounded-3xl border-2 border-slate-200 shadow-md">
+                <div class="flex gap-4 justify-center" id="action-buttons-container">
+                    <button id="btn-next-question" onclick="nextQuestion()" class="flex-1 bg-green-500 hover:bg-green-600 active:scale-95 text-white font-black py-6 rounded-3xl shadow-xl text-2xl md:text-3xl transition-transform">🟢 次へ進む</button>
+                    <button id="btn-another-round" onclick="startAnotherRound()" class="hidden flex-1 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white font-black py-6 rounded-3xl shadow-xl text-2xl md:text-3xl transition-transform">🔁 もう1周する</button>
                 </div>
             </div>
         </div>
@@ -315,9 +316,7 @@
                         playPromise.catch(e => console.log("Audio unlock", e));
                     }
                 }
-            } catch (e) {
-                console.log("Audio unlock error", e);
-            }
+            } catch (e) { console.log("Audio unlock error", e); }
         }
 
         async function fetchHistory() {
@@ -375,16 +374,16 @@
             });
             for (const [subjectName, chaptersSet] of Object.entries(subjectMap)) {
                 const header = document.createElement('div');
-                header.className = "bg-slate-200 p-4 font-black text-lg cursor-pointer border-b border-white hover:bg-slate-300 flex justify-between";
+                header.className = "bg-slate-200 p-5 font-black text-xl cursor-pointer border-b border-white hover:bg-slate-300 flex justify-between";
                 header.innerHTML = `<span>${subjectName}</span> <span>▼</span>`;
                 header.onclick = function() { this.nextElementSibling.classList.toggle('open'); };
                 
                 const content = document.createElement('div');
                 content.className = "accordion-content bg-white";
-                let checkboxHTML = `<div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-3">`;
+                let checkboxHTML = `<div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">`;
                 Array.from(chaptersSet).forEach(c => {
                     const val = `${subjectName}::${c}`;
-                    checkboxHTML += `<label class="flex items-center space-x-3 cursor-pointer p-3 hover:bg-indigo-50 rounded-xl border border-transparent hover:border-indigo-100"><input type="checkbox" name="chapter-check" value="${val}" class="w-6 h-6 text-indigo-600 rounded"><span class="text-base font-bold">${c}</span></label>`;
+                    checkboxHTML += `<label class="flex items-center space-x-4 cursor-pointer p-4 hover:bg-indigo-50 rounded-2xl border-2 border-transparent hover:border-indigo-100"><input type="checkbox" name="chapter-check" value="${val}" class="w-8 h-8 text-indigo-600 rounded-lg"><span class="text-lg font-bold">${c}</span></label>`;
                 });
                 checkboxHTML += `</div>`;
                 content.innerHTML = checkboxHTML;
@@ -410,13 +409,13 @@
             const btnIn = document.getElementById('sound-toggle-in-btn');
             unlockAudio();
             if (isMuted) {
-                const style = "bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-xl border border-slate-500 transition-colors shadow-lg ";
-                if(btnStart) { btnStart.innerHTML = "🔇 音声オフ"; btnStart.className = style + "px-6 py-3 text-lg md:text-xl"; }
-                if(btnIn) { btnIn.innerHTML = "🔇 音声オフ"; btnIn.className = style + "px-4 py-2.5 text-sm md:text-lg"; }
+                const style = "bg-slate-700 hover:bg-slate-600 text-white font-bold rounded-2xl border-2 border-slate-500 transition-colors shadow-lg ";
+                if(btnStart) { btnStart.innerHTML = "🔇 音声オフ"; btnStart.className = style + "px-8 py-4 text-xl md:text-2xl"; }
+                if(btnIn) { btnIn.innerHTML = "🔇 音声オフ"; btnIn.className = style + "px-5 py-3 text-lg md:text-xl"; }
             } else {
-                const style = "bg-green-600 hover:bg-green-500 text-white font-bold rounded-xl border border-green-500 transition-colors shadow-lg ";
-                if(btnStart) { btnStart.innerHTML = "🔊 音声オン"; btnStart.className = style + "px-6 py-3 text-lg md:text-xl"; }
-                if(btnIn) { btnIn.innerHTML = "🔊 音声オン"; btnIn.className = style + "px-4 py-2.5 text-sm md:text-lg"; }
+                const style = "bg-green-600 hover:bg-green-500 text-white font-bold rounded-2xl border-2 border-green-500 transition-colors shadow-lg ";
+                if(btnStart) { btnStart.innerHTML = "🔊 音声オン"; btnStart.className = style + "px-8 py-4 text-xl md:text-2xl"; }
+                if(btnIn) { btnIn.innerHTML = "🔊 音声オン"; btnIn.className = style + "px-5 py-3 text-lg md:text-xl"; }
                 generateAiMessage("warmup", {textOnly: false});
             }
         }
@@ -475,9 +474,9 @@ ${statsText}
 一番正解率が低いのは「${weakestSubj}」です。
 絶対にセリフのみを出力し、「AIとして～」などの前置きは禁止。ハキハキとした女性の口調で。`;
 
-            // モデル修正: gemini-2.5-flash
+            // モデル: gemini-2.5-flash
             callGeminiAPI('gemini-2.5-flash', prompt, (text) => {
-                document.getElementById('ai-analysis-text').textContent = text;
+                document.getElementById('ai-analysis-text').innerHTML = text;
                 const btn = document.getElementById('start-weakness-btn');
                 btn.classList.remove('hidden');
                 btn.onclick = () => { startTraining('weakness', weakestSubj); };
@@ -496,15 +495,12 @@ ${statsText}
                 userApiKey = document.getElementById('api-key-input').value.trim();
                 if (!userApiKey) { alert("APIキーを入力してください！"); return; }
                 
-                try {
-                    localStorage.setItem('gemini_api_key', userApiKey);
-                } catch(e) { console.warn("localStorage not available"); }
+                try { localStorage.setItem('gemini_api_key', userApiKey); } catch(e) {}
 
                 unlockAudio();
 
                 userCondition = document.getElementById('condition-select').value;
                 userHealth = document.getElementById('health-select').value;
-                
                 const inGameHealthEl = document.getElementById('in-game-health');
                 if (inGameHealthEl) inGameHealthEl.value = userHealth;
                 
@@ -515,8 +511,7 @@ ${statsText}
                 usedQuestionIds = new Set();
                 cancelPenaltyCount = 0;
                 
-                const giveUpBtn = document.getElementById('give-up-btn');
-                if (giveUpBtn) giveUpBtn.classList.add('hidden');
+                document.getElementById('give-up-btn').classList.add('hidden');
 
                 const timeLimitVal = document.getElementById('time-limit-select').value;
                 if (timeLimitVal === '無制限') {
@@ -535,8 +530,7 @@ ${statsText}
                 }
 
                 if (globalTimeLeftSeconds !== null) {
-                    const globalDisplay = document.getElementById('global-timer-display');
-                    if (globalDisplay) globalDisplay.classList.remove('hidden');
+                    document.getElementById('global-timer-display').classList.remove('hidden');
                     if (globalTimerInterval) clearInterval(globalTimerInterval);
                     globalTimerInterval = setInterval(globalTimerTick, 1000);
                 }
@@ -582,13 +576,11 @@ ${statsText}
                 currentPlaylistIndex = 0;
                 document.getElementById('start-screen').classList.add('hidden');
                 
-                // ★ 修正: isVeryFirst = true を渡す
                 generateAiMessage("start_all", { total: totalQuestionsToPlay, textOnly: false });
                 startNextPlaylistSet(true); 
 
             } catch (err) {
                 alert("エラーが発生しました。\n画面を再読み込みしてください。\n" + err.message);
-                console.error(err);
             }
         }
 
@@ -601,7 +593,7 @@ ${statsText}
                 const d = document.getElementById('global-timer-display');
                 if (d) {
                     d.textContent = '🏁 目標到達'; 
-                    d.className = "text-sm md:text-lg font-bold bg-red-600 px-4 py-2 rounded-full border border-red-800 animate-pulse";
+                    d.className = "text-lg md:text-xl font-black bg-red-600 px-6 py-3 rounded-full border-2 border-red-800 animate-pulse";
                 }
             }
         }
@@ -614,7 +606,6 @@ ${statsText}
             if (d) d.textContent = `🏁 残り ${h > 0 ? h+':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
 
-        // ★ 修正: 最初のセットかどうかを判定する引数を受け取る
         function startNextPlaylistSet(isVeryFirst = false) {
             if (currentPlaylistIndex >= playlistQueue.length) { handlePlaylistComplete(); return; }
             const currentSet = playlistQueue[currentPlaylistIndex];
@@ -628,7 +619,6 @@ ${statsText}
             loadQuestion(isVeryFirst);
         }
 
-        // ★ 修正: 最初の一問目なら「次の問題だよ！」の上書きを防ぐ
         function loadQuestion(isVeryFirst = false) {
             const q = currentQuestions[currentIndex];
             if (!q) return;
@@ -643,7 +633,7 @@ ${statsText}
             document.getElementById('stat-rate').textContent = hist.playCount > 0 ? Math.round((hist.correctCount/hist.playCount)*100) : 0;
             document.getElementById('stat-history').textContent = hist.historyStr || "未挑戦";
 
-            // 最初の一問目以外なら「次」のテキストを出す
+            // 最初の一問目は「気合入れ」のコメントが上書きされないように「次の問題」表示を行わない
             if (!isVeryFirst) {
                 generateAiMessage("next", { textOnly: true }); 
             }
@@ -693,10 +683,10 @@ ${statsText}
             const badge = document.getElementById('result-badge');
             if (isCorrect) {
                 badge.textContent = "大正解！ 🎉";
-                badge.className = "inline-block px-8 py-2 rounded-full text-xl md:text-2xl font-black text-white bg-green-500 animate-bounce shadow-lg";
+                badge.className = "inline-block px-10 py-3 rounded-full text-2xl md:text-3xl font-black text-white bg-green-500 animate-bounce shadow-xl";
             } else {
                 badge.textContent = "不正解... 💦";
-                badge.className = "inline-block px-8 py-2 rounded-full text-xl md:text-2xl font-black text-white bg-red-500 shadow-lg";
+                badge.className = "inline-block px-10 py-3 rounded-full text-2xl md:text-3xl font-black text-white bg-red-500 shadow-xl";
             }
             document.getElementById('article-text').textContent = q.根拠条文 || '条文なし';
             document.getElementById('explanation-text').innerHTML = q.解説 || '解説なし';
@@ -770,7 +760,7 @@ ${statsText}
         }
 
         // ==========================================
-        // 🤖 Gemini TTS & 会話制御（バックアップ音声復元版）
+        // 🤖 Gemini TTS & 会話制御
         // ==========================================
         async function speakText(text) {
             if (isMuted || !text) return; 
@@ -784,7 +774,7 @@ ${statsText}
             else if (currentMode === '普通') voicePrompt = "落ち着いた優しい女性の声で、丁寧に話してください。";
 
             try {
-                // モデル修正: gemini-3.8-flash-tts
+                // モデル: gemini-3.8-flash-tts
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: `${voicePrompt}「${cleanText}」` }] }] })
@@ -796,7 +786,7 @@ ${statsText}
                 player.src = `data:audio/mp3;base64,${audioBase64}`;
                 player.play();
             } catch (err) { 
-                console.error("Gemini TTS エラー (iPad内蔵音声で代用します):", err);
+                console.error("Gemini TTS エラー (内蔵音声で代用):", err);
                 if (!('speechSynthesis' in window)) return;
                 const utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.lang = 'ja-JP';
@@ -840,7 +830,7 @@ ${statsText}
                 if(aiMessageEl) aiMessageEl.innerHTML = "よし、次の問題だよ！"; return;
             }
 
-            // ★ モデル修正とエラーハンドリング復活
+            // モデル: gemini-2.5-flash
             callGeminiAPI('gemini-2.5-flash', prompt, (text) => {
                 if(aiMessageEl) aiMessageEl.innerHTML = text;
                 if (!extraData.textOnly) speakText(text); 
@@ -848,7 +838,7 @@ ${statsText}
         }
 
         // ==========================================
-        // 🚨 Pro検証 ＆ スプレッドシート自動修正（動的日付連動）
+        // 🚨 Pro検証 ＆ スプレッドシート自動修正
         // ==========================================
         async function verifyDataWithPro(q) {
             if (q._verified) return; 
@@ -860,7 +850,7 @@ ${statsText}
             const todayStr = `${y}年${m}月${d}日`;
             
             const prompt = `あなたはデータ検証プロです。以下の過去問データに矛盾や法改正による古い情報がないか検証してください。
-【本日の日付（問題を解いている今日）】: ${todayStr}
+【本日の日付】: ${todayStr}
 ※本日の日付時点で施行されている法令、および【令和9年（2027年）4月以前に施行される法令】を基準にして、正確に正誤と解説を判断してください。
 問題文: ${q.問題文}
 データ正誤: ${q.正誤}
@@ -869,7 +859,7 @@ ${statsText}
 間違いや不適切な箇所があれば、以下の形式で修正案を出力してください。
 NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理由（短く）`;
             
-            // ★ モデル修正とエラーハンドリング復活
+            // モデル: gemini-3.1-pro-preview
             callGeminiAPI('gemini-3.1-pro-preview', prompt, (text) => {
                 q._verified = true; 
                 if (text.startsWith("NG")) {
@@ -890,7 +880,7 @@ NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理
             if (!pendingFixData) return;
             const q = pendingFixData.question;
             const fixActionEl = document.getElementById('ai-fix-action');
-            if (fixActionEl) fixActionEl.innerHTML = `<p class="text-sm font-bold text-green-600">クラウドのデータを上書き修正しています...</p>`;
+            if (fixActionEl) fixActionEl.innerHTML = `<p class="text-lg font-bold text-green-600">クラウドのデータを上書き修正しています...</p>`;
             try {
                 const res = await fetch(GAS_URL, {
                     method: 'POST', body: JSON.stringify({ action: 'update_question', original_q: q.問題文, new_ans: pendingFixData.correctChoice, new_exp: pendingFixData.newExplanation })
@@ -899,12 +889,12 @@ NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理
                 if(data.success) {
                     q.正誤 = pendingFixData.correctChoice; q.解説 = pendingFixData.newExplanation;
                     if (fixActionEl) {
-                        fixActionEl.innerHTML = `<p class="text-sm font-bold text-green-600">✅ スプレッドシートを自動修正しました！</p>`;
+                        fixActionEl.innerHTML = `<p class="text-lg font-bold text-green-600">✅ スプレッドシートを自動修正しました！</p>`;
                         setTimeout(() => { fixActionEl.classList.add('hidden'); }, 3000);
                     }
                 } else throw new Error(data.error);
             } catch(e) { 
-                if (fixActionEl) fixActionEl.innerHTML = `<p class="text-sm font-bold text-red-600">❌ 保存失敗: ${e.message}</p>`; 
+                if (fixActionEl) fixActionEl.innerHTML = `<p class="text-lg font-bold text-red-600">❌ 保存失敗: ${e.message}</p>`; 
             }
         }
         
@@ -919,12 +909,13 @@ NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理
             if (aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">🔥 講師が背景を整理中...</span>';
             const prompt = `最高峰の社労士講師として、以下の問題の背景や立法趣旨を分かりやすく講義して。\n条文: ${q.根拠条文}\n問題: ${q.問題文}\n解説: ${q.解説}`;
             
-            // ★ モデル修正
+            // モデル: gemini-3.1-pro-preview
             callGeminiAPI('gemini-3.1-pro-preview', prompt, (text) => { 
                 if (aiMessageEl) aiMessageEl.innerHTML = `🎓 <b>特別講義</b><br>${text}`; 
             });
         }
 
+        // ★修正：エラー時はAIメッセージボックスに赤文字で確実にエラー内容を表示する
         async function callGeminiAPI(model, prompt, callback) {
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`, {
@@ -932,16 +923,15 @@ NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理
                 });
                 if (!res.ok) {
                     const errData = await res.json();
-                    throw new Error(errData.error?.message || "通信エラー");
+                    throw new Error(errData.error?.message || "通信エラー (HTTP " + res.status + ")");
                 }
                 const data = await res.json();
                 callback(data.candidates[0].content.parts[0].text);
             } catch (err) { 
                 console.error("Gemini API エラー:", err);
                 const aiMessageEl = document.getElementById('ai-message');
-                // 解答後のコメント表示など、別の情報を出している最中ではない場合のみエラー表示
-                if (aiMessageEl && !aiMessageEl.innerHTML.includes('正解') && !aiMessageEl.innerHTML.includes('不正解')) {
-                    aiMessageEl.innerHTML = `⚠️ <b>API通信エラーが発生しました</b><br><span class="text-xs text-red-500">${err.message}</span>`;
+                if (aiMessageEl) {
+                    aiMessageEl.innerHTML = `<span class="text-red-500 font-bold text-base md:text-xl">⚠️ API通信エラー: ${err.message}</span>`;
                 }
             }
         }
