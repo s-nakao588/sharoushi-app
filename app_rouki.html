@@ -7,12 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
     <style>
-        @keyframes timer-run {
-            0%   { width: 100%; background-color: #10b981; }
-            50%  { width: 50%;  background-color: #f59e0b; }
-            80%  { width: 20%;  background-color: #ef4444; }
-            100% { width: 0%;   background-color: #ef4444; }
-        }
+        @keyframes timer-run { 0% { width: 100%; background-color: #10b981; } 50% { width: 50%; background-color: #f59e0b; } 80% { width: 20%; background-color: #ef4444; } 100% { width: 0%; background-color: #ef4444; } }
         .typing { animation: blink 1s infinite; }
         @keyframes blink { 50% { opacity: 0.3; } }
         .accordion-content { transition: max-height 0.3s ease-in-out; overflow: hidden; max-height: 0; }
@@ -22,62 +17,58 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
-        /* 💡 iPad・タッチ端末専用の強制拡大スタイル（PCには一切影響しません） */
+        /* 💡 黄金基準：iPad・タッチ端末専用の強制拡大スタイル（PCには一切影響しません） */
         @media (hover: none) and (pointer: coarse) {
-            #question-text {
-                font-size: 2.5rem !important;      /* 40px相当の特大細字 */
-                line-height: 1.7 !important;
-                font-weight: 400 !important;
-            }
-            .answer-btn-box {
-                height: 9rem !important;           /* 〇✖ボタンをしっかり大型化 */
-            }
-            .answer-btn {
-                font-size: 6.5rem !important;      /* 〇✖記号を極大化 */
-                border-width: 6px !important;
-            }
-            #ai-message {
-                font-size: 1.75rem !important;     /* AIコメントを特大化 */
-                line-height: 1.5 !important;
-            }
-            #explanation-text {
-                font-size: 1.85rem !important;     /* 解説文を特大・細字化 */
-                line-height: 1.8 !important;
-                font-weight: 400 !important;
-            }
-            #article-text {
-                font-size: 1.6rem !important;      /* 条文名を特大化 */
-            }
-            .btn-next-action {
-                font-size: 1.75rem !important;     /* 次へ進むボタン拡大 */
-                padding-top: 1.25rem !important;
-                padding-bottom: 1.25rem !important;
-            }
-            .btn-mistake-action {
-                font-size: 1.25rem !important;     /* 押し間違いボタン拡大 */
-                padding: 0.75rem 1.25rem !important;
-            }
+            #question-text { font-size: 2.5rem !important; line-height: 1.7 !important; font-weight: 400 !important; }
+            .answer-btn-box { height: 9rem !important; }
+            .answer-btn { font-size: 6.5rem !important; border-width: 6px !important; }
+            #ai-message { font-size: 1.75rem !important; line-height: 1.5 !important; }
+            #explanation-text { font-size: 1.85rem !important; line-height: 1.8 !important; font-weight: 400 !important; }
+            #article-text { font-size: 1.6rem !important; }
+            .btn-next-action { font-size: 1.75rem !important; padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
+            .btn-mistake-action { font-size: 1.25rem !important; padding: 0.75rem 1.25rem !important; }
         }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 h-[100dvh] w-screen flex flex-col lg:flex-row overflow-hidden font-sans">
 
-    <!-- 離席・休憩オーバーレイ -->
+    <!-- 離席オーバーレイ -->
     <div id="pause-overlay" class="fixed inset-0 bg-slate-900/90 z-[100] hidden flex-col items-center justify-center text-white backdrop-blur-sm p-6 text-center">
         <span class="text-7xl md:text-9xl mb-6 animate-bounce">⏸️</span>
         <h2 class="text-4xl md:text-6xl font-black mb-4">ちょっと離席中...</h2>
-        <button onclick="resumeTimer()" class="w-full max-w-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-black py-6 rounded-2xl text-3xl shadow-[0_8px_0_#166534] active:translate-y-[6px]">
-            ▶ 戻ったよ！（再開）
-        </button>
+        <button onclick="resumeTimer()" class="w-full max-w-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-black py-6 rounded-2xl text-3xl shadow-[0_8px_0_#166534] active:translate-y-[6px]">▶ 戻ったよ！（再開）</button>
     </div>
 
+    <!-- 休憩オーバーレイ -->
     <div id="break-overlay" class="fixed inset-0 bg-slate-900/95 z-[110] hidden flex-col items-center justify-center text-white backdrop-blur-md p-6 text-center">
         <span class="text-7xl md:text-9xl mb-6">☕</span>
         <h2 class="text-4xl md:text-6xl font-black mb-4">休憩タイム！</h2>
         <div class="text-7xl md:text-9xl font-black mb-6 font-mono tracking-wider" id="break-countdown">05:00</div>
-        <button onclick="endBreak()" class="w-full max-w-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-black py-6 rounded-2xl text-3xl shadow-[0_8px_0_#1e3a8a] active:translate-y-[6px]">
-            ▶ 休憩おわり！（再開）
-        </button>
+        <button onclick="endBreak()" class="w-full max-w-xl bg-gradient-to-r from-blue-500 to-blue-600 text-white font-black py-6 rounded-2xl text-3xl shadow-[0_8px_0_#1e3a8a] active:translate-y-[6px]">▶ 休憩おわり！（再開）</button>
+    </div>
+
+    <!-- 💤 仮眠オーバーレイ -->
+    <div id="nap-overlay" class="fixed inset-0 bg-black/95 z-[120] hidden flex-col items-center justify-center text-indigo-200 backdrop-blur-xl p-6 text-center">
+        <span class="text-7xl md:text-9xl mb-6 animate-pulse">💤</span>
+        <h2 class="text-3xl md:text-5xl font-black mb-4 text-indigo-400">仮眠モード</h2>
+        <p class="text-lg md:text-2xl mb-8">お疲れ様。時間になったら起こしてあげるわ。</p>
+        
+        <div id="nap-setup" class="w-full max-w-xl bg-slate-900 p-8 rounded-3xl border-2 border-slate-700">
+            <button onclick="startNap(15)" class="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl text-2xl mb-4">15分 仮眠する (推奨)</button>
+            <p class="mb-2 text-slate-400 font-bold">または時刻指定</p>
+            <div class="flex gap-2">
+                <input type="time" id="nap-time-input" class="flex-1 bg-slate-800 border-2 border-slate-600 text-white text-xl p-3 rounded-xl text-center">
+                <button onclick="startNapCustom()" class="bg-indigo-700 text-white font-black px-6 rounded-xl text-xl">開始</button>
+            </div>
+            <button onclick="cancelNapMenu()" class="mt-8 text-slate-400 font-bold underline">キャンセル</button>
+        </div>
+
+        <div id="nap-running" class="hidden flex-col items-center w-full max-w-xl">
+            <div class="text-7xl md:text-9xl font-black mb-10 font-mono tracking-wider text-indigo-300" id="nap-countdown">15:00</div>
+            <button onclick="stopNap()" id="nap-stop-btn" class="w-full bg-red-600 hover:bg-red-500 text-white font-black py-6 rounded-2xl text-3xl shadow-[0_8px_0_#991b1b] active:translate-y-[6px]">
+                ⏹ 起きる！（終了）
+            </button>
+        </div>
     </div>
 
     <!-- スタート画面 -->
@@ -93,31 +84,55 @@
                 <input type="password" id="api-key-input" class="w-full border-2 border-yellow-300 p-4 rounded-lg text-xl focus:outline-none focus:border-yellow-500">
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <button onclick="startAiWeaknessAnalysis()" class="bg-gradient-to-br from-purple-100 to-indigo-100 border-4 border-indigo-300 p-8 rounded-3xl text-left active:scale-95 shadow-md">
-                    <h3 class="text-2xl md:text-3xl font-black text-indigo-800 mb-3">📊 AI分析＆弱点特訓</h3>
-                    <p class="text-indigo-600 font-bold text-base md:text-xl">苦手科目をAIが分析して出題</p>
-                </button>
-                <button onclick="startEbbinghausReview()" class="bg-gradient-to-br from-emerald-100 to-teal-100 border-4 border-teal-300 p-8 rounded-3xl text-left active:scale-95 shadow-md">
-                    <h3 class="text-2xl md:text-3xl font-black text-teal-800 mb-3">🧠 忘却曲線ベース復習</h3>
-                    <p class="text-teal-600 font-bold text-base md:text-xl">時間が経った問題を優先抽出</p>
-                </button>
+            <!-- 🌟 ダッシュボード＆作戦会議エリア -->
+            <div class="bg-slate-50 rounded-3xl p-6 md:p-8 mb-8 border-4 border-slate-200 shadow-inner">
+                <h2 class="text-2xl md:text-3xl font-black mb-4 flex items-center gap-2">
+                    <span>📈 学習ダッシュボード</span>
+                    <span class="text-sm md:text-base font-bold text-slate-500 bg-white px-3 py-1 rounded-full border" id="loading-status">☁️ データ集計中...</span>
+                </h2>
+                
+                <!-- 今日の一言 -->
+                <div class="bg-pink-50 border-2 border-pink-200 rounded-2xl p-4 mb-6 flex items-start gap-4 shadow-sm">
+                    <img src="coach.jpg" class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white shadow">
+                    <div>
+                        <p class="text-xs md:text-sm font-black text-pink-500 mb-1">今日の一言診断</p>
+                        <p class="text-base md:text-xl font-bold text-slate-800" id="dash-ai-comment">データを読み込んでいるわ。少し待っててね。</p>
+                    </div>
+                </div>
+
+                <!-- マスター度表示 -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="dash-master-bars">
+                    <!-- JSで動的生成 -->
+                </div>
+
+                <!-- 作戦会議チャット -->
+                <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-5 md:p-6 shadow-md">
+                    <h3 class="text-xl md:text-2xl font-black text-indigo-800 mb-2">💬 専属講師と今日の作戦会議をする</h3>
+                    <p class="text-sm md:text-base text-slate-600 font-bold mb-4">今の気分ややりたい科目を伝えてね。（例: 疲れてるから厚年の弱点だけ15問）</p>
+                    <div class="flex gap-2">
+                        <input type="text" id="strategy-input" class="flex-1 bg-white border-2 border-indigo-300 text-lg p-3 md:p-4 rounded-xl font-bold focus:outline-none focus:border-indigo-500" placeholder="要望を入力...">
+                        <button onclick="startStrategyMeeting()" class="bg-indigo-600 text-white font-black px-6 py-3 rounded-xl text-lg hover:bg-indigo-700 active:scale-95 transition-transform">相談する</button>
+                    </div>
+                    <div id="strategy-result" class="mt-4 hidden flex-col items-center">
+                        <p class="text-base md:text-xl text-indigo-900 font-bold mb-4 bg-white p-4 rounded-xl border border-indigo-200 w-full" id="strategy-ai-reply">プラン作成中...</p>
+                        <button id="btn-strategy-start" onclick="executeStrategyPlan()" class="w-full max-w-md bg-gradient-to-r from-pink-500 to-red-500 text-white font-black py-4 rounded-2xl text-2xl shadow-lg active:scale-95 transition-transform hidden">🔥 このプランで特訓スタート！</button>
+                    </div>
+                </div>
             </div>
 
-            <div id="ai-analysis-result" class="hidden mb-8 p-6 bg-indigo-50 rounded-2xl border-4 border-indigo-200">
-                <h3 class="text-xl font-black text-indigo-800 mb-2">👨‍🏫 AI講師のアドバイス</h3>
-                <p id="ai-analysis-text" class="text-lg md:text-2xl text-slate-700 font-bold">分析中...</p>
-                <button id="start-weakness-btn" class="hidden mt-6 w-full bg-indigo-600 text-white font-black py-5 rounded-xl text-2xl shadow-md active:scale-95">弱点克服特訓をスタート</button>
-            </div>
-
-            <h2 class="text-2xl md:text-3xl font-black mb-4 flex justify-between items-end">
-                <span>📚 通常プレイリスト作成</span>
-                <span class="text-base font-bold text-slate-500" id="loading-status">☁️ 読み込み中...</span>
-            </h2>
-            <div class="flex gap-3 mb-6">
+            <!-- 通常プレイリスト（既存） -->
+            <h2 class="text-2xl md:text-3xl font-black mb-4">📚 自分でプレイリストを作成</h2>
+            <div class="flex flex-wrap gap-3 mb-4 items-center">
                 <button onclick="checkAllChapters(true)" class="bg-indigo-100 text-indigo-700 px-6 py-3 rounded-xl font-bold text-lg">☑ すべて選択</button>
                 <button onclick="checkAllChapters(false)" class="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-bold text-lg">☐ すべて解除</button>
+                
+                <!-- ★新機能：完璧除外フィルター -->
+                <label class="ml-auto bg-green-50 border-2 border-green-200 px-4 py-3 rounded-xl flex items-center gap-2 cursor-pointer font-bold text-green-800 text-lg hover:bg-green-100">
+                    <input type="checkbox" id="exclude-perfect-check" class="w-6 h-6" checked>
+                    🟢 完璧な問題を除外する
+                </label>
             </div>
+            
             <div id="subject-accordion-container" class="w-full border-4 border-slate-200 rounded-3xl mb-8 bg-slate-50 overflow-hidden max-h-72 overflow-y-auto"></div>
 
             <div class="flex flex-col md:flex-row gap-6 mb-8">
@@ -153,6 +168,10 @@
                     <button onclick="stopTraining()" class="bg-white/10 px-4 py-2 rounded-xl text-sm md:text-lg font-bold border border-slate-500">🚪 終了</button>
                     <button onclick="pauseTimer()" class="bg-white/10 px-4 py-2 rounded-xl text-sm md:text-lg font-bold border border-slate-500">⏸️ 離席</button>
                     <button onclick="startManualBreak()" class="bg-orange-900/60 px-4 py-2 rounded-xl text-sm md:text-lg font-bold text-orange-200 border border-orange-500">☕ 5分休憩</button>
+                    
+                    <!-- 💤 仮眠ボタン -->
+                    <button onclick="openNapMenu()" class="bg-indigo-950/80 px-4 py-2 rounded-xl text-sm md:text-lg font-bold text-indigo-200 border border-indigo-500">💤 仮眠</button>
+
                     <button onclick="toggleSound()" id="sound-toggle-in-btn" class="bg-slate-700 px-4 py-2 rounded-xl text-sm md:text-lg font-bold border border-slate-500">🔇 音声オフ</button>
                 </div>
                 <div class="flex items-center gap-3 justify-end ml-auto">
@@ -171,12 +190,12 @@
                 <span class="bg-slate-100 px-3 py-1.5 rounded-lg tracking-widest text-slate-400" id="stat-history">-</span>
             </div>
 
-            <!-- PCでは適正サイズ、iPadではCSSの@mediaにより自動で特大細字化 -->
+            <!-- 問題文エリア -->
             <div class="flex-1 overflow-y-auto mb-4 pr-3">
                 <h2 class="text-2xl lg:text-3xl font-normal leading-relaxed text-slate-800 tracking-wide" id="question-text">問題文</h2>
             </div>
             
-            <!-- PCでは適正サイズ、iPadではCSSの@mediaによりボタン・文字を自動で超拡大 -->
+            <!-- 〇 ✖ ボタン -->
             <div class="shrink-0 flex space-x-4 md:space-x-6 pb-2 md:pb-4 h-28 lg:h-32 answer-btn-box">
                 <button onclick="answer('〇')" class="answer-btn flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-3xl border-4 md:border-6 border-blue-400 active:scale-95 text-5xl lg:text-6xl shadow-xl flex items-center justify-center transition-transform py-2 leading-none">〇</button>
                 <button onclick="answer('✖')" class="answer-btn flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-3xl border-4 md:border-6 border-red-400 active:scale-95 text-5xl lg:text-6xl shadow-xl flex items-center justify-center transition-transform py-2 leading-none">✖</button>
@@ -216,11 +235,23 @@
                 </div>
             </div>
             
-            <div class="bg-white rounded-3xl p-5 md:p-6 lg:p-8 shadow-md border-2 border-slate-200 mb-4 flex-1">
-                <h3 class="text-sm lg:text-base font-black text-slate-400 mb-2 border-b-2 pb-2">根拠条文</h3>
-                <p class="text-indigo-700 font-bold mb-4 text-lg lg:text-xl" id="article-text">法X条</p>
-                <h3 class="text-sm lg:text-base font-black text-slate-400 mb-2 border-b-2 pb-2">解説</h3>
-                <p class="text-slate-700 leading-relaxed font-normal text-xl lg:text-2xl mb-6" id="explanation-text">解説</p>
+            <div class="bg-white rounded-3xl p-5 md:p-6 lg:p-8 shadow-md border-2 border-slate-200 mb-4 flex-1 flex flex-col">
+                <div class="flex-1 overflow-y-auto">
+                    <h3 class="text-sm lg:text-base font-black text-slate-400 mb-2 border-b-2 pb-2">根拠条文</h3>
+                    <p class="text-indigo-700 font-bold mb-4 text-lg lg:text-xl" id="article-text">法X条</p>
+                    <h3 class="text-sm lg:text-base font-black text-slate-400 mb-2 border-b-2 pb-2">解説</h3>
+                    <p class="text-slate-700 leading-relaxed font-normal text-xl lg:text-2xl mb-4" id="explanation-text">解説</p>
+                </div>
+                
+                <!-- 🌟 ステータス判定ボタン（解説下部） -->
+                <div class="mt-4 pt-4 border-t-2 border-slate-100 shrink-0">
+                    <p class="text-sm font-bold text-slate-400 mb-2">この問題の仕分け（任意）</p>
+                    <div class="flex gap-2 flex-wrap" id="status-buttons">
+                        <button onclick="saveStatus('完璧')" id="btn-status-perfect" class="flex-1 bg-slate-100 hover:bg-green-100 text-slate-600 font-bold py-3 rounded-xl border-2 border-slate-200 transition-colors">🟢 完璧</button>
+                        <button onclick="saveStatus('テキスト復習')" id="btn-status-text" class="flex-1 bg-slate-100 hover:bg-yellow-100 text-slate-600 font-bold py-3 rounded-xl border-2 border-slate-200 transition-colors">🟡 テキスト復習</button>
+                        <button onclick="saveStatus('苦手')" id="btn-status-weak" class="flex-1 bg-slate-100 hover:bg-red-100 text-slate-600 font-bold py-3 rounded-xl border-2 border-slate-200 transition-colors">🔴 苦手</button>
+                    </div>
+                </div>
             </div>
 
             <div id="self-eval-area" class="shrink-0 p-3 md:p-4 bg-white/95 rounded-3xl border-2 border-slate-200 shadow-md">
@@ -248,6 +279,12 @@
         let timerInterval = null, timeLeft = 60, isMuted = true, isPaused = false, todayMistakes = [];
         let userApiKey = '';
         let globalTimerInterval = null, globalTimeLeftSeconds = null, isTimeUp = false;
+        
+        let strategyPlan = null; 
+
+        // 💤 仮眠用変数
+        let napInterval = null, napSecondsLeft = 0;
+        let audioCtx = null;
 
         window.onload = function() {
             try {
@@ -255,7 +292,7 @@
                 if(savedKey) {
                     document.getElementById('api-key-input').value = savedKey;
                     document.getElementById('api-key-container').classList.add('hidden');
-                    document.getElementById('show-api-btn').classList.remove('hidden');
+                    userApiKey = savedKey;
                 }
             } catch(e) {}
             loadAllSubjects();
@@ -271,6 +308,9 @@
 
         function unlockAudio() {
             try {
+                if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                audioCtx.resume();
+                
                 const player = document.getElementById('tts-player');
                 if (player) {
                     player.src = "data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
@@ -283,7 +323,10 @@
             try {
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'get_history' }) });
                 const data = await res.json();
-                if (data.success) userHistory = data.history;
+                if (data.success) {
+                    userHistory = data.history;
+                    updateDashboard(); 
+                }
             } catch(e) {}
         }
 
@@ -309,9 +352,152 @@
             if (parsedSubjectsCount === SUBJECTS.length) {
                 document.getElementById('loading-status').textContent = `✅ 完了 (${allDatabase.length}問)`;
                 buildSubjectAccordionUI();
+                updateDashboard();
             }
         }
 
+        // 🌟 ダッシュボード描画
+        function updateDashboard() {
+            if (allDatabase.length === 0 || Object.keys(userHistory).length === 0) return;
+            
+            const stats = getStatsSummary();
+            const container = document.getElementById('dash-master-bars');
+            container.innerHTML = "";
+            
+            for (const subj of SUBJECTS) {
+                if(subj.name === "労働基準法" || subj.name === "安全衛生法" || subj.name === "厚生年金保険法" || subj.name === "健康保険法") {
+                    let s = stats[subj.name] || { total: 0, perfects: 0, rate: 0 };
+                    let color = s.rate >= 80 ? 'bg-green-500' : (s.rate >= 50 ? 'bg-yellow-400' : 'bg-red-400');
+                    let html = `
+                        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center">
+                            <p class="text-xs md:text-sm font-bold text-slate-500 mb-1">${subj.name}</p>
+                            <p class="text-xl md:text-2xl font-black text-slate-800 mb-2">${s.rate}%</p>
+                            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full ${color}" style="width: ${s.rate}%"></div>
+                            </div>
+                        </div>
+                    `;
+                    container.innerHTML += html;
+                }
+            }
+
+            // AI一言診断を裏で取得
+            if(userApiKey) {
+                let prompt = `あなたは社労士試験の専属コーチです。以下の成績データを見て、受講生に「今日一番やるべき科目・項目」を1〜2文（40文字程度）でズバッと指摘して発破をかけてください。
+データ: ${JSON.stringify(stats)}`;
+                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                }).then(res => res.json()).then(data => {
+                    document.getElementById('dash-ai-comment').textContent = data.candidates[0].content.parts[0].text;
+                }).catch(e => {});
+            } else {
+                document.getElementById('dash-ai-comment').textContent = "APIキーを入れるとデータ分析ができるわよ！";
+            }
+        }
+
+        function getStatsSummary() {
+            let stats = {};
+            allDatabase.forEach(q => {
+                let subj = q._subjectName;
+                if (!stats[subj]) stats[subj] = { total: 0, perfects: 0 };
+                stats[subj].total++;
+                
+                let hist = userHistory[q._id];
+                if (hist && hist.playCount > 0) {
+                    let rate = (hist.correctCount / hist.playCount) * 100;
+                    if (rate >= 80 || hist.status === '完璧') stats[subj].perfects++;
+                }
+            });
+            for (let subj in stats) {
+                stats[subj].rate = stats[subj].total > 0 ? Math.round((stats[subj].perfects / stats[subj].total) * 100) : 0;
+            }
+            return stats;
+        }
+
+        // 🌟 作戦会議
+        async function startStrategyMeeting() {
+            const input = document.getElementById('strategy-input').value.trim();
+            if(!input) { alert("要望を入力してね！"); return; }
+            if(!userApiKey) { alert("APIキーが必要です"); return; }
+            
+            const replyEl = document.getElementById('strategy-ai-reply');
+            const btnEl = document.getElementById('btn-strategy-start');
+            document.getElementById('strategy-result').classList.remove('hidden');
+            document.getElementById('strategy-result').classList.add('flex');
+            replyEl.innerHTML = '<span class="typing">💬 プランを考え中...</span>';
+            btnEl.classList.add('hidden');
+
+            const stats = getStatsSummary();
+            const prompt = `あなたは社労士試験の専属コーチ。成績データと受講生の要望から、本日の最適な出題プランを提案してください。
+【要望】: ${input}
+【成績】: ${JSON.stringify(stats)}
+
+出力ルール：
+1. まず受講生への自然な返答（セリフのみ。励ましとプラン内容）。
+2. その後、必ず以下のJSONフォーマットで出題条件を出力すること。JSONブロックは \`\`\`json と \`\`\` で囲むこと。
+\`\`\`json
+{ "subject": "厚生年金保険法", "count": 15, "excludePerfect": true }
+\`\`\`
+※ subjectは「全科目」「労働基準法」「安全衛生法」「厚生年金保険法」「健康保険法」から選択。
+`;
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                const data = await res.json();
+                const text = data.candidates[0].content.parts[0].text;
+                
+                // JSONの抽出
+                const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+                let replyText = text.replace(/```json\n[\s\S]*?\n```/, '').trim();
+                
+                replyEl.innerHTML = replyText;
+                if(jsonMatch) {
+                    strategyPlan = JSON.parse(jsonMatch[1]);
+                    btnEl.classList.remove('hidden');
+                } else {
+                    replyEl.innerHTML += "<br><span class='text-sm text-red-500'>※プランの生成に失敗しました。もう一度試してね。</span>";
+                }
+            } catch(e) {
+                replyEl.innerHTML = "エラーが発生したわ。APIキーを確認してね。";
+            }
+        }
+
+        function executeStrategyPlan() {
+            if(!strategyPlan) return;
+            unlockAudio();
+            userCondition = document.getElementById('condition-select').value;
+            cumulativeQuestions = 0; setCorrectCount = 0; todayMistakes = []; usedQuestionIds = new Set();
+            playlistQueue = []; totalQuestionsToPlay = 0;
+            globalTimeLeftSeconds = null; // 作戦会議は回数指定のためタイマーなし
+
+            let pool = [];
+            if (strategyPlan.subject === "全科目") {
+                pool = [...allDatabase];
+            } else {
+                pool = allDatabase.filter(q => q._subjectName === strategyPlan.subject);
+            }
+
+            if (strategyPlan.excludePerfect) {
+                pool = pool.filter(q => {
+                    let h = userHistory[q._id];
+                    return !(h && h.status === '完璧');
+                });
+            }
+
+            let qs = pool.sort(() => Math.random() - 0.5).slice(0, strategyPlan.count || 10);
+            if(qs.length === 0) { alert("条件に合う問題がありませんでした。"); return; }
+
+            playlistQueue.push({ subjectName: strategyPlan.subject, chapterName: "AI特選作戦プラン", questions: qs });
+            totalQuestionsToPlay = qs.length;
+            currentPlaylistIndex = 0;
+
+            document.getElementById('start-screen').classList.add('hidden');
+            generateAiMessage("start_all", { total: totalQuestionsToPlay, textOnly: false });
+            startNextPlaylistSet(true); 
+        }
+
+        // ----------------- 既存機能 -----------------
         function buildSubjectAccordionUI() {
             const container = document.getElementById('subject-accordion-container');
             const subjectMap = {};
@@ -344,16 +530,7 @@
             document.getElementById('sound-toggle-in-btn').innerHTML = isMuted ? "🔇 音声オフ" : "🔊 音声オン";
         }
 
-        function getEffectiveCondition() {
-            let userCondition = document.getElementById('condition-select').value;
-            if (userCondition === 'ルーレット') {
-                const modes = ['普通', '厳しめ', '熱血'];
-                return modes[Math.floor(Math.random() * modes.length)];
-            }
-            return userCondition === 'おまかせ' ? '普通' : userCondition;
-        }
-
-        function startTraining(mode = 'normal', targetSubj = '') {
+        function startTraining(mode = 'normal') {
             userApiKey = document.getElementById('api-key-input').value.trim();
             if (!userApiKey) { alert("APIキーを入力してください！"); return; }
             try { localStorage.setItem('gemini_api_key', userApiKey); } catch(e) {}
@@ -364,20 +541,18 @@
             playlistQueue = []; totalQuestionsToPlay = 0;
 
             const timeLimitVal = document.getElementById('time-limit-select').value;
-            if (timeLimitVal === '無制限') {
-                globalTimeLeftSeconds = null;
-            } else if (timeLimitVal === 'custom') {
+            if (timeLimitVal === '無制限') globalTimeLeftSeconds = null;
+            else if (timeLimitVal === 'custom') {
                 const customTimeStr = document.getElementById('custom-time-input').value;
                 if (!customTimeStr) { alert("終了時刻を入力してください！"); return; }
                 const [h, m] = customTimeStr.split(':');
                 const target = new Date(); target.setHours(parseInt(h), parseInt(m), 0);
                 if (target <= new Date()) target.setDate(target.getDate() + 1);
                 globalTimeLeftSeconds = Math.floor((target - new Date()) / 1000);
-            } else if (timeLimitVal === '1分') {
-                globalTimeLeftSeconds = 60;
-            } else {
-                globalTimeLeftSeconds = parseInt(timeLimitVal.replace('分','')) * 60;
-            }
+            } else if (timeLimitVal === '1分') globalTimeLeftSeconds = 60;
+            else globalTimeLeftSeconds = parseInt(timeLimitVal.replace('分','')) * 60;
+
+            const excludePerfect = document.getElementById('exclude-perfect-check').checked;
 
             if (mode === 'normal') {
                 const checkboxes = Array.from(document.querySelectorAll('input[name="chapter-check"]:checked')).map(cb => cb.value);
@@ -385,6 +560,9 @@
                 checkboxes.forEach(val => {
                     const [subj, chap] = val.split("::");
                     let pool = allDatabase.filter(q => q._subjectName === subj && q.項目 === chap && !usedQuestionIds.has(q._id));
+                    if (excludePerfect) {
+                        pool = pool.filter(q => !(userHistory[q._id] && userHistory[q._id].status === '完璧'));
+                    }
                     if(pool.length > 0) {
                         let qs = pool.sort(() => Math.random() - 0.5).slice(0, 10);
                         qs.forEach(q => usedQuestionIds.add(q._id));
@@ -392,27 +570,13 @@
                         totalQuestionsToPlay += qs.length;
                     }
                 });
-            } else if (mode === 'ebbinghaus') {
-                let pool = [...allDatabase].sort((a, b) => {
-                    let hA = userHistory[a._id], hB = userHistory[b._id];
-                    if(!hA) return -1; if(!hB) return 1;
-                    return new Date(hA.lastDate) - new Date(hB.lastDate); 
-                });
-                let qs = pool.slice(0, 10);
-                playlistQueue.push({ subjectName: "全科目", chapterName: "忘却曲線復習", questions: qs });
-                totalQuestionsToPlay += qs.length;
             }
 
-            if (playlistQueue.length === 0) { alert("出題できる問題がありません。"); return; }
+            if (playlistQueue.length === 0) { alert("出題できる問題がありません。（完璧除外によりゼロになった可能性があります）"); return; }
             currentPlaylistIndex = 0;
             document.getElementById('start-screen').classList.add('hidden');
             generateAiMessage("start_all", { total: totalQuestionsToPlay, textOnly: false });
             startNextPlaylistSet(true); 
-        }
-
-        function startEbbinghausReview() { startTraining('ebbinghaus'); }
-        async function startAiWeaknessAnalysis() {
-            alert("弱点分析は現在準備中です。通常特訓をご利用ください。");
         }
 
         function startNextPlaylistSet(isVeryFirst = false) {
@@ -433,10 +597,25 @@
             document.getElementById('explanation-area').classList.add('hidden');
             document.getElementById('ai-fix-action').classList.add('hidden');
             
-            const hist = userHistory[q._id] || { playCount: 0, correctCount: 0, historyStr: "" };
+            const hist = userHistory[q._id] || { playCount: 0, correctCount: 0, historyStr: "", status: "" };
             document.getElementById('stat-play').textContent = hist.playCount;
             document.getElementById('stat-rate').textContent = hist.playCount > 0 ? Math.round((hist.correctCount/hist.playCount)*100) : 0;
-            document.getElementById('stat-history').textContent = hist.historyStr || "未挑戦";
+            
+            // ステータス表示
+            let histDisp = hist.historyStr || "未挑戦";
+            if (hist.status) histDisp += ` (${hist.status})`;
+            document.getElementById('stat-history').textContent = histDisp;
+
+            // ステータスボタンのリセット
+            const btnP = document.getElementById('btn-status-perfect');
+            const btnT = document.getElementById('btn-status-text');
+            const btnW = document.getElementById('btn-status-weak');
+            btnP.className = "flex-1 bg-slate-100 hover:bg-green-100 text-slate-600 font-bold py-3 rounded-xl border-2 border-slate-200 transition-colors";
+            btnT.className = "flex-1 bg-slate-100 hover:bg-yellow-100 text-slate-600 font-bold py-3 rounded-xl border-2 border-slate-200 transition-colors";
+            btnW.className = "flex-1 bg-slate-100 hover:bg-red-100 text-slate-600 font-bold py-3 rounded-xl border-2 border-slate-200 transition-colors";
+            if(hist.status === '完璧') btnP.className = "flex-1 bg-green-500 text-white font-black py-3 rounded-xl shadow-inner border-2 border-green-700";
+            if(hist.status === 'テキスト復習') btnT.className = "flex-1 bg-yellow-400 text-yellow-900 font-black py-3 rounded-xl shadow-inner border-2 border-yellow-600";
+            if(hist.status === '苦手') btnW.className = "flex-1 bg-red-500 text-white font-black py-3 rounded-xl shadow-inner border-2 border-red-700";
 
             if (!isVeryFirst) generateAiMessage("next", { textOnly: true }); 
             verifyDataWithPro(q);
@@ -482,10 +661,36 @@
                 const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_answer', q_id: q._id, is_correct: isCorrect }) });
                 const data = await res.json();
                 if(data.success) {
-                    userHistory[q._id] = { playCount: data.playCount, correctCount: data.correctCount, historyStr: data.histStr };
-                    document.getElementById('stat-history').textContent = data.histStr || "未挑戦";
+                    let oldStatus = userHistory[q._id] ? userHistory[q._id].status : "";
+                    userHistory[q._id] = { playCount: data.playCount, correctCount: data.correctCount, historyStr: data.histStr, status: oldStatus };
+                    let disp = data.histStr || "未挑戦";
+                    if(oldStatus) disp += ` (${oldStatus})`;
+                    document.getElementById('stat-history').textContent = disp;
                 }
             } catch(e) { }
+        }
+
+        // 🌟 新機能：ステータスの保存
+        function saveStatus(status) {
+            const q = currentQuestions[currentIndex];
+            if(!userHistory[q._id]) userHistory[q._id] = {};
+            userHistory[q._id].status = status;
+            
+            const btnP = document.getElementById('btn-status-perfect');
+            const btnT = document.getElementById('btn-status-text');
+            const btnW = document.getElementById('btn-status-weak');
+            btnP.className = "flex-1 bg-slate-100 hover:bg-green-100 text-slate-600 font-bold py-3 rounded-xl border-2 border-slate-200 transition-colors";
+            btnT.className = "flex-1 bg-slate-100 hover:bg-yellow-100 text-slate-600 font-bold py-3 rounded-xl border-2 border-slate-200 transition-colors";
+            btnW.className = "flex-1 bg-slate-100 hover:bg-red-100 text-slate-600 font-bold py-3 rounded-xl border-2 border-slate-200 transition-colors";
+            
+            if(status === '完璧') btnP.className = "flex-1 bg-green-500 text-white font-black py-3 rounded-xl shadow-inner border-2 border-green-700";
+            if(status === 'テキスト復習') btnT.className = "flex-1 bg-yellow-400 text-yellow-900 font-black py-3 rounded-xl shadow-inner border-2 border-yellow-600";
+            if(status === '苦手') btnW.className = "flex-1 bg-red-500 text-white font-black py-3 rounded-xl shadow-inner border-2 border-red-700";
+
+            let disp = (userHistory[q._id].historyStr || "未挑戦") + ` (${status})`;
+            document.getElementById('stat-history').textContent = disp;
+
+            fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_status', q_id: q._id, status: status }) });
         }
 
         async function cancelMistake() {
@@ -516,6 +721,89 @@
         function stopTraining() { location.reload(); }
         function pauseTimer() { clearInterval(timerInterval); document.getElementById('pause-overlay').classList.remove('hidden'); document.getElementById('pause-overlay').classList.add('flex'); }
         function resumeTimer() { document.getElementById('pause-overlay').classList.add('hidden'); document.getElementById('pause-overlay').classList.remove('flex'); timerInterval = setInterval(() => { timeLeft--; document.getElementById('time-display').textContent = `⏳ ${timeLeft}秒`; if (timeLeft <= 0) clearInterval(timerInterval); }, 1000); }
+
+        // 💤 仮眠機能関連
+        function openNapMenu() {
+            if (!document.getElementById('explanation-area').classList.contains('hidden')) return;
+            isPaused = true;
+            clearInterval(timerInterval);
+            const timerBar = document.getElementById('timer-bar');
+            if(timerBar) timerBar.style.animationPlayState = 'paused';
+            
+            document.getElementById('nap-overlay').classList.remove('hidden');
+            document.getElementById('nap-overlay').classList.add('flex');
+            document.getElementById('nap-setup').classList.remove('hidden');
+            document.getElementById('nap-running').classList.add('hidden');
+            document.getElementById('nap-running').classList.remove('flex');
+            generateAiMessage("nap_start", { textOnly: true });
+        }
+        function cancelNapMenu() {
+            document.getElementById('nap-overlay').classList.add('hidden');
+            document.getElementById('nap-overlay').classList.remove('flex');
+            resumeTimer();
+        }
+        function startNap(minutes) {
+            napSecondsLeft = minutes * 60;
+            runNapTimer();
+        }
+        function startNapCustom() {
+            const timeStr = document.getElementById('nap-time-input').value;
+            if(!timeStr) { alert("時刻を入力してね"); return; }
+            const [h, m] = timeStr.split(':');
+            const target = new Date(); target.setHours(parseInt(h), parseInt(m), 0);
+            if(target <= new Date()) target.setDate(target.getDate() + 1);
+            napSecondsLeft = Math.floor((target - new Date()) / 1000);
+            runNapTimer();
+        }
+        function runNapTimer() {
+            unlockAudio(); // 音声コンテキストのアンロック
+            document.getElementById('nap-setup').classList.add('hidden');
+            document.getElementById('nap-running').classList.remove('hidden');
+            document.getElementById('nap-running').classList.add('flex');
+            
+            updateNapDisplay();
+            napInterval = setInterval(() => {
+                napSecondsLeft--;
+                updateNapDisplay();
+                if(napSecondsLeft <= 0) {
+                    clearInterval(napInterval);
+                    playAlarmSound();
+                    document.getElementById('nap-countdown').classList.add('animate-ping', 'text-red-500');
+                }
+            }, 1000);
+        }
+        function updateNapDisplay() {
+            let m = Math.floor(Math.max(0, napSecondsLeft) / 60).toString().padStart(2, '0');
+            let s = (Math.max(0, napSecondsLeft) % 60).toString().padStart(2, '0');
+            document.getElementById('nap-countdown').textContent = `${m}:${s}`;
+        }
+        let beepInterval = null;
+        function playAlarmSound() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const playBeep = () => {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); // ピッ
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.1);
+            };
+            beepInterval = setInterval(() => {
+                playBeep(); setTimeout(playBeep, 150); setTimeout(playBeep, 300);
+            }, 1000);
+        }
+        function stopNap() {
+            clearInterval(napInterval);
+            if(beepInterval) clearInterval(beepInterval);
+            document.getElementById('nap-countdown').classList.remove('animate-ping', 'text-red-500');
+            document.getElementById('nap-overlay').classList.add('hidden');
+            document.getElementById('nap-overlay').classList.remove('flex');
+            generateAiMessage("nap_end", { textOnly: true });
+            resumeTimer();
+        }
 
         async function speakText(text) {
             if (isMuted || !text) return; 
@@ -550,22 +838,18 @@
             else if (situation === "end_set") prompt += `10問中${extraData.correctInSet}問正解しました。「次へ進もう」と促す短い発言を。`;
             else if (situation === "end_all") prompt += `全${extraData.totalPlayed}問が終了。労いと復習を促すコメントを。`;
             else if (situation === "answer") prompt += `解答は【${extraData.isCorrect ? "正解" : "不正解"}】。解説（${extraData.explanation}）から最重要ポイントを1文で要約して。`;
+            else if (situation === "nap_start") prompt += `受講生が仮眠を取ります。「しっかり休んでね。時間になったら起こすから」と優しく伝えて。`;
+            else if (situation === "nap_end") prompt += `仮眠から起きました。「さあ、顔を洗って再開よ！」と元気よく喝を入れて。`;
 
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-                if (!res.ok) {
-                    const errData = await res.json();
-                    throw new Error(errData.error?.message || "通信エラー");
-                }
                 const data = await res.json();
                 const text = data.candidates[0].content.parts[0].text;
                 if(aiMessageEl) aiMessageEl.innerHTML = text;
                 if (!extraData.textOnly) speakText(text); 
-            } catch(e) {
-                if(aiMessageEl) aiMessageEl.innerHTML = `<span class="text-red-500 font-bold text-lg">⚠️ APIエラー: ${e.message}</span>`;
-            }
+            } catch(e) {}
         }
 
         async function verifyDataWithPro(q) {
@@ -579,7 +863,6 @@
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-                if (!res.ok) throw new Error("API Limit");
                 const data = await res.json();
                 const text = data.candidates[0].content.parts[0].text;
                 q._verified = true; 
