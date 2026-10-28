@@ -268,7 +268,7 @@
 
         let currentQuestions = [];
         let currentIndex = 0;
-        let usedQuestionIds = new Set(); // 完全重複排除用
+        let usedQuestionIds = new Set(); 
         
         let timerInterval = null;
         let timeLeft = 60;
@@ -289,7 +289,7 @@
         let setCorrectCount = 0; 
         let isTimeUp = false;         
         let todayMistakes = [];
-        let cancelPenaltyCount = 0; // 押し間違いキャンセル回数       
+        let cancelPenaltyCount = 0; 
 
         window.onload = function() {
             try {
@@ -302,7 +302,7 @@
             } catch(e) { console.warn("localStorage not available"); }
             
             loadAllSubjects();
-            fetchHistory(); // 裏側から履歴データを取得
+            fetchHistory(); 
         };
 
         function unlockAudio() {
@@ -434,7 +434,6 @@
             document.getElementById('ai-analysis-result').classList.remove('hidden');
             document.getElementById('ai-analysis-text').innerHTML = '<span class="typing">データ集計中...</span>';
 
-            // 履歴から科目ごとの正解率を集計
             let stats = {};
             allDatabase.forEach(q => {
                 const hist = userHistory[q._id];
@@ -489,7 +488,7 @@ ${statsText}
         }
 
         // ==========================================
-        // 🚀 特訓スタートフロー（エラー回避強化版）
+        // 🚀 特訓スタートフロー
         // ==========================================
         function startTraining(mode = 'normal', targetSubj = '') {
             try {
@@ -498,9 +497,7 @@ ${statsText}
                 
                 try {
                     localStorage.setItem('gemini_api_key', userApiKey);
-                } catch(e) {
-                    console.warn("localStorage not available");
-                }
+                } catch(e) { console.warn("localStorage not available"); }
 
                 unlockAudio();
 
@@ -588,8 +585,8 @@ ${statsText}
                 startNextPlaylistSet(); 
 
             } catch (err) {
-                alert("特訓の開始中にエラーが発生しました。\n画面を再読み込みしてください。\n" + err.message);
-                console.error("startTraining Error:", err);
+                alert("エラーが発生しました。\n画面を再読み込みしてください。\n" + err.message);
+                console.error(err);
             }
         }
 
@@ -765,7 +762,7 @@ ${statsText}
         }
 
         // ==========================================
-        // 🤖 Gemini TTS & 会話制御
+        // 🤖 Gemini TTS & 会話制御（バックアップ音声復元版）
         // ==========================================
         async function speakText(text) {
             if (isMuted || !text) return; 
@@ -790,7 +787,16 @@ ${statsText}
                 player.src = `data:audio/mp3;base64,${audioBase64}`;
                 player.play();
             } catch (err) { 
-                console.error("Gemini TTS エラー:", err);
+                console.error("Gemini TTS エラー (iPad内蔵音声で代用します):", err);
+                // ★ 誤って消してしまっていた安全装置（Web Speech API）を完全復元 ★
+                if (!('speechSynthesis' in window)) return;
+                const utterance = new SpeechSynthesisUtterance(cleanText);
+                utterance.lang = 'ja-JP';
+                if (currentMode === '厳しめ') { utterance.pitch = 1.15; utterance.rate = 1.1; }
+                else if (currentMode === '熱血') { utterance.pitch = 1.1; utterance.rate = 1.1; }
+                else { utterance.pitch = 1.0; utterance.rate = 1.05; }
+                window.speechSynthesis.cancel();
+                window.speechSynthesis.speak(utterance);
             }
         }
 
@@ -826,7 +832,7 @@ ${statsText}
                 if(aiMessageEl) aiMessageEl.innerHTML = "よし、次の問題だよ！"; return;
             }
 
-            callGeminiAPI('gemini-2.5-flash', prompt, (text) => {
+            callGeminiAPI('gemini-1.5-flash', prompt, (text) => {
                 if(aiMessageEl) aiMessageEl.innerHTML = text;
                 if (!extraData.textOnly) speakText(text); 
             });
@@ -855,7 +861,7 @@ ${statsText}
 間違いや不適切な箇所があれば、以下の形式で修正案を出力してください。
 NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理由（短く）`;
             
-            callGeminiAPI('gemini-3.1-pro-preview', prompt, (text) => {
+            callGeminiAPI('gemini-1.5-pro', prompt, (text) => {
                 q._verified = true; 
                 if (text.startsWith("NG")) {
                     const parts = text.split("|");
@@ -903,7 +909,7 @@ NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理
             const aiMessageEl = document.getElementById('ai-message');
             if (aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">🔥 講師が背景を整理中...</span>';
             const prompt = `最高峰の社労士講師として、以下の問題の背景や立法趣旨を分かりやすく講義して。\n条文: ${q.根拠条文}\n問題: ${q.問題文}\n解説: ${q.解説}`;
-            callGeminiAPI('gemini-3.1-pro-preview', prompt, (text) => { 
+            callGeminiAPI('gemini-1.5-pro', prompt, (text) => { 
                 if (aiMessageEl) aiMessageEl.innerHTML = `🎓 <b>特別講義</b><br>${text}`; 
             });
         }
