@@ -292,20 +292,32 @@
         let cancelPenaltyCount = 0; // 押し間違いキャンセル回数       
 
         window.onload = function() {
-            const savedKey = localStorage.getItem('gemini_api_key');
-            if(savedKey) {
-                document.getElementById('api-key-input').value = savedKey;
-                document.getElementById('api-key-container').classList.add('hidden');
-                document.getElementById('show-api-btn').classList.remove('hidden');
-            }
+            try {
+                const savedKey = localStorage.getItem('gemini_api_key');
+                if(savedKey) {
+                    document.getElementById('api-key-input').value = savedKey;
+                    document.getElementById('api-key-container').classList.add('hidden');
+                    document.getElementById('show-api-btn').classList.remove('hidden');
+                }
+            } catch(e) { console.warn("localStorage not available"); }
+            
             loadAllSubjects();
             fetchHistory(); // 裏側から履歴データを取得
         };
 
         function unlockAudio() {
-            const player = document.getElementById('tts-player');
-            player.src = "data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
-            player.play().catch(e => console.log("Audio unlock", e));
+            try {
+                const player = document.getElementById('tts-player');
+                if (player) {
+                    player.src = "data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
+                    let playPromise = player.play();
+                    if (playPromise !== undefined) {
+                        playPromise.catch(e => console.log("Audio unlock", e));
+                    }
+                }
+            } catch (e) {
+                console.log("Audio unlock error", e);
+            }
         }
 
         async function fetchHistory() {
@@ -417,7 +429,7 @@
         async function startAiWeaknessAnalysis() {
             userApiKey = document.getElementById('api-key-input').value.trim();
             if (!userApiKey) { alert("APIキーを入力してください！"); return; }
-            localStorage.setItem('gemini_api_key', userApiKey);
+            try { localStorage.setItem('gemini_api_key', userApiKey); } catch(e) {}
             
             document.getElementById('ai-analysis-result').classList.remove('hidden');
             document.getElementById('ai-analysis-text').innerHTML = '<span class="typing">データ集計中...</span>';
@@ -473,88 +485,112 @@ ${statsText}
         }
 
         function startEbbinghausReview() {
-            userApiKey = document.getElementById('api-key-input').value.trim();
-            if (!userApiKey) { alert("APIキーを入力してください！"); return; }
-            localStorage.setItem('gemini_api_key', userApiKey);
             startTraining('ebbinghaus');
         }
 
         // ==========================================
-        // 🚀 特訓スタートフロー
+        // 🚀 特訓スタートフロー（エラー回避強化版）
         // ==========================================
         function startTraining(mode = 'normal', targetSubj = '') {
-            userApiKey = document.getElementById('api-key-input').value.trim();
-            if (!userApiKey) { alert("APIキーを入力してください！"); return; }
-            localStorage.setItem('gemini_api_key', userApiKey);
+            try {
+                userApiKey = document.getElementById('api-key-input').value.trim();
+                if (!userApiKey) { alert("APIキーを入力してください！"); return; }
+                
+                try {
+                    localStorage.setItem('gemini_api_key', userApiKey);
+                } catch(e) {
+                    console.warn("localStorage not available");
+                }
 
-            unlockAudio();
+                unlockAudio();
 
-            userCondition = document.getElementById('condition-select').value;
-            userHealth = document.getElementById('health-select').value;
-            document.getElementById('in-game-health').value = userHealth;
-            
-            cumulativeQuestions = 0;
-            setCorrectCount = 0;
-            isTimeUp = false;
-            todayMistakes = [];
-            usedQuestionIds = new Set();
-            cancelPenaltyCount = 0;
-            document.getElementById('give-up-btn').classList.add('hidden');
+                userCondition = document.getElementById('condition-select').value;
+                userHealth = document.getElementById('health-select').value;
+                
+                const inGameHealthEl = document.getElementById('in-game-health');
+                if (inGameHealthEl) inGameHealthEl.value = userHealth;
+                
+                cumulativeQuestions = 0;
+                setCorrectCount = 0;
+                isTimeUp = false;
+                todayMistakes = [];
+                usedQuestionIds = new Set();
+                cancelPenaltyCount = 0;
+                
+                const giveUpBtn = document.getElementById('give-up-btn');
+                if (giveUpBtn) giveUpBtn.classList.add('hidden');
 
-            const timeLimitVal = document.getElementById('time-limit-select').value;
-            if (timeLimitVal === '無制限') globalTimeLeftSeconds = null;
-            else if (timeLimitVal === 'custom') {
-                const customTimeStr = document.getElementById('custom-time-input').value;
-                if (!customTimeStr) { alert("終了時刻を入力してください！"); return; }
-                const [h, m] = customTimeStr.split(':');
-                const target = new Date(); target.setHours(h, m, 0);
-                if (target <= new Date()) target.setDate(target.getDate() + 1);
-                globalTimeLeftSeconds = Math.floor((target - new Date()) / 1000);
-            } else if (timeLimitVal === '1分') globalTimeLeftSeconds = 60; 
-            else globalTimeLeftSeconds = parseInt(timeLimitVal.replace('分','')) * 60;
+                const timeLimitVal = document.getElementById('time-limit-select').value;
+                if (timeLimitVal === '無制限') {
+                    globalTimeLeftSeconds = null;
+                } else if (timeLimitVal === 'custom') {
+                    const customTimeStr = document.getElementById('custom-time-input').value;
+                    if (!customTimeStr) { alert("終了時刻を入力してください！"); return; }
+                    const [h, m] = customTimeStr.split(':');
+                    const target = new Date(); target.setHours(parseInt(h), parseInt(m), 0);
+                    if (target <= new Date()) target.setDate(target.getDate() + 1);
+                    globalTimeLeftSeconds = Math.floor((target - new Date()) / 1000);
+                } else if (timeLimitVal === '1分') {
+                    globalTimeLeftSeconds = 60; 
+                } else {
+                    globalTimeLeftSeconds = parseInt(timeLimitVal.replace('分','')) * 60;
+                }
 
-            if (globalTimeLeftSeconds !== null) {
-                document.getElementById('global-timer-display').classList.remove('hidden');
-                globalTimerInterval = setInterval(globalTimerTick, 1000);
+                if (globalTimeLeftSeconds !== null) {
+                    const globalDisplay = document.getElementById('global-timer-display');
+                    if (globalDisplay) globalDisplay.classList.remove('hidden');
+                    if (globalTimerInterval) clearInterval(globalTimerInterval);
+                    globalTimerInterval = setInterval(globalTimerTick, 1000);
+                }
+
+                playlistQueue = [];
+                totalQuestionsToPlay = 0;
+
+                if (mode === 'normal') {
+                    const checkboxes = Array.from(document.querySelectorAll('input[name="chapter-check"]:checked')).map(cb => cb.value);
+                    if (checkboxes.length === 0) { alert("学習する項目を選択してください！"); return; }
+                    
+                    checkboxes.forEach(val => {
+                        const [subj, chap] = val.split("::");
+                        let pool = allDatabase.filter(q => q._subjectName === subj && q.項目 === chap && !usedQuestionIds.has(q._id));
+                        if(pool.length > 0) {
+                            let qs = pool.sort(() => Math.random() - 0.5).slice(0, 10);
+                            qs.forEach(q => usedQuestionIds.add(q._id));
+                            playlistQueue.push({ subjectName: subj, chapterName: chap, questions: qs });
+                            totalQuestionsToPlay += qs.length;
+                        }
+                    });
+                } else if (mode === 'weakness') {
+                    weakTargetQuestions.forEach(q => usedQuestionIds.add(q._id));
+                    playlistQueue.push({ subjectName: targetSubj, chapterName: "AI弱点特訓", questions: weakTargetQuestions });
+                    totalQuestionsToPlay += weakTargetQuestions.length;
+                } else if (mode === 'ebbinghaus') {
+                    let pool = [...allDatabase];
+                    pool.sort((a, b) => {
+                        let hA = userHistory[a._id], hB = userHistory[b._id];
+                        if(!hA) return -1; if(!hB) return 1;
+                        return new Date(hA.lastDate) - new Date(hB.lastDate); 
+                    });
+                    let qs = pool.slice(0, 10);
+                    playlistQueue.push({ subjectName: "全科目", chapterName: "忘却曲線復習", questions: qs });
+                    totalQuestionsToPlay += qs.length;
+                }
+
+                if (playlistQueue.length === 0) {
+                    alert("出題できる問題が見つかりません。別の項目を選んでください。");
+                    return;
+                }
+
+                currentPlaylistIndex = 0;
+                document.getElementById('start-screen').classList.add('hidden');
+                
+                generateAiMessage("start_all", { total: totalQuestionsToPlay, textOnly: false });
+                startNextPlaylistSet(); 
+
+            } catch (err) {
+                alert("特訓の開始中にエラーが発生しました。\n画面を再読み込みしてください。\n" + err.message);
+                console.error("startTraining Error:", err);
             }
-
-            playlistQueue = [];
-            totalQuestionsToPlay = 0;
-
-            if (mode === 'normal') {
-                const checkboxes = Array.from(document.querySelectorAll('input[name="chapter-check"]:checked')).map(cb => cb.value);
-                if (checkboxes.length === 0) { alert("項目を選択してください！"); return; }
-                checkboxes.forEach(val => {
-                    const [subj, chap] = val.split("::");
-                    let pool = allDatabase.filter(q => q._subjectName === subj && q.項目 === chap && !usedQuestionIds.has(q._id));
-                    if(pool.length > 0) {
-                        let qs = pool.sort(() => Math.random() - 0.5).slice(0, 10);
-                        qs.forEach(q => usedQuestionIds.add(q._id));
-                        playlistQueue.push({ subjectName: subj, chapterName: chap, questions: qs });
-                        totalQuestionsToPlay += qs.length;
-                    }
-                });
-            } else if (mode === 'weakness') {
-                weakTargetQuestions.forEach(q => usedQuestionIds.add(q._id));
-                playlistQueue.push({ subjectName: targetSubj, chapterName: "AI弱点特訓", questions: weakTargetQuestions });
-                totalQuestionsToPlay += weakTargetQuestions.length;
-            } else if (mode === 'ebbinghaus') {
-                let pool = [...allDatabase];
-                pool.sort((a, b) => {
-                    let hA = userHistory[a._id], hB = userHistory[b._id];
-                    if(!hA) return -1; if(!hB) return 1;
-                    return new Date(hA.lastDate) - new Date(hB.lastDate); 
-                });
-                let qs = pool.slice(0, 10);
-                playlistQueue.push({ subjectName: "全科目", chapterName: "忘却曲線復習", questions: qs });
-                totalQuestionsToPlay += qs.length;
-            }
-
-            currentPlaylistIndex = 0;
-            document.getElementById('start-screen').classList.add('hidden');
-            
-            generateAiMessage("start_all", { total: totalQuestionsToPlay, textOnly: false });
-            startNextPlaylistSet(); 
         }
 
         function globalTimerTick() {
@@ -564,7 +600,10 @@ ${statsText}
                 isTimeUp = true;
                 clearInterval(globalTimerInterval);
                 const d = document.getElementById('global-timer-display');
-                d.textContent = '🏁 目標到達'; d.className = "text-sm md:text-lg font-bold bg-red-600 px-4 py-2 rounded-full border border-red-800 animate-pulse";
+                if (d) {
+                    d.textContent = '🏁 目標到達'; 
+                    d.className = "text-sm md:text-lg font-bold bg-red-600 px-4 py-2 rounded-full border border-red-800 animate-pulse";
+                }
             }
         }
         function updateGlobalTimer() {
@@ -572,7 +611,8 @@ ${statsText}
             const h = Math.floor(globalTimeLeftSeconds / 3600);
             const m = Math.floor((globalTimeLeftSeconds % 3600) / 60);
             const s = globalTimeLeftSeconds % 60;
-            document.getElementById('global-timer-display').textContent = `🏁 残り ${h > 0 ? h+':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            const d = document.getElementById('global-timer-display');
+            if (d) d.textContent = `🏁 残り ${h > 0 ? h+':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
 
         function startNextPlaylistSet() {
@@ -749,13 +789,15 @@ ${statsText}
                 const player = document.getElementById('tts-player');
                 player.src = `data:audio/mp3;base64,${audioBase64}`;
                 player.play();
-            } catch (err) { console.error("TTS エラー:", err); }
+            } catch (err) { 
+                console.error("Gemini TTS エラー:", err);
+            }
         }
 
         async function generateAiMessage(situation, extraData = {}) {
             if(situation === 'warmup') { speakText("今日も一日頑張ろう！"); return; }
             const aiMessageEl = document.getElementById('ai-message');
-            aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
+            if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
             
             const effectiveCond = getEffectiveCondition();
             let prompt = `あなたは社労士試験の専属コーチです。以下の状況に合わせセリフを生成してください。
@@ -781,11 +823,11 @@ ${statsText}
             } else if (situation === "cancel_penalty") {
                 prompt += `【状況】受講生が「押し間違いキャンセル」を何度も使いました。適当にやっていないか、ハキハキと叱ってください（1文）。`;
             } else if (situation === "next") {
-                aiMessageEl.innerHTML = "よし、次の問題だよ！"; return;
+                if(aiMessageEl) aiMessageEl.innerHTML = "よし、次の問題だよ！"; return;
             }
 
             callGeminiAPI('gemini-2.5-flash', prompt, (text) => {
-                aiMessageEl.innerHTML = text;
+                if(aiMessageEl) aiMessageEl.innerHTML = text;
                 if (!extraData.textOnly) speakText(text); 
             });
         }
@@ -798,11 +840,14 @@ ${statsText}
             
             // 本日の日付を動的に取得
             const today = new Date();
-            const todayStr = today.getFullYear() + '年' + (today.getMonth() + 1) + '月' + today.getDate() + '日';
+            const y = today.getFullYear();
+            const m = today.getMonth() + 1;
+            const d = today.getDate();
+            const todayStr = `${y}年${m}月${d}日`;
             
             const prompt = `あなたはデータ検証プロです。以下の過去問データに矛盾や法改正による古い情報がないか検証してください。
-【本日の日付】: ${todayStr}
-※本日の日付における最新法令、および【令和9年（2027年）4月以前に施行される法令】を基準にして、正確に正誤と解説を判断してください。
+【本日の日付（問題を解いている今日）】: ${todayStr}
+※本日の日付時点で施行されている法令、および【令和9年（2027年）4月以前に施行される法令】を基準にして、正確に正誤と解説を判断してください。
 問題文: ${q.問題文}
 データ正誤: ${q.正誤}
 解説: ${q.解説}
@@ -818,8 +863,10 @@ NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理
                         question: q, correctChoice: (parts[1] || "").trim(),
                         newExplanation: (parts[2] || "").trim(), reason: (parts[3] || "").trim()
                     };
-                    document.getElementById('ai-fix-reason').textContent = pendingFixData.reason;
-                    document.getElementById('ai-fix-action').classList.remove('hidden');
+                    const fixReasonEl = document.getElementById('ai-fix-reason');
+                    const fixActionEl = document.getElementById('ai-fix-action');
+                    if (fixReasonEl) fixReasonEl.textContent = pendingFixData.reason;
+                    if (fixActionEl) fixActionEl.classList.remove('hidden');
                 }
             });
         }
@@ -827,7 +874,8 @@ NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理
         async function applyFixToGAS() {
             if (!pendingFixData) return;
             const q = pendingFixData.question;
-            document.getElementById('ai-fix-action').innerHTML = `<p class="text-sm font-bold text-green-600">クラウドのデータを上書き修正しています...</p>`;
+            const fixActionEl = document.getElementById('ai-fix-action');
+            if (fixActionEl) fixActionEl.innerHTML = `<p class="text-sm font-bold text-green-600">クラウドのデータを上書き修正しています...</p>`;
             try {
                 const res = await fetch(GAS_URL, {
                     method: 'POST', body: JSON.stringify({ action: 'update_question', original_q: q.問題文, new_ans: pendingFixData.correctChoice, new_exp: pendingFixData.newExplanation })
@@ -835,18 +883,29 @@ NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理
                 const data = await res.json();
                 if(data.success) {
                     q.正誤 = pendingFixData.correctChoice; q.解説 = pendingFixData.newExplanation;
-                    document.getElementById('ai-fix-action').innerHTML = `<p class="text-sm font-bold text-green-600">✅ スプレッドシートを自動修正しました！</p>`;
-                    setTimeout(() => { document.getElementById('ai-fix-action').classList.add('hidden'); }, 3000);
+                    if (fixActionEl) {
+                        fixActionEl.innerHTML = `<p class="text-sm font-bold text-green-600">✅ スプレッドシートを自動修正しました！</p>`;
+                        setTimeout(() => { fixActionEl.classList.add('hidden'); }, 3000);
+                    }
                 } else throw new Error(data.error);
-            } catch(e) { document.getElementById('ai-fix-action').innerHTML = `<p class="text-sm font-bold text-red-600">❌ 保存失敗: ${e.message}</p>`; }
+            } catch(e) { 
+                if (fixActionEl) fixActionEl.innerHTML = `<p class="text-sm font-bold text-red-600">❌ 保存失敗: ${e.message}</p>`; 
+            }
         }
-        function ignoreFix() { document.getElementById('ai-fix-action').classList.add('hidden'); }
+        
+        function ignoreFix() { 
+            const fixActionEl = document.getElementById('ai-fix-action');
+            if (fixActionEl) fixActionEl.classList.add('hidden'); 
+        }
 
         function askProDeeply() {
             const q = currentQuestions[currentIndex];
-            document.getElementById('ai-message').innerHTML = '<span class="typing">🔥 講師が背景を整理中...</span>';
+            const aiMessageEl = document.getElementById('ai-message');
+            if (aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">🔥 講師が背景を整理中...</span>';
             const prompt = `最高峰の社労士講師として、以下の問題の背景や立法趣旨を分かりやすく講義して。\n条文: ${q.根拠条文}\n問題: ${q.問題文}\n解説: ${q.解説}`;
-            callGeminiAPI('gemini-3.1-pro-preview', prompt, (text) => { document.getElementById('ai-message').innerHTML = `🎓 <b>特別講義</b><br>${text}`; });
+            callGeminiAPI('gemini-3.1-pro-preview', prompt, (text) => { 
+                if (aiMessageEl) aiMessageEl.innerHTML = `🎓 <b>特別講義</b><br>${text}`; 
+            });
         }
 
         async function callGeminiAPI(model, prompt, callback) {
@@ -864,27 +923,66 @@ NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理
         function pauseTimer() {
             if (!document.getElementById('explanation-area').classList.contains('hidden')) return;
             isPaused = true; clearInterval(timerInterval); clearInterval(globalTimerInterval);
-            document.getElementById('timer-bar').style.animationPlayState = 'paused';
-            document.getElementById('pause-overlay').classList.remove('hidden');
-            document.getElementById('pause-overlay').classList.add('flex');
+            const tBar = document.getElementById('timer-bar');
+            if (tBar) tBar.style.animationPlayState = 'paused';
+            
+            const pOverlay = document.getElementById('pause-overlay');
+            if (pOverlay) {
+                pOverlay.classList.remove('hidden');
+                pOverlay.classList.add('flex');
+            }
         }
+        
         function resumeTimer() {
-            isPaused = false; document.getElementById('pause-overlay').classList.add('hidden'); document.getElementById('pause-overlay').classList.remove('flex');
-            document.getElementById('timer-bar').style.animationPlayState = 'running';
-            timerInterval = setInterval(() => { timeLeft--; document.getElementById('time-display').textContent = `⏳ ${timeLeft}秒`; if (timeLeft <= 0) clearInterval(timerInterval); }, 1000);
+            isPaused = false; 
+            const pOverlay = document.getElementById('pause-overlay');
+            if (pOverlay) {
+                pOverlay.classList.add('hidden');
+                pOverlay.classList.remove('flex');
+            }
+            const tBar = document.getElementById('timer-bar');
+            if (tBar) tBar.style.animationPlayState = 'running';
+            
+            timerInterval = setInterval(() => { 
+                timeLeft--; 
+                const tDisp = document.getElementById('time-display');
+                if (tDisp) tDisp.textContent = `⏳ ${timeLeft}秒`; 
+                if (timeLeft <= 0) clearInterval(timerInterval); 
+            }, 1000);
             if (globalTimeLeftSeconds !== null && !isTimeUp) globalTimerInterval = setInterval(globalTimerTick, 1000);
         }
+        
         function startManualBreak() {
             if (!document.getElementById('explanation-area').classList.contains('hidden')) return;
             isPaused = true; isBreakMode = true; clearInterval(timerInterval); clearInterval(globalTimerInterval);
-            document.getElementById('timer-bar').style.animationPlayState = 'paused';
-            breakSecondsLeft = 300; document.getElementById('break-countdown').textContent = "05:00";
-            document.getElementById('break-overlay').classList.remove('hidden'); document.getElementById('break-overlay').classList.add('flex');
-            breakInterval = setInterval(() => { breakSecondsLeft--; let m=Math.floor(breakSecondsLeft/60).toString().padStart(2,'0'), s=(breakSecondsLeft%60).toString().padStart(2,'0'); document.getElementById('break-countdown').textContent = `${m}:${s}`; }, 1000);
+            const tBar = document.getElementById('timer-bar');
+            if (tBar) tBar.style.animationPlayState = 'paused';
+            
+            breakSecondsLeft = 300; 
+            const bCount = document.getElementById('break-countdown');
+            if (bCount) bCount.textContent = "05:00";
+            
+            const bOverlay = document.getElementById('break-overlay');
+            if (bOverlay) {
+                bOverlay.classList.remove('hidden'); 
+                bOverlay.classList.add('flex');
+            }
+            
+            breakInterval = setInterval(() => { 
+                breakSecondsLeft--; 
+                let m = Math.floor(breakSecondsLeft/60).toString().padStart(2,'0');
+                let s = (breakSecondsLeft%60).toString().padStart(2,'0'); 
+                if (bCount) bCount.textContent = `${m}:${s}`; 
+            }, 1000);
         }
+        
         function endBreak() {
             clearInterval(breakInterval); isBreakMode = false;
-            document.getElementById('break-overlay').classList.add('hidden'); document.getElementById('break-overlay').classList.remove('flex');
+            const bOverlay = document.getElementById('break-overlay');
+            if (bOverlay) {
+                bOverlay.classList.add('hidden'); 
+                bOverlay.classList.remove('flex');
+            }
             resumeTimer();
         }
     </script>
