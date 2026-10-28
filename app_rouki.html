@@ -475,6 +475,7 @@ ${statsText}
 一番正解率が低いのは「${weakestSubj}」です。
 絶対にセリフのみを出力し、「AIとして～」などの前置きは禁止。ハキハキとした女性の口調で。`;
 
+            // モデル修正: gemini-2.5-flash
             callGeminiAPI('gemini-2.5-flash', prompt, (text) => {
                 document.getElementById('ai-analysis-text').textContent = text;
                 const btn = document.getElementById('start-weakness-btn');
@@ -581,8 +582,9 @@ ${statsText}
                 currentPlaylistIndex = 0;
                 document.getElementById('start-screen').classList.add('hidden');
                 
+                // ★ 修正: isVeryFirst = true を渡す
                 generateAiMessage("start_all", { total: totalQuestionsToPlay, textOnly: false });
-                startNextPlaylistSet(); 
+                startNextPlaylistSet(true); 
 
             } catch (err) {
                 alert("エラーが発生しました。\n画面を再読み込みしてください。\n" + err.message);
@@ -612,7 +614,8 @@ ${statsText}
             if (d) d.textContent = `🏁 残り ${h > 0 ? h+':' : ''}${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
         }
 
-        function startNextPlaylistSet() {
+        // ★ 修正: 最初のセットかどうかを判定する引数を受け取る
+        function startNextPlaylistSet(isVeryFirst = false) {
             if (currentPlaylistIndex >= playlistQueue.length) { handlePlaylistComplete(); return; }
             const currentSet = playlistQueue[currentPlaylistIndex];
             currentQuestions = currentSet.questions;
@@ -622,10 +625,11 @@ ${statsText}
             document.getElementById('current-playlist-title').textContent = `🎧 プレイリスト [${currentPlaylistIndex + 1}/${playlistQueue.length}] : ${currentSet.subjectName} - ${currentSet.chapterName}`;
             document.getElementById('btn-next-question').classList.remove('hidden');
             document.getElementById('btn-another-round').classList.add('hidden');
-            loadQuestion();
+            loadQuestion(isVeryFirst);
         }
 
-        function loadQuestion() {
+        // ★ 修正: 最初の一問目なら「次の問題だよ！」の上書きを防ぐ
+        function loadQuestion(isVeryFirst = false) {
             const q = currentQuestions[currentIndex];
             if (!q) return;
 
@@ -639,7 +643,11 @@ ${statsText}
             document.getElementById('stat-rate').textContent = hist.playCount > 0 ? Math.round((hist.correctCount/hist.playCount)*100) : 0;
             document.getElementById('stat-history').textContent = hist.historyStr || "未挑戦";
 
-            generateAiMessage("next", { textOnly: true }); 
+            // 最初の一問目以外なら「次」のテキストを出す
+            if (!isVeryFirst) {
+                generateAiMessage("next", { textOnly: true }); 
+            }
+            
             verifyDataWithPro(q);
 
             clearInterval(timerInterval);
@@ -740,8 +748,8 @@ ${statsText}
                     cumulative: cumulativeQuestions, totalAll: totalQuestionsToPlay, textOnly: false 
                 });
                 currentPlaylistIndex++;
-                setTimeout(() => { startNextPlaylistSet(); }, 1500); 
-            } else { loadQuestion(); }
+                setTimeout(() => { startNextPlaylistSet(false); }, 1500); 
+            } else { loadQuestion(false); }
         }
 
         function handlePlaylistComplete() {
@@ -776,6 +784,7 @@ ${statsText}
             else if (currentMode === '普通') voicePrompt = "落ち着いた優しい女性の声で、丁寧に話してください。";
 
             try {
+                // モデル修正: gemini-3.8-flash-tts
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: `${voicePrompt}「${cleanText}」` }] }] })
@@ -788,7 +797,6 @@ ${statsText}
                 player.play();
             } catch (err) { 
                 console.error("Gemini TTS エラー (iPad内蔵音声で代用します):", err);
-                // ★ 誤って消してしまっていた安全装置（Web Speech API）を完全復元 ★
                 if (!('speechSynthesis' in window)) return;
                 const utterance = new SpeechSynthesisUtterance(cleanText);
                 utterance.lang = 'ja-JP';
@@ -832,7 +840,8 @@ ${statsText}
                 if(aiMessageEl) aiMessageEl.innerHTML = "よし、次の問題だよ！"; return;
             }
 
-            callGeminiAPI('gemini-1.5-flash', prompt, (text) => {
+            // ★ モデル修正とエラーハンドリング復活
+            callGeminiAPI('gemini-2.5-flash', prompt, (text) => {
                 if(aiMessageEl) aiMessageEl.innerHTML = text;
                 if (!extraData.textOnly) speakText(text); 
             });
@@ -844,7 +853,6 @@ ${statsText}
         async function verifyDataWithPro(q) {
             if (q._verified) return; 
             
-            // 本日の日付を動的に取得
             const today = new Date();
             const y = today.getFullYear();
             const m = today.getMonth() + 1;
@@ -861,7 +869,8 @@ ${statsText}
 間違いや不適切な箇所があれば、以下の形式で修正案を出力してください。
 NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理由（短く）`;
             
-            callGeminiAPI('gemini-1.5-pro', prompt, (text) => {
+            // ★ モデル修正とエラーハンドリング復活
+            callGeminiAPI('gemini-3.1-pro-preview', prompt, (text) => {
                 q._verified = true; 
                 if (text.startsWith("NG")) {
                     const parts = text.split("|");
@@ -909,7 +918,9 @@ NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理
             const aiMessageEl = document.getElementById('ai-message');
             if (aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">🔥 講師が背景を整理中...</span>';
             const prompt = `最高峰の社労士講師として、以下の問題の背景や立法趣旨を分かりやすく講義して。\n条文: ${q.根拠条文}\n問題: ${q.問題文}\n解説: ${q.解説}`;
-            callGeminiAPI('gemini-1.5-pro', prompt, (text) => { 
+            
+            // ★ モデル修正
+            callGeminiAPI('gemini-3.1-pro-preview', prompt, (text) => { 
                 if (aiMessageEl) aiMessageEl.innerHTML = `🎓 <b>特別講義</b><br>${text}`; 
             });
         }
@@ -919,10 +930,20 @@ NG | 〇か✖ | 新しい正しい解説文 | なぜ間違っていたかの理
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-                if (!res.ok) throw new Error("APIエラー");
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error?.message || "通信エラー");
+                }
                 const data = await res.json();
                 callback(data.candidates[0].content.parts[0].text);
-            } catch (err) { console.error("Gemini API エラー:", err); }
+            } catch (err) { 
+                console.error("Gemini API エラー:", err);
+                const aiMessageEl = document.getElementById('ai-message');
+                // 解答後のコメント表示など、別の情報を出している最中ではない場合のみエラー表示
+                if (aiMessageEl && !aiMessageEl.innerHTML.includes('正解') && !aiMessageEl.innerHTML.includes('不正解')) {
+                    aiMessageEl.innerHTML = `⚠️ <b>API通信エラーが発生しました</b><br><span class="text-xs text-red-500">${err.message}</span>`;
+                }
+            }
         }
         
         // 離席用タイマー
