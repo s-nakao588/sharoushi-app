@@ -94,8 +94,16 @@
                 </div>
             </div>
 
-            <h2 class="text-xl font-black mb-3">⏱️ 目標時間</h2>
-            <select id="time-limit-select" class="w-full bg-blue-50 border-4 border-blue-200 text-xl md:text-2xl font-black p-4 rounded-2xl mb-8"><option value="無制限">無制限</option><option value="15分">15分</option><option value="30分">30分</option></select>
+            <!-- ★完全復元：目標時間のすべての選択肢とカスタム時刻入力 -->
+            <h2 class="text-xl font-black mb-3">⏱️ 全体の目標時間</h2>
+            <select id="time-limit-select" onchange="toggleCustomTime()" class="w-full bg-blue-50 border-4 border-blue-200 text-xl md:text-2xl font-black p-4 rounded-2xl mb-4 focus:outline-none">
+                <option value="無制限">無制限（限界までやる）</option>
+                <option value="1分">テスト用: 1分</option>
+                <option value="15分">15分（スキマ時間）</option>
+                <option value="30分">30分（集中）</option>
+                <option value="custom">⏰ 自分で終了時刻を指定</option>
+            </select>
+            <input type="time" id="custom-time-input" class="hidden w-full border-4 border-blue-300 p-4 rounded-2xl text-xl font-bold mb-6 focus:outline-none text-center">
 
             <button onclick="startTraining('normal')" class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black py-6 rounded-3xl text-3xl shadow-xl active:scale-95">🚀 通常特訓スタート！！</button>
         </div>
@@ -120,36 +128,36 @@
             <div class="w-full h-2 bg-indigo-950 overflow-hidden"><div id="timer-bar" class="h-full w-full"></div></div>
         </div>
 
-        <div class="p-5 md:p-8 flex-1 flex flex-col min-h-0 relative">
-            <div class="mb-4 text-sm md:text-lg text-slate-500 font-black flex gap-3 shrink-0">
+        <div class="p-4 md:p-8 flex-1 flex flex-col min-h-0 relative justify-between">
+            <div class="mb-2 md:mb-4 text-sm md:text-lg text-slate-500 font-black flex gap-3 shrink-0">
                 <span class="bg-slate-100 px-3 py-1.5 rounded-lg">挑戦: <span id="stat-play">0</span>回</span>
                 <span class="bg-slate-100 px-3 py-1.5 rounded-lg">正解率: <span id="stat-rate">0</span>%</span>
                 <span class="bg-slate-100 px-3 py-1.5 rounded-lg tracking-widest text-slate-400" id="stat-history">-</span>
             </div>
 
-            <!-- 問題文エリア -->
-            <div class="flex-1 overflow-y-auto mb-6 pr-4">
-                <h2 class="text-3xl md:text-5xl lg:text-6xl font-normal leading-relaxed md:leading-loose text-slate-800 tracking-wide" id="question-text">問題文</h2>
+            <!-- ★修正：iPad（md:）では特大細字、PC（lg:）では大きすぎない適正サイズ（text-2xl〜3xl）に自動切り替え -->
+            <div class="flex-1 overflow-y-auto mb-4 pr-3">
+                <h2 class="text-2xl md:text-5xl lg:text-3xl font-normal leading-relaxed text-slate-800 tracking-wide" id="question-text">問題文</h2>
             </div>
             
-            <!-- 〇 ✖ ボタン -->
-            <div class="shrink-0 flex space-x-6 pb-4 md:pb-8">
-                <button onclick="answer('〇')" class="flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-3xl border-8 border-blue-400 active:scale-95 text-6xl md:text-8xl shadow-xl flex items-center justify-center transition-transform py-12 md:py-20 leading-none">〇</button>
-                <button onclick="answer('✖')" class="flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-3xl border-8 border-red-400 active:scale-95 text-6xl md:text-8xl shadow-xl flex items-center justify-center transition-transform py-12 md:py-20 leading-none">✖</button>
+            <!-- ★修正：〇✖ボタン。iPad（md:）では極太ゆとり配置、PC（lg:）では高さh-28前後の使いやすい適正サイズに戻す -->
+            <div class="shrink-0 flex space-x-4 md:space-x-6 pb-2 md:pb-6 h-28 md:h-auto lg:h-32">
+                <button onclick="answer('〇')" class="flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-3xl border-4 md:border-8 border-blue-400 active:scale-95 text-5xl md:text-8xl lg:text-6xl shadow-xl flex items-center justify-center transition-transform py-4 md:py-16 lg:py-6 leading-none">〇</button>
+                <button onclick="answer('✖')" class="flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-3xl border-4 md:border-8 border-red-400 active:scale-95 text-5xl md:text-8xl lg:text-6xl shadow-xl flex items-center justify-center transition-transform py-4 md:py-16 lg:py-6 leading-none">✖</button>
             </div>
         </div>
     </main>
 
     <!-- 右側：AIエリア -->
     <aside class="w-full lg:w-2/5 h-[45dvh] lg:h-full flex flex-col bg-slate-50 border-t-8 lg:border-t-0 lg:border-l-8 border-slate-200">
-        <div class="p-5 md:p-8 bg-white border-b border-slate-200 shrink-0 shadow-sm">
+        <div class="p-4 md:p-6 bg-white border-b border-slate-200 shrink-0 shadow-sm">
             <div class="flex items-start">
-                <div class="w-20 h-20 md:w-24 md:h-24 rounded-full bg-pink-100 border-4 border-white shadow-lg overflow-hidden shrink-0 flex items-center justify-center">
+                <div class="w-16 h-16 md:w-24 md:h-24 lg:w-16 lg:h-16 rounded-full bg-pink-100 border-4 border-white shadow-lg overflow-hidden shrink-0 flex items-center justify-center">
                     <img src="coach.jpg" alt="AI講師" class="w-full h-full object-cover">
                 </div>
-                <div class="ml-5 flex-grow">
-                    <div class="bg-pink-50 rounded-3xl rounded-tl-none p-5 md:p-6 shadow-md border-4 border-pink-100 relative">
-                        <p class="text-slate-800 font-bold leading-relaxed text-2xl md:text-3xl lg:text-4xl" id="ai-message">準備ができたらスタートしてね！</p>
+                <div class="ml-4 flex-grow">
+                    <div class="bg-pink-50 rounded-3xl rounded-tl-none p-4 md:p-6 lg:p-4 shadow-md border-4 border-pink-100 relative">
+                        <p class="text-slate-800 font-bold leading-relaxed text-xl md:text-3xl lg:text-xl" id="ai-message">準備ができたらスタートしてね！</p>
                         <div id="ai-fix-action" class="mt-4 p-4 bg-white rounded-xl border-4 border-red-300 shadow-sm hidden">
                             <p class="text-sm md:text-lg font-black text-red-600 mb-2">🚨 AIが矛盾・法改正を発見！</p>
                             <p id="ai-fix-reason" class="text-sm md:text-base text-slate-700 font-bold mb-3"></p>
@@ -163,25 +171,25 @@
             </div>
         </div>
 
-        <div id="explanation-area" class="p-5 md:p-8 hidden flex-col flex-1 overflow-y-auto relative">
-            <div class="mb-6 text-center shrink-0 flex justify-between items-center">
+        <div id="explanation-area" class="p-4 md:p-8 hidden flex-col flex-1 overflow-y-auto relative">
+            <div class="mb-4 text-center shrink-0 flex justify-between items-center">
                 <div class="flex-1"></div>
-                <span id="result-badge" class="inline-block px-8 py-3 rounded-full text-xl md:text-3xl font-black text-white shadow-xl">結果</span>
+                <span id="result-badge" class="inline-block px-8 py-2 md:py-3 rounded-full text-xl md:text-3xl lg:text-2xl font-black text-white shadow-xl">結果</span>
                 <div class="flex-1 text-right">
-                    <button onclick="cancelMistake()" class="bg-slate-200 text-slate-600 font-bold py-3 px-6 rounded-xl text-base md:text-xl border-2 border-slate-300 active:scale-95 shadow-sm">⚠️ 押し間違い</button>
+                    <button onclick="cancelMistake()" class="bg-slate-200 text-slate-600 font-bold py-2 md:py-3 px-4 md:px-6 rounded-xl text-sm md:text-xl lg:text-base border-2 border-slate-300 active:scale-95 shadow-sm">⚠️ 押し間違い</button>
                 </div>
             </div>
             
-            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-md border-2 border-slate-200 mb-6 flex-1">
-                <h3 class="text-base md:text-xl font-black text-slate-400 mb-3 border-b-2 pb-2">根拠条文</h3>
-                <p class="text-indigo-700 font-bold mb-6 text-xl md:text-3xl" id="article-text">法X条</p>
-                <h3 class="text-base md:text-xl font-black text-slate-400 mb-3 border-b-2 pb-2">解説</h3>
-                <p class="text-slate-700 leading-loose font-normal text-2xl md:text-4xl mb-8" id="explanation-text">解説</p>
+            <div class="bg-white rounded-3xl p-5 md:p-8 shadow-md border-2 border-slate-200 mb-4 flex-1">
+                <h3 class="text-sm md:text-xl lg:text-base font-black text-slate-400 mb-2 border-b-2 pb-2">根拠条文</h3>
+                <p class="text-indigo-700 font-bold mb-4 text-lg md:text-3xl lg:text-xl" id="article-text">法X条</p>
+                <h3 class="text-sm md:text-xl lg:text-base font-black text-slate-400 mb-2 border-b-2 pb-2">解説</h3>
+                <p class="text-slate-700 leading-relaxed md:leading-loose font-normal text-xl md:text-4xl lg:text-2xl mb-6" id="explanation-text">解説</p>
             </div>
 
-            <div id="self-eval-area" class="shrink-0 p-4 bg-white/95 rounded-3xl border-2 border-slate-200 shadow-md">
-                <button id="btn-next-question" onclick="nextQuestion()" class="w-full bg-green-500 text-white font-black py-5 rounded-2xl shadow-xl text-2xl md:text-3xl active:scale-95">🟢 次へ進む</button>
-                <button id="btn-another-round" onclick="startAnotherRound()" class="hidden w-full bg-blue-500 text-white font-black py-5 rounded-2xl shadow-xl text-2xl md:text-3xl active:scale-95">🔁 もう1周する</button>
+            <div id="self-eval-area" class="shrink-0 p-3 md:p-4 bg-white/95 rounded-3xl border-2 border-slate-200 shadow-md">
+                <button id="btn-next-question" onclick="nextQuestion()" class="w-full bg-green-500 text-white font-black py-4 md:py-5 rounded-2xl shadow-xl text-xl md:text-3xl lg:text-2xl active:scale-95">🟢 次へ進む</button>
+                <button id="btn-another-round" onclick="startAnotherRound()" class="hidden w-full bg-blue-500 text-white font-black py-4 md:py-5 rounded-2xl shadow-xl text-xl md:text-3xl lg:text-2xl active:scale-95">🔁 もう1周する</button>
             </div>
         </div>
     </aside>
@@ -191,7 +199,6 @@
     <script>
         const GAS_URL = "https://script.google.com/a/macros/sr-nakao.com/s/AKfycbyHu72D7p9XrmynRKYbt_4HOfhJ47D3xEdv-SgqTWS1iSrxWo6KuhZnzTbMvitQ7r0_Eg/exec";
         
-        // ★ 今回追加していただいた厚生年金・健康保険のURLを適用済み！
         const SUBJECTS = [
             { id: "rouki", name: "労働基準法", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?output=csv" },
             { id: "anei", name: "安全衛生法", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=340566361&single=true&output=csv" },
@@ -204,6 +211,7 @@
         let currentIndex = 0, usedQuestionIds = new Set(), setCorrectCount = 0, cancelPenaltyCount = 0;
         let timerInterval = null, timeLeft = 60, isMuted = true, isPaused = false, todayMistakes = [];
         let userApiKey = '';
+        let globalTimerInterval = null, globalTimeLeftSeconds = null, isTimeUp = false;
 
         window.onload = function() {
             try {
@@ -218,11 +226,18 @@
             fetchHistory();
         };
 
+        function toggleCustomTime() {
+            const selectVal = document.getElementById('time-limit-select').value;
+            const customInput = document.getElementById('custom-time-input');
+            if (selectVal === 'custom') customInput.classList.remove('hidden');
+            else customInput.classList.add('hidden');
+        }
+
         function unlockAudio() {
             try {
                 const player = document.getElementById('tts-player');
                 if (player) {
-                    player.src = "data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
+                    player.src = "data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
                     player.play().catch(e => {});
                 }
             } catch (e) {}
@@ -311,6 +326,22 @@
             userCondition = document.getElementById('condition-select').value;
             cumulativeQuestions = 0; setCorrectCount = 0; todayMistakes = []; usedQuestionIds = new Set(); cancelPenaltyCount = 0;
             playlistQueue = []; totalQuestionsToPlay = 0;
+
+            const timeLimitVal = document.getElementById('time-limit-select').value;
+            if (timeLimitVal === '無制限') {
+                globalTimeLeftSeconds = null;
+            } else if (timeLimitVal === 'custom') {
+                const customTimeStr = document.getElementById('custom-time-input').value;
+                if (!customTimeStr) { alert("終了時刻を入力してください！"); return; }
+                const [h, m] = customTimeStr.split(':');
+                const target = new Date(); target.setHours(parseInt(h), parseInt(m), 0);
+                if (target <= new Date()) target.setDate(target.getDate() + 1);
+                globalTimeLeftSeconds = Math.floor((target - new Date()) / 1000);
+            } else if (timeLimitVal === '1分') {
+                globalTimeLeftSeconds = 60;
+            } else {
+                globalTimeLeftSeconds = parseInt(timeLimitVal.replace('分','')) * 60;
+            }
 
             if (mode === 'normal') {
                 const checkboxes = Array.from(document.querySelectorAll('input[name="chapter-check"]:checked')).map(cb => cb.value);
@@ -402,7 +433,7 @@
 
             const badge = document.getElementById('result-badge');
             badge.textContent = isCorrect ? "大正解！ 🎉" : "不正解... 💦";
-            badge.className = isCorrect ? "inline-block px-10 py-3 rounded-full text-2xl md:text-3xl font-black text-white bg-green-500 animate-bounce shadow-xl" : "inline-block px-10 py-3 rounded-full text-2xl md:text-3xl font-black text-white bg-red-500 shadow-xl";
+            badge.className = isCorrect ? "inline-block px-8 py-2 md:py-3 rounded-full text-xl md:text-3xl lg:text-2xl font-black text-white bg-green-500 animate-bounce shadow-xl" : "inline-block px-8 py-2 md:py-3 rounded-full text-xl md:text-3xl lg:text-2xl font-black text-white bg-red-500 shadow-xl";
             document.getElementById('article-text').textContent = q.根拠条文 || '条文なし';
             document.getElementById('explanation-text').innerHTML = q.解説 || '解説なし';
 
