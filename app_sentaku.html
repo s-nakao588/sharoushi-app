@@ -126,7 +126,10 @@
             </div>
             
             <div class="bg-slate-50 rounded-3xl p-6 md:p-8 mb-8 border-4 border-slate-200 shadow-inner">
-                <h2 class="text-2xl md:text-3xl font-black mb-4">📈 選択式ダッシュボード</h2>
+                <h2 class="text-2xl md:text-3xl font-black mb-4 flex items-center gap-2">
+                    <span>📈 選択式ダッシュボード</span>
+                    <span class="text-sm md:text-base font-bold text-slate-500 bg-white px-3 py-1 rounded-full border" id="loading-status">☁️ データ読み込み中...</span>
+                </h2>
                 <div class="bg-pink-50 border-2 border-pink-200 rounded-2xl p-4 mb-6 flex items-start gap-4 shadow-sm">
                     <img src="coach.jpg" class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white shadow object-cover shrink-0">
                     <div>
@@ -150,6 +153,15 @@
                     </div>
                 </div>
             </div>
+
+            <!-- 通常プレイリスト作成 -->
+            <h2 class="text-2xl md:text-3xl font-black mb-4">📚 自分でプレイリストを作成</h2>
+            <div class="flex flex-wrap gap-3 mb-4 items-center">
+                <button onclick="checkAllChapters(true)" class="bg-indigo-100 text-indigo-700 px-6 py-3 rounded-xl font-bold text-lg">☑ すべて選択</button>
+                <button onclick="checkAllChapters(false)" class="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-bold text-lg">☐ すべて解除</button>
+            </div>
+            
+            <div id="subject-accordion-container" class="w-full border-4 border-slate-200 rounded-3xl mb-8 bg-slate-50 overflow-hidden max-h-72 overflow-y-auto"></div>
 
             <button onclick="startTraining('normal')" class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black py-6 rounded-3xl text-3xl shadow-xl active:scale-95">🚀 全科目ランダム特訓スタート！！</button>
         </div>
@@ -213,7 +225,7 @@
             </div>
         </div>
 
-        <!-- 内部スクロール（アクション＆解説） 下部の余白を pb-48 に増やして自己評価エリアとかぶらないように -->
+        <!-- 内部スクロール（アクション＆解説） -->
         <div class="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 pb-48">
             
             <div id="action-btn-area" class="flex flex-col gap-3">
@@ -278,23 +290,18 @@
     <script>
         const GAS_URL = "https://script.google.com/a/macros/sr-nakao.com/s/AKfycbyHu72D7p9XrmynRKYbt_4HOfhJ47D3xEdv-SgqTWS1iSrxWo6KuhZnzTbMvitQ7r0_Eg/exec";
         
-        // ★ダミーデータ生成（選択式用CSVが来るまでのモック）
-        let allDatabase = [];
-        for(let i=1; i<=10; i++) {
-            allDatabase.push({
-                _id: "sentaku_mock_" + i,
-                _subjectName: "労働基準法",
-                項目: "総則",
-                問題文: `労働条件は、労働者が人たるに値する【A】を営むための必要を充たすべきものでなければならない。この法律で定める労働条件の基準は【B】のものであるから、労働関係の当事者は、この基準を理由として労働条件を【C】させてはならないことはもとより、その【D】を図るように【E】なければならない。`,
-                正解A: "生活", 正解B: "最低", 正解C: "低下", 正解D: "向上", 正解E: "努め",
-                ダミー: "健康,幸福,最高,維持,合意,上昇,改善,努力し,義務づけられ,保障,人権,対等,決定,遵守,尊重",
-                根拠条文: "労基法第1条（労働条件の原則）",
-                解説: "人たるに値する「生活」がキーワード。最低基準であること、向上の努力義務があることを押さえる。"
-            });
-        }
+        // ==============================================================
+        // ★ご提示いただいた4科目のCSV URL★
+        // ==============================================================
+        const SUBJECTS = [
+            { id: "rouki_s", name: "労働基準法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=743168881&single=true&output=csv" },
+            { id: "anei_s", name: "安全衛生法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=2064794651&single=true&output=csv" },
+            { id: "kenpo_s", name: "健康保険法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=1172602320&single=true&output=csv" },
+            { id: "kounen_s", name: "厚生年金保険法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=268551140&single=true&output=csv" }
+        ];
 
-        let userHistory = {}, playlistQueue = [], currentQuestions = [];
-        let currentPlaylistIndex = 0, currentIndex = 0;
+        let allDatabase = [], userHistory = {}, playlistQueue = [], currentQuestions = [];
+        let parsedSubjectsCount = 0, currentPlaylistIndex = 0, currentIndex = 0;
         let userApiKey = '', userModel = 'gemini-2.5-flash';
         let eliminatedWords = new Set();
         let currentWordBank = [];
@@ -311,8 +318,8 @@
                 if(savedKey) { document.getElementById('api-key-input').value = savedKey; userApiKey = savedKey; }
                 if(savedModel) { document.getElementById('api-model-input').value = savedModel; userModel = savedModel; }
             } catch(e) {}
-            // fetchHistory(); // 実際のGASが繋がったら有効化
-            document.getElementById('loading-status').textContent = `✅ 準備完了 (モック${allDatabase.length}問)`;
+            loadAllSubjects();
+            fetchHistory(); 
         };
 
         function unlockAudio() {
@@ -326,14 +333,169 @@
             document.getElementById('sound-toggle-start-btn').innerHTML = isMuted ? "🔇 音声オフ" : "🔊 音声オン";
         }
 
+        async function fetchHistory() {
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'get_history' }) });
+                const data = await res.json();
+                if (data.success) {
+                    userHistory = data.history;
+                    updateDashboard(); 
+                }
+            } catch(e) {}
+        }
+
+        async function loadAllSubjects() {
+            for (const subject of SUBJECTS) {
+                if (!subject.url || subject.url.includes("※") || subject.url.includes("★")) { parsedSubjectsCount++; checkAllLoaded(); continue; }
+                try {
+                    const response = await fetch(subject.url);
+                    const csvText = await response.text();
+                    Papa.parse(csvText, {
+                        header: true, skipEmptyLines: true,
+                        complete: function(results) {
+                            let data = results.data.filter(q => q && q.問題文 && String(q.問題文).trim() !== "");
+                            data.forEach(q => { 
+                                q._subjectName = subject.name; 
+                                q.項目 = q.項目 || "分類なし"; 
+                                q._id = q.問題文.substring(0, 30); 
+                            });
+                            allDatabase = allDatabase.concat(data); parsedSubjectsCount++; checkAllLoaded();
+                        }
+                    });
+                } catch (error) { parsedSubjectsCount++; checkAllLoaded(); }
+            }
+        }
+
+        function checkAllLoaded() {
+            if (parsedSubjectsCount === SUBJECTS.length) {
+                if (allDatabase.length === 0) {
+                    document.getElementById('loading-status').textContent = `✅ 準備完了 (モックデータ起動中)`;
+                    loadMockData(); // CSV未設定時はモックをセット
+                } else {
+                    document.getElementById('loading-status').textContent = `✅ 完了 (${allDatabase.length}問)`;
+                }
+                buildSubjectAccordionUI();
+                updateDashboard();
+            }
+        }
+
+        function loadMockData() {
+            for(let i=1; i<=10; i++) {
+                allDatabase.push({
+                    _id: "sentaku_mock_" + i,
+                    _subjectName: "労働基準法(選択)",
+                    項目: "総則",
+                    問題文: `労働条件は、労働者が人たるに値する【A】を営むための必要を充たすべきものでなければならない。この法律で定める労働条件の基準は【B】のものであるから、労働関係の当事者は、この基準を理由として労働条件を【C】させてはならないことはもとより、その【D】を図るように【E】なければならない。`,
+                    正解A: "生活", 正解B: "最低", 正解C: "低下", 正解D: "向上", 正解E: "努め",
+                    ダミー: "健康,幸福,最高,維持,合意,上昇,改善,努力し,義務づけられ,保障,人権,対等,決定,遵守,尊重",
+                    根拠条文: "労基法第1条（労働条件の原則）",
+                    解説: "人たるに値する「生活」がキーワード。最低基準であること、向上の努力義務があることを押さえる。"
+                });
+            }
+        }
+
+        function getStatsSummary() {
+            let stats = {};
+            allDatabase.forEach(q => {
+                let subj = q._subjectName;
+                if (!stats[subj]) stats[subj] = { total: 0, played: 0, perfects: 0 };
+                stats[subj].total++;
+                let hist = userHistory[q._id];
+                if (hist && hist.playCount > 0) {
+                    stats[subj].played++;
+                    let rate = (hist.correctCount / (hist.playCount * 5)) * 100;
+                    if (rate >= 80) stats[subj].perfects++;
+                }
+            });
+            for (let subj in stats) {
+                stats[subj].progressRate = stats[subj].total > 0 ? Math.round((stats[subj].played / stats[subj].total) * 100) : 0;
+                stats[subj].masterRate = stats[subj].played > 0 ? Math.round((stats[subj].perfects / stats[subj].played) * 100) : 0;
+            }
+            return stats;
+        }
+
+        function updateDashboard() {
+            if (allDatabase.length === 0 || Object.keys(userHistory).length === 0) return;
+            const stats = getStatsSummary();
+            const container = document.getElementById('dash-master-bars');
+            container.innerHTML = "";
+            for (const subj of Object.keys(stats)) {
+                let s = stats[subj];
+                let mColor = s.masterRate >= 80 ? 'bg-green-500' : (s.masterRate >= 50 ? 'bg-yellow-400' : 'bg-red-400');
+                let html = `
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center flex flex-col justify-between">
+                        <p class="text-xs md:text-sm font-bold text-slate-500 mb-2 truncate">${subj}</p>
+                        <div class="mb-2">
+                            <p class="text-xs font-bold text-slate-600 mb-1">進捗: ${s.progressRate}%</p>
+                            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full bg-blue-500" style="width: ${s.progressRate}%"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-xs font-bold text-slate-600 mb-1">マスター: ${s.masterRate}%</p>
+                            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                                <div class="h-full ${mColor}" style="width: ${s.masterRate}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.insertAdjacentHTML('beforeend', html);
+            }
+        }
+
+        function buildSubjectAccordionUI() {
+            const container = document.getElementById('subject-accordion-container');
+            container.innerHTML = "";
+            const subjectMap = {};
+            allDatabase.forEach(q => {
+                if (!subjectMap[q._subjectName]) subjectMap[q._subjectName] = new Set();
+                subjectMap[q._subjectName].add(q.項目);
+            });
+            for (const [subjectName, chaptersSet] of Object.entries(subjectMap)) {
+                const header = document.createElement('div');
+                header.className = "bg-slate-200 p-5 font-black text-xl cursor-pointer border-b border-white flex justify-between";
+                header.innerHTML = `<span>${subjectName}</span> <span>▼</span>`;
+                header.onclick = function() { this.nextElementSibling.classList.toggle('open'); };
+                
+                const content = document.createElement('div');
+                content.className = "accordion-content bg-white";
+                let checkboxHTML = `<div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">`;
+                Array.from(chaptersSet).forEach(c => {
+                    checkboxHTML += `<label class="flex items-center space-x-4 cursor-pointer p-4 hover:bg-indigo-50"><input type="checkbox" name="chapter-check" value="${subjectName}::${c}" class="w-8 h-8"><span class="text-base md:text-lg font-bold">${c}</span></label>`;
+                });
+                checkboxHTML += `</div>`;
+                content.innerHTML = checkboxHTML;
+                container.appendChild(header); container.appendChild(content);
+            }
+        }
+
+        function checkAllChapters(check) { document.querySelectorAll('input[name="chapter-check"]').forEach(cb => cb.checked = check); }
+
         function startTraining(mode) {
+            if(allDatabase.length === 0) { alert("問題データがありません。CSVの設定を確認してください。"); return; }
             userApiKey = document.getElementById('api-key-input').value.trim();
             userModel = document.getElementById('api-model-input').value;
             if (!userApiKey) { alert("APIキーを入力してください！"); return; }
             try { localStorage.setItem('gemini_api_key', userApiKey); localStorage.setItem('gemini_api_model', userModel); } catch(e) {}
             unlockAudio();
             
-            playlistQueue = [{ subjectName: "ランダム特訓", chapterName: "選択式", questions: [...allDatabase].sort(()=>Math.random()-0.5).slice(0,5) }];
+            let qs = [];
+            if (mode === 'normal') {
+                const checkboxes = Array.from(document.querySelectorAll('input[name="chapter-check"]:checked')).map(cb => cb.value);
+                if (checkboxes.length > 0) {
+                    checkboxes.forEach(val => {
+                        const [subj, chap] = val.split("::");
+                        let pool = allDatabase.filter(q => q._subjectName === subj && q.項目 === chap);
+                        qs = qs.concat(pool);
+                    });
+                } else {
+                    qs = [...allDatabase]; // 未選択時は全問
+                }
+            }
+            
+            if(qs.length === 0) { alert("出題できる問題がありません。"); return; }
+            qs = qs.sort(()=>Math.random()-0.5).slice(0, 10);
+            playlistQueue = [{ subjectName: "選択式 特訓", chapterName: "選択式", questions: qs }];
             currentPlaylistIndex = 0;
             document.getElementById('start-screen').classList.add('hidden');
             startNextPlaylistSet();
@@ -354,19 +516,21 @@
             document.getElementById('q-subject-badge').textContent = q._subjectName;
             document.getElementById('q-chapter-text').textContent = q.項目 || (isAlchemy ? "Pro AI 錬金問題" : "条文");
             
+            const hist = userHistory[q._id] || { playCount: 0, correctCount: 0 };
+            const rate = hist.playCount > 0 ? Math.round((hist.correctCount / (hist.playCount * 5)) * 100) : 0;
+            document.getElementById('q-history-stats').textContent = `挑戦:${hist.playCount} 過去正答:${rate}%`;
+
             document.getElementById('action-btn-area').classList.remove('hidden');
             document.getElementById('explanation-area').classList.add('hidden');
             document.getElementById('self-eval-area').classList.add('hidden');
             
             eliminatedWords.clear();
             
-            // 正解とダミーを結合してシャッフル（20個）
             currentAnswers = { 'A': q.正解A, 'B': q.正解B, 'C': q.正解C, 'D': q.正解D, 'E': q.正解E };
             let dummies = q.ダミー ? q.ダミー.split(',') : [];
             currentWordBank = [q.正解A, q.正解B, q.正解C, q.正解D, q.正解E, ...dummies].filter(w=>w).slice(0,20);
             currentWordBank.sort(() => Math.random() - 0.5);
 
-            // 問題文の構築
             let htmlText = q.問題文;
             ['A','B','C','D','E'].forEach(letter => {
                 let options = `<option value="" selected disabled>【 ${letter} 】</option>`;
@@ -378,7 +542,6 @@
             });
             document.getElementById('question-text-area').innerHTML = htmlText;
 
-            // 語群UIの構築
             const wbContainer = document.getElementById('word-bank-container');
             wbContainer.innerHTML = "";
             currentWordBank.forEach((word, idx) => {
@@ -393,9 +556,8 @@
             el.classList.toggle('bg-slate-100'); el.classList.toggle('opacity-50');
             if (eliminatedWords.has(word)) eliminatedWords.delete(word); else eliminatedWords.add(word);
             
-            // プルダウンの選択肢を非表示に
             document.querySelectorAll('.inline-select').forEach(select => {
-                if (select.value === word) select.value = ""; // 選択中なら解除
+                if (select.value === word) select.value = ""; 
                 Array.from(select.options).forEach(opt => {
                     if (opt.value && eliminatedWords.has(opt.value)) opt.classList.add('hidden-option');
                     else opt.classList.remove('hidden-option');
@@ -406,17 +568,14 @@
             document.querySelectorAll(`.inline-select[data-letter="${letter}"]`).forEach(s => s.value = value);
         }
 
-        // 🌟 文脈ハイライト（ヒント）
         function showContextHint() {
             const qArea = document.getElementById('question-text-area');
             let text = qArea.innerHTML;
-            // シンプルな正規表現で「〜なければならない」「〜努める」等の文末や接続詞をハイライト
             text = text.replace(/(なければならない|努め|こと|また|ただし|において|ため)/g, '<span class="highlight-clue">$1</span>');
             qArea.innerHTML = text;
             generateAiMessage("hint", { textOnly: true });
         }
 
-        // 🌟 テスト用ランダムフィル
         function fillRandomAnswers() {
             ['A','B','C','D','E'].forEach(letter => {
                 let randomWord = currentWordBank[Math.floor(Math.random() * currentWordBank.length)];
@@ -424,7 +583,6 @@
             });
         }
 
-        // 🌟 提出と採点
         function submitSentakuAnswers() {
             let hasUnanswered = false;
             let userAns = {};
@@ -437,13 +595,13 @@
 
             let score = 0;
             let trapsPicked = [];
-            currentFullText = currentQuestions[currentIndex].問題文; // 音読用ベース
+            currentFullText = currentQuestions[currentIndex].問題文; 
 
             ['A','B','C','D','E'].forEach(letter => {
                 const s = document.querySelector(`.inline-select[data-letter="${letter}"]`);
                 const val = s.value;
                 const correct = currentAnswers[letter];
-                currentFullText = currentFullText.replace(new RegExp(`【${letter}】`, 'g'), correct); // 音読用置換
+                currentFullText = currentFullText.replace(new RegExp(`【${letter}】`, 'g'), correct); 
 
                 const span = document.createElement('span');
                 span.className = 'mx-1 inline-block align-baseline';
@@ -455,14 +613,13 @@
                     span.innerHTML = `<span class="bg-red-100 text-red-600 line-through font-bold px-1 rounded">${val}</span><span class="text-slate-400 mx-1 text-xs">➡</span><span class="bg-blue-100 text-blue-800 border-b-2 border-blue-500 font-bold px-2 py-1 rounded shadow-sm">${correct}</span>`;
                 }
                 
-                // 同じ記号のセレクトを全て置換
                 document.querySelectorAll(`.inline-select[data-letter="${letter}"]`).forEach(el => {
                     if(el.parentNode) el.parentNode.replaceChild(span.cloneNode(true), el);
                 });
             });
 
-            // GASへのスコアとトラップ保存（モック時はコンソールのみ）
-            console.log(`Score: ${score}/5, Traps: ${trapsPicked.join(',')}`);
+            const q = currentQuestions[currentIndex];
+            saveSentakuToGAS(q._id, score, trapsPicked.join(','));
 
             document.getElementById('action-btn-area').classList.add('hidden');
             document.getElementById('explanation-area').classList.remove('hidden');
@@ -471,10 +628,9 @@
             
             document.getElementById('score-badge').textContent = `${score} / 5 点`;
             document.getElementById('score-badge').className = score === 5 ? "inline-block px-6 py-2 rounded-full text-2xl font-black text-white bg-green-500 shadow-md mb-2 animate-bounce" : "inline-block px-6 py-2 rounded-full text-2xl font-black text-white bg-red-500 shadow-md mb-2";
-            document.getElementById('article-text').textContent = currentQuestions[currentIndex].根拠条文 || "条文なし";
-            document.getElementById('explanation-text').innerHTML = currentQuestions[currentIndex].解説 || "解説なし";
+            document.getElementById('article-text').textContent = q.根拠条文 || "条文なし";
+            document.getElementById('explanation-text').innerHTML = q.解説 || "解説なし";
 
-            // 自己評価のA~Eボタン生成 (iPad時は大きく、チェックはデフォルトで外す)
             const evalTargetContainer = document.getElementById('eval-target-buttons');
             evalTargetContainer.innerHTML = '<span id="eval-target-label" class="text-xs font-bold text-slate-500 self-center mr-2">対象:</span>';
             ['A','B','C','D','E'].forEach(letter => {
@@ -484,12 +640,22 @@
             generateAiMessage("result_sentaku", { score: score, textOnly: false });
         }
 
+        async function saveSentakuToGAS(q_id, score, traps) {
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_sentaku', q_id: q_id, score: score, traps: traps }) });
+                const data = await res.json();
+                if(data.success) {
+                    if(!userHistory[q_id]) userHistory[q_id] = {};
+                    userHistory[q_id].playCount = data.playCount;
+                    userHistory[q_id].correctCount = data.correctCount;
+                }
+            } catch(e) { }
+        }
+
         function closeWarningModal() { document.getElementById('warning-modal').classList.add('hidden'); document.getElementById('warning-modal').classList.remove('flex'); }
 
-        // 🌟 耳学問（TTS再生）
         function playCompletedArticle() {
             const speed = parseFloat(document.getElementById('tts-speed').value);
-            // Web Speech API で倍速対応
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const u = new SpeechSynthesisUtterance(currentFullText.replace(/<[^>]+>/g, ''));
@@ -503,7 +669,6 @@
             if(p) { p.pause(); p.currentTime=0; }
         }
 
-        // 🌟 錬金術（Pro AI派生問題作成）
         async function generateAlchemyQuestion() {
             const btn = document.querySelector('button[onclick="generateAlchemyQuestion()"]');
             btn.textContent = "🔥 錬金中... (Pro AIが思考中)";
@@ -525,7 +690,6 @@
 ${currentFullText}`;
 
             try {
-                // ルール17厳守：Pro版指定
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
@@ -539,7 +703,6 @@ ${currentFullText}`;
                     newQ.解説 = "【錬金術による派生問題】\n" + (currentQuestions[currentIndex].解説 || "");
                     newQ.根拠条文 = currentQuestions[currentIndex].根拠条文 || "錬金生成";
                     
-                    // 現在のキューに挿入してリロード
                     currentQuestions.splice(currentIndex + 1, 0, newQ);
                     btn.textContent = "✨ 錬金成功！次の問題へ進んで！";
                     btn.classList.replace('from-purple-500', 'from-green-500');
@@ -552,16 +715,16 @@ ${currentFullText}`;
             }
         }
 
-        // 🌟 評価マーク（A〜E個別）
         function markEval(status) {
             const checked = Array.from(document.querySelectorAll('input[name="eval-target"]:checked')).map(cb => cb.value);
             if(checked.length === 0) { alert("対象の空欄(A~E)を選択してください"); return; }
-            console.log(`[${status}として記録]: ${checked.join(',')}`);
-            // TODO: GASに保存する処理
             
-            // 視覚的フィードバック
+            const statusStr = `${status}(${checked.join(',')})`;
+            const q = currentQuestions[currentIndex];
+            fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_status', q_id: q._id, status: statusStr }) });
+            
             document.querySelectorAll('input[name="eval-target"]:checked').forEach(cb => {
-                cb.parentElement.classList.add('opacity-30');
+                cb.parentElement.classList.add('opacity-30', 'bg-yellow-200');
                 cb.checked = false;
             });
         }
@@ -575,7 +738,6 @@ ${currentFullText}`;
             } else { loadQuestion(currentQuestions[currentIndex].解説 && currentQuestions[currentIndex].解説.includes('錬金術')); }
         }
 
-        // AIメッセージ生成
         async function generateAiMessage(situation, extraData = {}) {
             const aiMessageEl = document.getElementById('ai-message');
             if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
@@ -586,7 +748,6 @@ ${currentFullText}`;
             else if (situation === "result_sentaku") prompt += `選択式の解答が完了し、5点満点中${extraData.score}点でした。点数に応じたコメントと、「まぐれ当たりや迷った空欄は下のボタンで記録してね。耳学問モードもおすすめよ！」と促して。`;
 
             try {
-                // ルール17厳守：2.5-flash指定
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
