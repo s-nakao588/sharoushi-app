@@ -17,7 +17,7 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
-        /* 💡 黄金基準：iPad・タッチ端末専用の強制拡大スタイル（PCには影響しません） */
+        /* 💡 黄金基準：iPad・タッチ端末専用の強制拡大スタイル */
         @media (hover: none) and (pointer: coarse) {
             #question-text { font-size: 2.5rem !important; line-height: 1.7 !important; font-weight: 400 !important; }
             .answer-btn-box { height: 9rem !important; }
@@ -91,7 +91,6 @@
                     <span class="text-sm md:text-base font-bold text-slate-500 bg-white px-3 py-1 rounded-full border" id="loading-status">☁️ データ集計中...</span>
                 </h2>
                 
-                <!-- 今日の一言 -->
                 <div class="bg-pink-50 border-2 border-pink-200 rounded-2xl p-4 mb-6 flex items-start gap-4 shadow-sm">
                     <img src="coach.jpg" class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white shadow object-cover shrink-0">
                     <div>
@@ -100,12 +99,8 @@
                     </div>
                 </div>
 
-                <!-- マスター度表示 -->
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="dash-master-bars">
-                    <!-- JSで動的生成 -->
-                </div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="dash-master-bars"></div>
 
-                <!-- ★復活：ワンタッチAI特訓リクエストボタン -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <button onclick="triggerAnalysisStrategy()" class="bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-indigo-300 p-4 md:p-6 rounded-2xl text-left active:scale-95 shadow-sm hover:shadow-md transition-all">
                         <h3 class="text-lg md:text-xl font-black text-indigo-800 mb-1">📊 AI分析＆弱点特訓</h3>
@@ -117,22 +112,18 @@
                     </button>
                 </div>
 
-                <!-- 作戦会議チャット -->
                 <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 md:p-6 shadow-md flex flex-col">
                     <h3 class="text-xl md:text-2xl font-black text-indigo-800 mb-2">💬 専属講師と今日の作戦会議</h3>
-                    
                     <div id="strategy-chat-log" class="mb-4 max-h-60 overflow-y-auto flex flex-col gap-2 p-2 bg-white/50 rounded-xl border border-indigo-100">
                         <div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">
                             今の気分ややりたい科目を教えてね。上のボタンを押してもいいよ！
                         </div>
                     </div>
-
                     <div class="flex gap-2 shrink-0">
                         <input type="text" id="strategy-input" class="flex-1 bg-white border-2 border-indigo-300 text-base md:text-lg p-3 rounded-xl font-bold focus:outline-none focus:border-indigo-500" placeholder="要望を入力...">
                         <button onclick="sendStrategyMessage()" class="bg-indigo-600 text-white font-black px-4 md:px-6 py-3 rounded-xl text-base md:text-lg hover:bg-indigo-700 active:scale-95 transition-transform">送信</button>
                     </div>
-
-                    <div class="mt-4 flex justify-center">
+                    <div class="mt-4 flex justify-center" id="btn-strategy-container">
                         <button id="btn-strategy-start" onclick="executeStrategyPlan()" class="w-full max-w-md bg-gradient-to-r from-pink-500 to-red-500 text-white font-black py-4 rounded-2xl text-xl md:text-2xl shadow-lg active:scale-95 transition-transform hidden">🔥 このプランで特訓スタート！</button>
                     </div>
                 </div>
@@ -204,12 +195,10 @@
                 <span class="bg-slate-100 px-3 py-1.5 rounded-lg tracking-widest text-slate-400" id="stat-history">-</span>
             </div>
 
-            <!-- 問題文エリア -->
             <div class="flex-1 overflow-y-auto mb-4 pr-3">
                 <h2 class="text-2xl lg:text-3xl font-normal leading-relaxed text-slate-800 tracking-wide" id="question-text">問題文</h2>
             </div>
             
-            <!-- 〇 ✖ ボタン -->
             <div class="shrink-0 flex space-x-4 md:space-x-6 pb-2 md:pb-4 h-28 lg:h-32 answer-btn-box">
                 <button onclick="answer('〇')" class="answer-btn flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-3xl border-4 md:border-6 border-blue-400 active:scale-95 text-5xl lg:text-6xl shadow-xl flex items-center justify-center transition-transform py-2 leading-none">〇</button>
                 <button onclick="answer('✖')" class="answer-btn flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-3xl border-4 md:border-6 border-red-400 active:scale-95 text-5xl lg:text-6xl shadow-xl flex items-center justify-center transition-transform py-2 leading-none">✖</button>
@@ -413,7 +402,7 @@
                             </div>
                         </div>
                     `;
-                    container.innerHTML += html;
+                    container.insertAdjacentHTML('beforeend', html);
                 }
             }
 
@@ -421,13 +410,23 @@
                 let prompt = `あなたは社労士試験の専属コーチです。以下の成績データを見て、受講生に「今日一番やるべき科目・項目」を1〜2文（40文字程度）でズバッと指摘して発破をかけてください。進捗率(progressRate)が低い場合は「まずは順番に進めよう」と基礎を促してください。データ: ${JSON.stringify(stats)}`;
                 fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-                }).then(res => res.json()).then(data => {
+                })
+                .then(async res => {
+                    if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(err.error?.message || "HTTP Error");
+                    }
+                    return res.json();
+                })
+                .then(data => {
                     document.getElementById('dash-ai-comment').textContent = data.candidates[0].content.parts[0].text;
-                }).catch(e => {});
+                })
+                .catch(e => {
+                    document.getElementById('dash-ai-comment').textContent = `⚠️ APIエラー: ${e.message}`;
+                });
             }
         }
 
-        // ★復活：ボタンからの作戦チャット連動
         function triggerAnalysisStrategy() {
             const inputEl = document.getElementById('strategy-input');
             inputEl.value = '弱点を分析して特訓プランを作って！';
@@ -439,7 +438,7 @@
             sendStrategyMessage();
         }
 
-        // 🌟 作戦会議チャット機能（キャッチボール対応＆エラー制御強化）
+        // ★修正: DOM書き換えを安全化（エラー時の透明化・フリーズバグを防止）
         async function sendStrategyMessage() {
             const inputEl = document.getElementById('strategy-input');
             const input = inputEl.value.trim();
@@ -447,7 +446,11 @@
             if(!userApiKey) { alert("APIキーが必要です"); return; }
             
             const logEl = document.getElementById('strategy-chat-log');
-            logEl.innerHTML += `<div class="self-end bg-indigo-100 text-indigo-900 p-3 rounded-2xl rounded-tr-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">${input}</div>`;
+            
+            const userDiv = document.createElement('div');
+            userDiv.className = "self-end bg-indigo-100 text-indigo-900 p-3 rounded-2xl rounded-tr-none max-w-[80%] shadow-sm font-bold text-sm md:text-base";
+            userDiv.textContent = input;
+            logEl.appendChild(userDiv);
             logEl.scrollTop = logEl.scrollHeight;
             inputEl.value = "";
             
@@ -455,7 +458,7 @@
             document.getElementById('btn-strategy-start').classList.add('hidden');
             
             const typingId = "typing-" + Date.now();
-            logEl.innerHTML += `<div id="${typingId}" class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base"><span class="typing">💬 考えてるよ...</span></div>`;
+            logEl.insertAdjacentHTML('beforeend', `<div id="${typingId}" class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base"><span class="typing">💬 考えてるよ...</span></div>`);
             logEl.scrollTop = logEl.scrollHeight;
             
             const stats = getStatsSummary();
@@ -485,10 +488,15 @@ ${JSON.stringify(stats)}
                     body: JSON.stringify({ contents: apiMessages })
                 });
                 
-                // ★修正：エラーハンドリング（残高ゼロ・遮断時の対応）
                 if (!res.ok) {
-                    const errData = await res.json();
-                    throw new Error(errData.error?.message || "通信エラー");
+                    let errMsg = "通信エラー";
+                    try {
+                        const errData = await res.json();
+                        errMsg = errData.error?.message || errMsg;
+                    } catch(parseErr) {
+                        errMsg = "モデルが見つかりません (404 Not Found)";
+                    }
+                    throw new Error(errMsg);
                 }
                 
                 const data = await res.json();
@@ -498,7 +506,13 @@ ${JSON.stringify(stats)}
                 const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
                 let replyText = text.replace(/```json\n[\s\S]*?\n```/, '').trim();
                 
-                document.getElementById(typingId).outerHTML = `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">${replyText}</div>`;
+                const typingEl = document.getElementById(typingId);
+                if (typingEl) {
+                    const botDiv = document.createElement('div');
+                    botDiv.className = "self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base";
+                    botDiv.innerHTML = replyText.replace(/\n/g, '<br>');
+                    typingEl.replaceWith(botDiv);
+                }
                 logEl.scrollTop = logEl.scrollHeight;
                 
                 if (jsonMatch) {
@@ -506,8 +520,15 @@ ${JSON.stringify(stats)}
                     document.getElementById('btn-strategy-start').classList.remove('hidden');
                 }
             } catch(e) {
-                // エラー時にフリーズさせず、赤文字で原因を表示する
-                document.getElementById(typingId).outerHTML = `<div class="self-start bg-red-50 text-red-600 p-3 rounded-2xl max-w-[80%] shadow-sm font-bold text-sm md:text-base border border-red-200">⚠️ APIエラー: 通信エラーや残高不足の可能性があります。<br>詳細: ${e.message}</div>`;
+                const typingEl = document.getElementById(typingId);
+                const errDiv = document.createElement('div');
+                errDiv.className = "self-start bg-red-50 text-red-600 p-3 rounded-2xl max-w-[80%] shadow-sm font-bold text-sm md:text-base border border-red-200";
+                errDiv.textContent = `⚠️ APIエラー: ${e.message}`;
+                if (typingEl) {
+                    typingEl.replaceWith(errDiv);
+                } else {
+                    logEl.appendChild(errDiv);
+                }
                 logEl.scrollTop = logEl.scrollHeight;
             }
         }
@@ -538,7 +559,6 @@ ${JSON.stringify(stats)}
             startNextPlaylistSet(true); 
         }
 
-        // ----------------- 既存機能 -----------------
         function buildSubjectAccordionUI() {
             const container = document.getElementById('subject-accordion-container');
             const subjectMap = {};
@@ -847,9 +867,10 @@ ${JSON.stringify(stats)}
             }
         }
 
+        // ★修正: エラー時のDOM破壊対策を組み込み
         async function generateAiMessage(situation, extraData = {}) {
             const aiMessageEl = document.getElementById('ai-message');
-            if(situation === 'next') { if(aiMessageEl) aiMessageEl.innerHTML = "よし、次の問題だよ！"; return; }
+            if(situation === 'next') { if(aiMessageEl) aiMessageEl.textContent = "よし、次の問題だよ！"; return; }
             if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
             
             let prompt = `あなたは社労士試験の専属コーチ（明るい女性）です。絶対にセリフ本文のみを出力し、カッコや設定説明は含めないでください。\n`;
@@ -864,11 +885,31 @@ ${JSON.stringify(stats)}
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
+                
+                if (!res.ok) {
+                    let errMsg = "通信エラー";
+                    try {
+                        const errData = await res.json();
+                        errMsg = errData.error?.message || errMsg;
+                    } catch(parseErr) {
+                        errMsg = "モデルが見つかりません (404 Not Found)";
+                    }
+                    throw new Error(errMsg);
+                }
+                
                 const data = await res.json();
                 const text = data.candidates[0].content.parts[0].text;
-                if(aiMessageEl) aiMessageEl.innerHTML = text;
+                if(aiMessageEl) {
+                    aiMessageEl.textContent = text;
+                    aiMessageEl.classList.remove('text-red-500', 'text-sm');
+                }
                 if (!extraData.textOnly) speakText(text); 
-            } catch(e) {}
+            } catch(e) {
+                if(aiMessageEl) {
+                    aiMessageEl.textContent = `⚠️ APIエラー: ${e.message}`;
+                    aiMessageEl.classList.add('text-red-500', 'text-sm');
+                }
+            }
         }
 
         async function verifyDataWithPro(q) {
@@ -882,6 +923,7 @@ ${JSON.stringify(stats)}
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
+                if (!res.ok) throw new Error("Pro API Error");
                 const data = await res.json();
                 const text = data.candidates[0].content.parts[0].text;
                 q._verified = true; 
