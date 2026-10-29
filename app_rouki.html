@@ -17,7 +17,7 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
 
-        /* 💡 黄金基準：iPad・タッチ端末専用の強制拡大スタイル */
+        /* 💡 黄金基準：iPad・タッチ端末専用の強制拡大スタイル（PCには影響しません） */
         @media (hover: none) and (pointer: coarse) {
             #question-text { font-size: 2.5rem !important; line-height: 1.7 !important; font-weight: 400 !important; }
             .answer-btn-box { height: 9rem !important; }
@@ -93,7 +93,6 @@
                 
                 <!-- 今日の一言 -->
                 <div class="bg-pink-50 border-2 border-pink-200 rounded-2xl p-4 mb-6 flex items-start gap-4 shadow-sm">
-                    <!-- ★修正：アイコンの潰れを object-cover shrink-0 で完全防止 -->
                     <img src="coach.jpg" class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white shadow object-cover shrink-0">
                     <div>
                         <p class="text-xs md:text-sm font-black text-pink-500 mb-1">今日の一言診断</p>
@@ -103,17 +102,28 @@
 
                 <!-- マスター度表示 -->
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="dash-master-bars">
-                    <!-- JSで動的生成（進捗率と正答率の2段ゲージ） -->
+                    <!-- JSで動的生成 -->
                 </div>
 
-                <!-- 作戦会議チャット（キャッチボール対応） -->
+                <!-- ★復活：ワンタッチAI特訓リクエストボタン -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                    <button onclick="triggerAnalysisStrategy()" class="bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-indigo-300 p-4 md:p-6 rounded-2xl text-left active:scale-95 shadow-sm hover:shadow-md transition-all">
+                        <h3 class="text-lg md:text-xl font-black text-indigo-800 mb-1">📊 AI分析＆弱点特訓</h3>
+                        <p class="text-indigo-600 font-bold text-xs md:text-sm">チャットで弱点克服プランを相談</p>
+                    </button>
+                    <button onclick="triggerEbbinghausStrategy()" class="bg-gradient-to-br from-emerald-100 to-teal-100 border-2 border-teal-300 p-4 md:p-6 rounded-2xl text-left active:scale-95 shadow-sm hover:shadow-md transition-all">
+                        <h3 class="text-lg md:text-xl font-black text-teal-800 mb-1">🧠 忘却曲線ベース復習</h3>
+                        <p class="text-teal-600 font-bold text-xs md:text-sm">チャットで放置問題の復習を相談</p>
+                    </button>
+                </div>
+
+                <!-- 作戦会議チャット -->
                 <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 md:p-6 shadow-md flex flex-col">
                     <h3 class="text-xl md:text-2xl font-black text-indigo-800 mb-2">💬 専属講師と今日の作戦会議</h3>
                     
-                    <!-- チャットログエリア -->
                     <div id="strategy-chat-log" class="mb-4 max-h-60 overflow-y-auto flex flex-col gap-2 p-2 bg-white/50 rounded-xl border border-indigo-100">
                         <div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">
-                            今の気分ややりたい科目を教えてね。（例: まだ始めたばかりだから労基から、疲れてるから弱点15問、等）
+                            今の気分ややりたい科目を教えてね。上のボタンを押してもいいよ！
                         </div>
                     </div>
 
@@ -128,7 +138,7 @@
                 </div>
             </div>
 
-            <!-- 通常プレイリスト（既存） -->
+            <!-- 通常プレイリスト作成 -->
             <h2 class="text-2xl md:text-3xl font-black mb-4">📚 自分でプレイリストを作成</h2>
             <div class="flex flex-wrap gap-3 mb-4 items-center">
                 <button onclick="checkAllChapters(true)" class="bg-indigo-100 text-indigo-700 px-6 py-3 rounded-xl font-bold text-lg">☑ すべて選択</button>
@@ -194,10 +204,12 @@
                 <span class="bg-slate-100 px-3 py-1.5 rounded-lg tracking-widest text-slate-400" id="stat-history">-</span>
             </div>
 
+            <!-- 問題文エリア -->
             <div class="flex-1 overflow-y-auto mb-4 pr-3">
                 <h2 class="text-2xl lg:text-3xl font-normal leading-relaxed text-slate-800 tracking-wide" id="question-text">問題文</h2>
             </div>
             
+            <!-- 〇 ✖ ボタン -->
             <div class="shrink-0 flex space-x-4 md:space-x-6 pb-2 md:pb-4 h-28 lg:h-32 answer-btn-box">
                 <button onclick="answer('〇')" class="answer-btn flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-3xl border-4 md:border-6 border-blue-400 active:scale-95 text-5xl lg:text-6xl shadow-xl flex items-center justify-center transition-transform py-2 leading-none">〇</button>
                 <button onclick="answer('✖')" class="answer-btn flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-3xl border-4 md:border-6 border-red-400 active:scale-95 text-5xl lg:text-6xl shadow-xl flex items-center justify-center transition-transform py-2 leading-none">✖</button>
@@ -281,7 +293,6 @@
         let userApiKey = '';
         let globalTimerInterval = null, globalTimeLeftSeconds = null, isTimeUp = false;
         
-        // 🌟 新機能用変数
         let strategyHistory = []; 
         let strategyPlan = null;
         let napInterval = null, napSecondsLeft = 0;
@@ -311,7 +322,6 @@
             try {
                 if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 audioCtx.resume();
-                
                 const player = document.getElementById('tts-player');
                 if (player) {
                     player.src = "data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq";
@@ -357,14 +367,12 @@
             }
         }
 
-        // ★修正：進捗率（解いた割合）と正答率（マスター度）を分離
         function getStatsSummary() {
             let stats = {};
             allDatabase.forEach(q => {
                 let subj = q._subjectName;
                 if (!stats[subj]) stats[subj] = { total: 0, played: 0, perfects: 0 };
                 stats[subj].total++;
-                
                 let hist = userHistory[q._id];
                 if (hist && hist.playCount > 0) {
                     stats[subj].played++;
@@ -379,13 +387,11 @@
             return stats;
         }
 
-        // 🌟 ダッシュボード描画
         function updateDashboard() {
             if (allDatabase.length === 0 || Object.keys(userHistory).length === 0) return;
             const stats = getStatsSummary();
             const container = document.getElementById('dash-master-bars');
             container.innerHTML = "";
-            
             for (const subj of SUBJECTS) {
                 if(subj.name === "労働基準法" || subj.name === "安全衛生法" || subj.name === "厚生年金保険法" || subj.name === "健康保険法") {
                     let s = stats[subj.name] || { total: 0, played: 0, perfects: 0, progressRate: 0, masterRate: 0 };
@@ -393,14 +399,12 @@
                     let html = `
                         <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center flex flex-col justify-between">
                             <p class="text-xs md:text-sm font-bold text-slate-500 mb-2 truncate">${subj.name}</p>
-                            
                             <div class="mb-2">
                                 <p class="text-xs font-bold text-slate-600 mb-1">進捗: ${s.progressRate}%</p>
                                 <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                     <div class="h-full bg-blue-500" style="width: ${s.progressRate}%"></div>
                                 </div>
                             </div>
-                            
                             <div>
                                 <p class="text-xs font-bold text-slate-600 mb-1">正答: ${s.masterRate}%</p>
                                 <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -423,7 +427,19 @@
             }
         }
 
-        // 🌟 作戦会議チャット機能（キャッチボール）
+        // ★復活：ボタンからの作戦チャット連動
+        function triggerAnalysisStrategy() {
+            const inputEl = document.getElementById('strategy-input');
+            inputEl.value = '弱点を分析して特訓プランを作って！';
+            sendStrategyMessage();
+        }
+        function triggerEbbinghausStrategy() {
+            const inputEl = document.getElementById('strategy-input');
+            inputEl.value = '忘却曲線をベースに復習プランを作って！';
+            sendStrategyMessage();
+        }
+
+        // 🌟 作戦会議チャット機能（キャッチボール対応＆エラー制御強化）
         async function sendStrategyMessage() {
             const inputEl = document.getElementById('strategy-input');
             const input = inputEl.value.trim();
@@ -431,8 +447,6 @@
             if(!userApiKey) { alert("APIキーが必要です"); return; }
             
             const logEl = document.getElementById('strategy-chat-log');
-            
-            // ユーザー発言をUIに追加
             logEl.innerHTML += `<div class="self-end bg-indigo-100 text-indigo-900 p-3 rounded-2xl rounded-tr-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">${input}</div>`;
             logEl.scrollTop = logEl.scrollHeight;
             inputEl.value = "";
@@ -447,7 +461,6 @@
             const stats = getStatsSummary();
             const cond = getEffectiveCondition();
             
-            // AIへの強力な指示
             let systemPrompt = `あなたは社労士試験の専属コーチ（18歳前後の天才女性講師）。性格は「${cond}」です。
 受講生と今日の学習プラン（プレイリスト）について対話してください。
 【現在の成績データ】
@@ -461,12 +474,9 @@ ${JSON.stringify(stats)}
 \`\`\`json
 { "subject": "労働基準法", "count": 15, "excludePerfect": true }
 \`\`\`
-※ subjectは「全科目」「労働基準法」「安全衛生法」「厚生年金保険法」「健康保険法」のいずれか。
-`;
+※ subjectは「全科目」「労働基準法」「安全衛生法」「厚生年金保険法」「健康保険法」のいずれか。`;
 
-            let apiMessages = [];
-            apiMessages.push({ role: "user", parts: [{ text: systemPrompt }] });
-            apiMessages.push({ role: "model", parts: [{ text: "わかりました。成績データに基づき、性格に合わせてプランを相談し、合意したらJSONを出力します。" }] });
+            let apiMessages = [{ role: "user", parts: [{ text: systemPrompt }] }, { role: "model", parts: [{ text: "わかりました。成績データに基づき、性格に合わせてプランを相談し、合意したらJSONを出力します。" }] }];
             apiMessages = apiMessages.concat(strategyHistory);
 
             try {
@@ -474,12 +484,17 @@ ${JSON.stringify(stats)}
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ contents: apiMessages })
                 });
+                
+                // ★修正：エラーハンドリング（残高ゼロ・遮断時の対応）
+                if (!res.ok) {
+                    const errData = await res.json();
+                    throw new Error(errData.error?.message || "通信エラー");
+                }
+                
                 const data = await res.json();
                 const text = data.candidates[0].content.parts[0].text;
                 
                 strategyHistory.push({ role: "model", parts: [{ text: text }] });
-                
-                // JSONブロックの抽出
                 const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
                 let replyText = text.replace(/```json\n[\s\S]*?\n```/, '').trim();
                 
@@ -491,7 +506,9 @@ ${JSON.stringify(stats)}
                     document.getElementById('btn-strategy-start').classList.remove('hidden');
                 }
             } catch(e) {
-                document.getElementById(typingId).outerHTML = `<div class="self-start bg-red-50 text-red-500 p-3 rounded-2xl max-w-[80%] shadow-sm font-bold text-sm">エラーが発生したわ。APIキーを確認してね。</div>`;
+                // エラー時にフリーズさせず、赤文字で原因を表示する
+                document.getElementById(typingId).outerHTML = `<div class="self-start bg-red-50 text-red-600 p-3 rounded-2xl max-w-[80%] shadow-sm font-bold text-sm md:text-base border border-red-200">⚠️ APIエラー: 通信エラーや残高不足の可能性があります。<br>詳細: ${e.message}</div>`;
+                logEl.scrollTop = logEl.scrollHeight;
             }
         }
 
