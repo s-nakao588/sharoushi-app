@@ -281,6 +281,7 @@
         let timerInterval = null, timeLeft = 60, isMuted = true, isPaused = false, todayMistakes = [];
         let userApiKey = '';
         let globalTimerInterval = null, globalTimeLeftSeconds = null, isTimeUp = false;
+        let userCondition = '普通';
         
         let strategyHistory = []; 
         let strategyPlan = null;
@@ -299,6 +300,19 @@
             loadAllSubjects();
             fetchHistory();
         };
+
+        // フリーズの原因となっていた削除済み関数を正しく復元
+        function getEffectiveCondition() {
+            const cond = document.getElementById('condition-select').value;
+            const health = document.getElementById('health-select').value;
+            let result = cond;
+            if (cond === 'おまかせ') result = '明るく親しみやすい';
+            if (cond === 'ルーレット') {
+                const types = ['普通', '厳しめ', '熱血', '優しめ'];
+                result = types[Math.floor(Math.random() * types.length)];
+            }
+            return `モード: ${result} / 体調: ${health}`;
+        }
 
         function toggleCustomTime() {
             const selectVal = document.getElementById('time-limit-select').value;
@@ -408,7 +422,6 @@
 
             if(userApiKey) {
                 let prompt = `あなたは社労士試験の専属コーチです。以下の成績データを見て、受講生に「今日一番やるべき科目・項目」を1〜2文（40文字程度）でズバッと指摘して発破をかけてください。進捗率(progressRate)が低い場合は「まずは順番に進めよう」と基礎を促してください。データ: ${JSON.stringify(stats)}`;
-                // 絶対ルール17に基づき、2.5モデルを使用
                 fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 })
@@ -440,10 +453,15 @@
         }
 
         async function sendStrategyMessage() {
+            userApiKey = document.getElementById('api-key-input').value.trim();
+            if(!userApiKey) { alert("APIキーが必要です"); return; }
+            try { 
+                localStorage.setItem('gemini_api_key', userApiKey); 
+            } catch(e) {}
+
             const inputEl = document.getElementById('strategy-input');
             const input = inputEl.value.trim();
             if(!input) return;
-            if(!userApiKey) { alert("APIキーが必要です"); return; }
             
             const logEl = document.getElementById('strategy-chat-log');
             
@@ -483,7 +501,6 @@ ${JSON.stringify(stats)}
             apiMessages = apiMessages.concat(strategyHistory);
 
             try {
-                // 絶対ルール17に基づき、2.5モデルを使用
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ contents: apiMessages })
@@ -674,7 +691,7 @@ ${JSON.stringify(stats)}
             
             let histDisp = hist.historyStr || "未挑戦";
             if (hist.status) histDisp += ` (${hist.status})`;
-            document.getElementById('stat-history').textContent = histDisp;
+            document.getElementById('stat-history').textContent = disp;
 
             const btnP = document.getElementById('btn-status-perfect');
             const btnT = document.getElementById('btn-status-text');
@@ -851,7 +868,6 @@ ${JSON.stringify(stats)}
             let cleanText = text.replace(/<[^>]+>/g, '').trim();
             if (!cleanText) return;
             try {
-                // 絶対ルール17に基づき、3.8-ttsモデルを使用
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: [{ parts: [{ text: cleanText }] }] })
@@ -883,7 +899,6 @@ ${JSON.stringify(stats)}
             else if (situation === "nap_end") prompt += `仮眠から起きました。「さあ、顔を洗って再開よ！」と元気よく喝を入れて。`;
 
             try {
-                // 絶対ルール17に基づき、2.5モデルを使用
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
@@ -922,7 +937,6 @@ ${JSON.stringify(stats)}
 問題文: ${q.問題文}\n正誤: ${q.正誤}\n解説: ${q.解説}`;
             
             try {
-                // 絶対ルール17に基づき、3.1モデルを使用
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
