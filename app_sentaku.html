@@ -36,32 +36,35 @@
 
         /* 💡 黄金基準：iPad・タッチ端末専用の強制拡大スタイル */
         @media (hover: none) and (pointer: coarse) {
-            /* ▼ 問題文：少し大きめに（2.3rem）、長文が見にくくならない絶妙なライン */
+            /* ▼ 問題文 */
             #question-text-area { font-size: 2.3rem !important; line-height: 2.1 !important; }
             .inline-select { font-size: 1.1em !important; padding: 0.3rem 2.2rem 0.3rem 0.8rem !important; }
             
-            /* ▼ 語群 */
-            #word-bank-container { font-size: 1.6rem !important; gap: 0.8rem !important; }
+            /* ▼ 語群：文字のみを拡大 */
+            #word-bank-container { font-size: 1.8rem !important; gap: 0.8rem !important; }
             #word-bank-container div { padding: 1.0rem !important; }
             
-            /* ▼ AIコメント＆解説（択一式と完全一致） */
-            #ai-message { font-size: 1.75rem !important; line-height: 1.5 !important; }
-            #explanation-text { font-size: 1.85rem !important; line-height: 1.8 !important; font-weight: 400 !important; }
-            #article-text { font-size: 1.6rem !important; }
+            /* ▼ AIコメント＆解説：さらに読みやすく拡大 */
+            #ai-message { font-size: 2.0rem !important; line-height: 1.6 !important; }
+            #explanation-text { font-size: 2.0rem !important; line-height: 1.8 !important; font-weight: 400 !important; }
+            #article-text { font-size: 1.8rem !important; }
             
-            /* ▼ ヘッダーの終了・仮眠ボタンを巨大化 */
+            /* ▼ ヘッダーの終了・仮眠ボタン */
             .header-btn { font-size: 1.6rem !important; padding: 1.0rem 1.8rem !important; border-width: 2px !important; }
             
-            /* ▼ ヒント・解答・錬金術などのアクションボタンを巨大化 */
+            /* ▼ ヒント・解答・錬金術などのアクションボタン */
             .action-btn { font-size: 1.8rem !important; padding: 1.8rem !important; border-width: 3px !important; border-radius: 1.2rem !important; }
 
-            /* ▼ 右下の自己評価エリア（迷った・次へ）を上に持ち上げ＆巨大化 */
+            /* ▼ 右下の自己評価エリア（迷った・次へ） */
             #self-eval-area { padding: 2rem 2rem 3rem 2rem !important; border-top-width: 4px !important; }
             .eval-btn { font-size: 2rem !important; padding: 1.8rem !important; border-width: 3px !important; border-radius: 1.2rem !important; }
-            .eval-target-box { font-size: 1.6rem !important; padding: 0.8rem 1.2rem !important; border-width: 2px !important; }
-            .eval-target-box input[type="checkbox"] { width: 1.8rem !important; height: 1.8rem !important; }
-            #eval-target-label { font-size: 1.4rem !important; }
-            #eval-guide-text { font-size: 1.3rem !important; margin-bottom: 1rem !important; }
+            
+            /* ▼ チェックボックス：タッチしやすいようさらに巨大化 */
+            .eval-target-box { font-size: 1.8rem !important; padding: 1.0rem 1.4rem !important; border-width: 2px !important; }
+            .eval-target-box input[type="checkbox"] { width: 2.4rem !important; height: 2.4rem !important; }
+            .eval-target-box span { font-size: 1.8rem !important; }
+            #eval-target-label { font-size: 1.6rem !important; }
+            #eval-guide-text { font-size: 1.4rem !important; margin-bottom: 1.2rem !important; }
         }
     </style>
 </head>
@@ -157,7 +160,6 @@
         <div class="bg-indigo-900 text-white shrink-0 shadow-md z-20">
             <div class="p-3 md:p-5 flex justify-between items-center gap-2">
                 <div class="flex items-center gap-2 shrink-0 flex-wrap">
-                    <!-- ▼ クラスに header-btn を追加 -->
                     <button onclick="location.reload()" class="header-btn bg-white/10 px-3 py-2 rounded-xl text-sm md:text-base font-bold border border-slate-500">🚪 終了</button>
                     <button onclick="openNapMenu()" class="header-btn bg-indigo-950/80 px-3 py-2 rounded-xl text-sm md:text-base font-bold text-indigo-200 border border-indigo-500">💤 仮眠</button>
                     <span class="bg-indigo-700 px-2 py-1 rounded text-xs md:text-sm font-bold ml-2">選択式モード</span>
@@ -215,7 +217,6 @@
         <div class="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 pb-48">
             
             <div id="action-btn-area" class="flex flex-col gap-3">
-                <!-- ▼ クラスに action-btn を追加 -->
                 <button onclick="showContextHint()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-3 rounded-xl shadow-sm border-2 border-yellow-300 text-lg active:scale-95 transition-all">
                     💡 文脈ヒント（手がかりをハイライト）
                 </button>
@@ -243,7 +244,7 @@
                     </div>
                 </div>
 
-                <!-- 🌟 錬金術ボタン ▼ クラスに action-btn を追加 -->
+                <!-- 🌟 錬金術ボタン -->
                 <button onclick="generateAlchemyQuestion()" class="action-btn w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 text-lg animate-pulse border-2 border-white">
                     🔥 別の箇所を抜いて再挑戦（Pro AI錬金）
                 </button>
@@ -261,11 +262,10 @@
         <!-- 🌟 自己評価ボタン（右下固定・A〜E個別評価対応） -->
         <div id="self-eval-area" class="hidden absolute bottom-0 left-0 w-full p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
             <p id="eval-guide-text" class="text-center text-[11px] font-bold text-slate-500 mb-2">間違えた空欄や、まぐれ当たりは必ず「迷った」を押して記録してね！</p>
-            <div class="flex gap-2 mb-3" id="eval-target-buttons">
+            <div class="flex gap-2 mb-3 justify-center" id="eval-target-buttons">
                 <!-- JSでA〜Eの選択ボタンを生成 -->
             </div>
             
-            <!-- 「完璧」を削除し、「迷った」と「次へ」を巨大化 -->
             <div class="flex gap-3">
                 <button onclick="markEval('迷った')" class="eval-btn flex-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border-2 border-yellow-300 font-black py-3 rounded-xl shadow-sm active:scale-95 transition-all">🟡 迷ったと記録</button>
                 <button onclick="nextQuestion()" class="eval-btn flex-[1.5] bg-slate-800 text-white font-black py-3 rounded-xl shadow-md active:scale-95 transition-all">次の問題へ ➡</button>
@@ -474,11 +474,11 @@
             document.getElementById('article-text').textContent = currentQuestions[currentIndex].根拠条文 || "条文なし";
             document.getElementById('explanation-text').innerHTML = currentQuestions[currentIndex].解説 || "解説なし";
 
-            // 自己評価のA~Eボタン生成 (クラス追加でiPad時に大きくする)
+            // 自己評価のA~Eボタン生成 (iPad時は大きく、チェックはデフォルトで外す)
             const evalTargetContainer = document.getElementById('eval-target-buttons');
-            evalTargetContainer.innerHTML = '<span id="eval-target-label" class="text-xs font-bold text-slate-500 self-center">対象:</span>';
+            evalTargetContainer.innerHTML = '<span id="eval-target-label" class="text-xs font-bold text-slate-500 self-center mr-2">対象:</span>';
             ['A','B','C','D','E'].forEach(letter => {
-                evalTargetContainer.innerHTML += `<label class="eval-target-box flex items-center gap-1 cursor-pointer bg-slate-100 px-2 py-1 rounded border border-slate-300"><input type="checkbox" name="eval-target" value="${letter}" checked><span class="font-bold text-sm">${letter}</span></label>`;
+                evalTargetContainer.innerHTML += `<label class="eval-target-box flex items-center gap-1 cursor-pointer bg-slate-100 px-2 py-1 rounded border border-slate-300"><input type="checkbox" name="eval-target" value="${letter}"><span class="font-bold text-sm">${letter}</span></label>`;
             });
 
             generateAiMessage("result_sentaku", { score: score, textOnly: false });
