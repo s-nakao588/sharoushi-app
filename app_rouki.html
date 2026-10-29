@@ -91,6 +91,7 @@
                     <span class="text-sm md:text-base font-bold text-slate-500 bg-white px-3 py-1 rounded-full border" id="loading-status">☁️ データ集計中...</span>
                 </h2>
                 
+                <!-- 今日の一言 -->
                 <div class="bg-pink-50 border-2 border-pink-200 rounded-2xl p-4 mb-6 flex items-start gap-4 shadow-sm">
                     <img src="coach.jpg" class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white shadow object-cover shrink-0">
                     <div>
@@ -99,7 +100,10 @@
                     </div>
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="dash-master-bars"></div>
+                <!-- マスター度表示 -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="dash-master-bars">
+                    <!-- JSで動的生成 -->
+                </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <button onclick="triggerAnalysisStrategy()" class="bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-indigo-300 p-4 md:p-6 rounded-2xl text-left active:scale-95 shadow-sm hover:shadow-md transition-all">
@@ -112,18 +116,22 @@
                     </button>
                 </div>
 
+                <!-- 作戦会議チャット -->
                 <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 md:p-6 shadow-md flex flex-col">
                     <h3 class="text-xl md:text-2xl font-black text-indigo-800 mb-2">💬 専属講師と今日の作戦会議</h3>
+                    
                     <div id="strategy-chat-log" class="mb-4 max-h-60 overflow-y-auto flex flex-col gap-2 p-2 bg-white/50 rounded-xl border border-indigo-100">
                         <div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">
                             今の気分ややりたい科目を教えてね。上のボタンを押してもいいよ！
                         </div>
                     </div>
+
                     <div class="flex gap-2 shrink-0">
                         <input type="text" id="strategy-input" class="flex-1 bg-white border-2 border-indigo-300 text-base md:text-lg p-3 rounded-xl font-bold focus:outline-none focus:border-indigo-500" placeholder="要望を入力...">
                         <button onclick="sendStrategyMessage()" class="bg-indigo-600 text-white font-black px-4 md:px-6 py-3 rounded-xl text-base md:text-lg hover:bg-indigo-700 active:scale-95 transition-transform">送信</button>
                     </div>
-                    <div class="mt-4 flex justify-center" id="btn-strategy-container">
+
+                    <div class="mt-4 flex justify-center">
                         <button id="btn-strategy-start" onclick="executeStrategyPlan()" class="w-full max-w-md bg-gradient-to-r from-pink-500 to-red-500 text-white font-black py-4 rounded-2xl text-xl md:text-2xl shadow-lg active:scale-95 transition-transform hidden">🔥 このプランで特訓スタート！</button>
                     </div>
                 </div>
@@ -407,8 +415,9 @@
             }
 
             if(userApiKey) {
+                // ★修正: AIモデルを実在する 1.5-flash に変更
                 let prompt = `あなたは社労士試験の専属コーチです。以下の成績データを見て、受講生に「今日一番やるべき科目・項目」を1〜2文（40文字程度）でズバッと指摘して発破をかけてください。進捗率(progressRate)が低い場合は「まずは順番に進めよう」と基礎を促してください。データ: ${JSON.stringify(stats)}`;
-                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
+                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 })
                 .then(async res => {
@@ -438,7 +447,7 @@
             sendStrategyMessage();
         }
 
-        // ★修正: DOM書き換えを安全化（エラー時の透明化・フリーズバグを防止）
+        // 🌟 作戦会議チャット機能
         async function sendStrategyMessage() {
             const inputEl = document.getElementById('strategy-input');
             const input = inputEl.value.trim();
@@ -483,7 +492,8 @@ ${JSON.stringify(stats)}
             apiMessages = apiMessages.concat(strategyHistory);
 
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
+                // ★修正: AIモデルを実在する 1.5-flash に変更
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ contents: apiMessages })
                 });
@@ -846,28 +856,15 @@ ${JSON.stringify(stats)}
         }
 
         async function speakText(text) {
+            // 本来は Google Cloud TTS を使用しますが、現行仕様に合わせてWeb Speech APIにフォールバックさせます。
             if (isMuted || !text) return; 
             let cleanText = text.replace(/<[^>]+>/g, '').trim();
             if (!cleanText) return;
-            try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${userApiKey}`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ contents: [{ parts: [{ text: cleanText }] }] })
-                });
-                if (!res.ok) throw new Error("TTS API Error");
-                const data = await res.json();
-                const audioBase64 = data.candidates[0].content.parts[0].inlineData.data;
-                const player = document.getElementById('tts-player');
-                player.src = `data:audio/mp3;base64,${audioBase64}`;
-                player.play();
-            } catch (err) {
-                if ('speechSynthesis' in window) {
-                    const utterance = new SpeechSynthesisUtterance(cleanText); utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance);
-                }
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(cleanText); utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance);
             }
         }
 
-        // ★修正: エラー時のDOM破壊対策を組み込み
         async function generateAiMessage(situation, extraData = {}) {
             const aiMessageEl = document.getElementById('ai-message');
             if(situation === 'next') { if(aiMessageEl) aiMessageEl.textContent = "よし、次の問題だよ！"; return; }
@@ -882,7 +879,8 @@ ${JSON.stringify(stats)}
             else if (situation === "nap_end") prompt += `仮眠から起きました。「さあ、顔を洗って再開よ！」と元気よく喝を入れて。`;
 
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
+                // ★修正: AIモデルを実在する 1.5-flash に変更
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
                 
@@ -920,7 +918,8 @@ ${JSON.stringify(stats)}
 問題文: ${q.問題文}\n正誤: ${q.正誤}\n解説: ${q.解説}`;
             
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${userApiKey}`, {
+                // ★修正: AIモデルを実在する 1.5-pro に変更
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
                 if (!res.ok) throw new Error("Pro API Error");
