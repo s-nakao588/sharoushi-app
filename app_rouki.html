@@ -408,7 +408,8 @@
 
             if(userApiKey) {
                 let prompt = `あなたは社労士試験の専属コーチです。以下の成績データを見て、受講生に「今日一番やるべき科目・項目」を1〜2文（40文字程度）でズバッと指摘して発破をかけてください。進捗率(progressRate)が低い場合は「まずは順番に進めよう」と基礎を促してください。データ: ${JSON.stringify(stats)}`;
-                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${userApiKey}`, {
+                // 絶対ルール17に基づき、2.5モデルを使用
+                fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 })
                 .then(async res => {
@@ -482,7 +483,8 @@ ${JSON.stringify(stats)}
             apiMessages = apiMessages.concat(strategyHistory);
 
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${userApiKey}`, {
+                // 絶対ルール17に基づき、2.5モデルを使用
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, 
                     body: JSON.stringify({ contents: apiMessages })
                 });
@@ -848,8 +850,22 @@ ${JSON.stringify(stats)}
             if (isMuted || !text) return; 
             let cleanText = text.replace(/<[^>]+>/g, '').trim();
             if (!cleanText) return;
-            if ('speechSynthesis' in window) {
-                const utterance = new SpeechSynthesisUtterance(cleanText); utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance);
+            try {
+                // 絶対ルール17に基づき、3.8-ttsモデルを使用
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${userApiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: cleanText }] }] })
+                });
+                if (!res.ok) throw new Error("TTS API Error");
+                const data = await res.json();
+                const audioBase64 = data.candidates[0].content.parts[0].inlineData.data;
+                const player = document.getElementById('tts-player');
+                player.src = `data:audio/mp3;base64,${audioBase64}`;
+                player.play();
+            } catch (err) {
+                if ('speechSynthesis' in window) {
+                    const utterance = new SpeechSynthesisUtterance(cleanText); utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance);
+                }
             }
         }
 
@@ -867,7 +883,8 @@ ${JSON.stringify(stats)}
             else if (situation === "nap_end") prompt += `仮眠から起きました。「さあ、顔を洗って再開よ！」と元気よく喝を入れて。`;
 
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${userApiKey}`, {
+                // 絶対ルール17に基づき、2.5モデルを使用
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
                 
@@ -905,7 +922,8 @@ ${JSON.stringify(stats)}
 問題文: ${q.問題文}\n正誤: ${q.正誤}\n解説: ${q.解説}`;
             
             try {
-                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro-latest:generateContent?key=${userApiKey}`, {
+                // 絶対ルール17に基づき、3.1モデルを使用
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
                 if (!res.ok) throw new Error("Pro API Error");
