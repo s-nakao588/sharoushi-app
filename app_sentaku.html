@@ -36,13 +36,22 @@
 
         /* 💡 黄金基準：iPad・タッチ端末専用の強制拡大スタイル */
         @media (hover: none) and (pointer: coarse) {
-            #question-text-area { font-size: 1.8rem !important; line-height: 2.2 !important; }
-            .inline-select { font-size: 1.1em !important; padding: 0.3rem 2rem 0.3rem 0.8rem !important; }
-            #word-bank-container { font-size: 1.4rem !important; gap: 0.8rem !important; }
-            #word-bank-container div { padding: 0.8rem !important; }
-            #ai-message { font-size: 1.6rem !important; line-height: 1.6 !important; }
-            #explanation-text { font-size: 1.6rem !important; line-height: 1.8 !important; }
-            .btn-next-action { font-size: 1.6rem !important; padding: 1.2rem !important; }
+            /* ▼ 問題文：少し大きめに（2.1rem）、長文が見にくくならない程度に調整 */
+            #question-text-area { font-size: 2.1rem !important; line-height: 2.0 !important; }
+            .inline-select { font-size: 1.1em !important; padding: 0.3rem 2.2rem 0.3rem 0.8rem !important; }
+            
+            /* ▼ 語群：見やすくタップしやすく拡大 */
+            #word-bank-container { font-size: 1.6rem !important; gap: 0.8rem !important; }
+            #word-bank-container div { padding: 1.0rem !important; }
+            
+            /* ▼ AIコメント＆解説：択一式と完全一致させる */
+            #ai-message { font-size: 1.75rem !important; line-height: 1.5 !important; }
+            #explanation-text { font-size: 1.85rem !important; line-height: 1.8 !important; font-weight: 400 !important; }
+            #article-text { font-size: 1.6rem !important; }
+            
+            /* ▼ 各種ボタン */
+            .btn-next-action { font-size: 1.75rem !important; padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
+            .btn-mistake-action { font-size: 1.25rem !important; padding: 0.75rem 1.25rem !important; }
         }
     </style>
 </head>
@@ -229,6 +238,8 @@
 
                 <!-- 解説文 -->
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                    <h3 class="text-sm font-black text-slate-400 mb-2 border-b-2 pb-2">根拠条文</h3>
+                    <p class="text-indigo-700 font-bold mb-4 text-lg" id="article-text">法X条</p>
                     <h3 class="text-sm font-black text-slate-400 mb-2 border-b-2 pb-2">解説</h3>
                     <p class="text-slate-700 leading-relaxed font-normal text-base md:text-lg mb-4" id="explanation-text">解説</p>
                 </div>
@@ -264,7 +275,8 @@
                 問題文: `労働条件は、労働者が人たるに値する【A】を営むための必要を充たすべきものでなければならない。この法律で定める労働条件の基準は【B】のものであるから、労働関係の当事者は、この基準を理由として労働条件を【C】させてはならないことはもとより、その【D】を図るように【E】なければならない。`,
                 正解A: "生活", 正解B: "最低", 正解C: "低下", 正解D: "向上", 正解E: "努め",
                 ダミー: "健康,幸福,最高,維持,合意,上昇,改善,努力し,義務づけられ,保障,人権,対等,決定,遵守,尊重",
-                解説: "労基法第1条（労働条件の原則）。人たるに値する「生活」がキーワード。最低基準であること、向上の努力義務があることを押さえる。"
+                根拠条文: "労基法第1条（労働条件の原則）",
+                解説: "人たるに値する「生活」がキーワード。最低基準であること、向上の努力義務があることを押さえる。"
             });
         }
 
@@ -512,6 +524,7 @@ ${currentFullText}`;
                     const newQ = JSON.parse(jsonMatch[1]);
                     newQ._subjectName = currentQuestions[currentIndex]._subjectName;
                     newQ.解説 = "【錬金術による派生問題】\n" + (currentQuestions[currentIndex].解説 || "");
+                    newQ.根拠条文 = currentQuestions[currentIndex].根拠条文 || "錬金生成";
                     
                     // 現在のキューに挿入してリロード
                     currentQuestions.splice(currentIndex + 1, 0, newQ);
