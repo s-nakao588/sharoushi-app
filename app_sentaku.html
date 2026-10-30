@@ -612,7 +612,8 @@
             currentWordBank = [q.正解A, q.正解B, q.正解C, q.正解D, q.正解E, ...dummies].filter(w=>w).slice(0,20);
             currentWordBank.sort(() => Math.random() - 0.5);
 
-            let htmlText = q.問題文;
+            // スプレッドシート上の改行（\n）をHTMLの改行タグ（<br>）に変換する処理を追加
+            let htmlText = q.問題文.replace(/\n/g, '<br>');
             ['A','B','C','D','E'].forEach(letter => {
                 let options = `<option value="" selected disabled>【 ${letter} 】</option>`;
                 currentWordBank.forEach((word, idx) => {
