@@ -136,7 +136,7 @@
             </div>
             
             <!-- 🌟 ダッシュボード＆作戦会議エリア -->
-            <div class="bg-slate-50 rounded-3xl p-6 md:p-8 mb-8 border-4 border-slate-200 shadow-inner">
+            <div class="bg-slate-50 rounded-3xl p-4 md:p-8 mb-8 border-4 border-slate-200 shadow-inner">
                 <h2 class="text-2xl md:text-3xl font-black mb-4 flex items-center gap-2">
                     <span>📈 統合ダッシュボード</span>
                     <span class="text-sm md:text-base font-bold text-slate-500 bg-white px-3 py-1 rounded-full border" id="loading-status">☁️ 統合データ読み込み中...</span>
@@ -149,7 +149,7 @@
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="dash-master-bars"></div>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 items-start" id="dash-master-bars"></div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                     <button onclick="triggerAnalysisStrategy()" class="bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-indigo-300 p-4 md:p-6 rounded-2xl text-left active:scale-95 shadow-sm hover:shadow-md transition-all">
@@ -467,7 +467,7 @@
                             let data = results.data.filter(q => q && q.問題文 && String(q.問題文).trim() !== "");
                             data.forEach(q => { 
                                 q._subjectName = subject.name;
-                                q._type = subject.type; // 択一 or 選択
+                                q._type = subject.type; 
                                 q.項目 = q.項目 || "分類なし"; 
                                 q._id = q.問題文.substring(0, 30); 
                             });
@@ -490,20 +490,48 @@
             let stats = {};
             allDatabase.forEach(q => {
                 let subj = q._subjectName;
-                if (!stats[subj]) stats[subj] = { total: 0, played: 0, perfects: 0 };
+                let chap = q.項目 || "分類なし";
+                
+                if (!stats[subj]) stats[subj] = { total: 0, played: 0, latestScore: 0, latestMax: 0, chapters: {} };
+                if (!stats[subj].chapters[chap]) stats[subj].chapters[chap] = { total: 0, played: 0, latestScore: 0, latestMax: 0 };
+                
                 stats[subj].total++;
+                stats[subj].chapters[chap].total++;
+                
                 let hist = userHistory[q._id];
-                if (hist && hist.playCount > 0) {
+                if (hist && hist.playCount > 0 && hist.historyStr) {
                     stats[subj].played++;
-                    // 択一式は1問1点、選択式は1問5点計算（GASから取ったcorrectCountで算出）
-                    let maxScore = q._type === '選択' ? (hist.playCount * 5) : hist.playCount;
-                    let rate = (hist.correctCount / maxScore) * 100;
-                    if (rate >= 80 || hist.status === '完璧') stats[subj].perfects++;
+                    stats[subj].chapters[chap].played++;
+                    
+                    let hArr = String(hist.historyStr).split(',');
+                    let latest = hArr[hArr.length - 1]; // 最新の履歴
+                    let lScore = 0;
+                    let mScore = q._type === '選択' ? 5 : 1;
+                    
+                    if (q._type === '択一') {
+                        if (latest === '〇') lScore = 1;
+                    } else {
+                        let match = latest.match(/(\d+)点/);
+                        if (match) lScore = parseInt(match[1], 10);
+                    }
+                    
+                    stats[subj].latestScore += lScore;
+                    stats[subj].latestMax += mScore;
+                    stats[subj].chapters[chap].latestScore += lScore;
+                    stats[subj].chapters[chap].latestMax += mScore;
                 }
             });
+            
             for (let subj in stats) {
-                stats[subj].progressRate = stats[subj].total > 0 ? Math.round((stats[subj].played / stats[subj].total) * 100) : 0;
-                stats[subj].masterRate = stats[subj].played > 0 ? Math.round((stats[subj].perfects / stats[subj].played) * 100) : 0;
+                let s = stats[subj];
+                s.progressRate = s.total > 0 ? Math.round((s.played / s.total) * 100) : 0;
+                s.masterRate = s.latestMax > 0 ? Math.round((s.latestScore / s.latestMax) * 100) : 0;
+                
+                for (let chap in s.chapters) {
+                    let c = s.chapters[chap];
+                    c.progressRate = c.total > 0 ? Math.round((c.played / c.total) * 100) : 0;
+                    c.masterRate = c.latestMax > 0 ? Math.round((c.latestScore / c.latestMax) * 100) : 0;
+                }
             }
             return stats;
         }
@@ -513,28 +541,52 @@
             const stats = getStatsSummary();
             const container = document.getElementById('dash-master-bars');
             container.innerHTML = "";
+            
+            let htmlContent = "";
             for (const subj of Object.keys(stats)) {
                 let s = stats[subj];
                 let mColor = s.masterRate >= 80 ? 'bg-green-500' : (s.masterRate >= 50 ? 'bg-yellow-400' : 'bg-red-400');
-                let html = `
-                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center flex flex-col justify-between">
-                        <p class="text-xs md:text-sm font-bold text-slate-500 mb-2 truncate" title="${subj}">${subj}</p>
+                
+                // 項目ごとのHTML組み立て
+                let chaptersHtml = `<div class="mt-3 hidden border-t border-slate-200 pt-3 text-left w-full" id="dash-chap-${subj.replace(/[^\w]/g,'')}">`;
+                for (let chap in s.chapters) {
+                    let c = s.chapters[chap];
+                    let cmColor = c.masterRate >= 80 ? 'bg-green-500' : (c.masterRate >= 50 ? 'bg-yellow-400' : 'bg-red-400');
+                    chaptersHtml += `
                         <div class="mb-2">
-                            <p class="text-xs font-bold text-slate-600 mb-1">進捗: ${s.progressRate}%</p>
+                            <div class="flex justify-between text-[10px] md:text-xs font-bold text-slate-600 mb-1">
+                                <span class="truncate w-3/5" title="${chap}">${chap}</span>
+                                <span class="w-2/5 text-right text-[9px] md:text-[10px]">進:${c.progressRate}% 正:${c.masterRate}%</span>
+                            </div>
+                            <div class="flex gap-1 h-1 w-full">
+                                <div class="w-1/2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-blue-500" style="width: ${c.progressRate}%"></div></div>
+                                <div class="w-1/2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full ${cmColor}" style="width: ${c.masterRate}%"></div></div>
+                            </div>
+                        </div>
+                    `;
+                }
+                chaptersHtml += `</div>`;
+                
+                htmlContent += `
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center flex flex-col justify-start cursor-pointer hover:bg-slate-50 transition-colors" onclick="document.getElementById('dash-chap-${subj.replace(/[^\w]/g,'')}').classList.toggle('hidden')">
+                        <p class="text-xs md:text-sm font-bold text-slate-500 mb-2 truncate" title="${subj}">${subj} <span class="text-[10px] text-slate-400">▼</span></p>
+                        <div class="mb-2">
+                            <p class="text-[10px] md:text-xs font-bold text-slate-600 mb-1">進捗: ${s.progressRate}%</p>
                             <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                 <div class="h-full bg-blue-500" style="width: ${s.progressRate}%"></div>
                             </div>
                         </div>
                         <div>
-                            <p class="text-xs font-bold text-slate-600 mb-1">マスター: ${s.masterRate}%</p>
+                            <p class="text-[10px] md:text-xs font-bold text-slate-600 mb-1">最新正解: ${s.masterRate}%</p>
                             <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                                 <div class="h-full ${mColor}" style="width: ${s.masterRate}%"></div>
                             </div>
                         </div>
+                        ${chaptersHtml}
                     </div>
                 `;
-                container.insertAdjacentHTML('beforeend', html);
             }
+            container.innerHTML = htmlContent;
 
             if(userApiKey) {
                 let prompt = `あなたは社労士試験の専属コーチ（18歳前後の明るい女性）です。成績データを見て、受講生に「今日一番やるべき科目」を1〜2文（40文字程度）でズバッと指摘して発破をかけてください。進捗率が0の場合は「今日から特訓スタートだね！択一も選択も両方できるよ！」と元気よく声をかけて。「～わ」「～よ」等の不自然な役割語は使わず、現代の自然な口語体で話してください。データ: ${JSON.stringify(stats)}`;
@@ -772,7 +824,7 @@
                 document.getElementById('tts-area').classList.add('hidden');
                 document.getElementById('alchemy-btn').classList.add('hidden');
                 
-                document.getElementById('question-text-takuitsu').textContent = q.問題文;
+                document.getElementById('question-text-takuitsu').innerHTML = q.問題文.replace(/\n/g, '<br>');
                 
                 // タイマーアニメーション（60秒）
                 clearInterval(timerInterval);
