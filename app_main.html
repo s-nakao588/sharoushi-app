@@ -34,7 +34,7 @@
         option.hidden-option { display: none !important; }
         .highlight-clue { background-color: #fef08a; padding: 0 2px; border-radius: 2px; font-weight: bold; border-bottom: 2px solid #eab308; }
 
-        /* 💡 黄金基準：iPad・タッチ端末専用の強制拡大スタイル */
+        /* 💡 黄金基準：iPad等のタッチ端末専用の強制拡大スタイル */
         @media (hover: none) and (pointer: coarse) {
             #ai-message { font-size: 2.0rem !important; line-height: 1.6 !important; }
             #explanation-text { font-size: 2.0rem !important; line-height: 1.8 !important; font-weight: 400 !important; }
@@ -61,6 +61,33 @@
             .btn-next-action { font-size: 1.75rem !important; padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
             .btn-mistake-action { font-size: 1.25rem !important; padding: 0.75rem 1.25rem !important; }
         }
+
+        /* 📱 スマホ専用レイアウト（PC・iPadの黄金基準には影響させない） */
+        @media (max-width: 767px) {
+            #question-text-takuitsu, #question-text-sentaku { font-size: 1.3rem !important; line-height: 1.6 !important; padding: 1rem !important; }
+            .answer-btn-box-takuitsu { height: 6rem !important; padding-bottom: 0.5rem !important; }
+            .answer-btn-takuitsu { font-size: 3.5rem !important; border-width: 3px !important; padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+            
+            #ai-message { font-size: 1.1rem !important; line-height: 1.5 !important; }
+            #explanation-text { font-size: 1.1rem !important; line-height: 1.6 !important; }
+            #article-text { font-size: 1.1rem !important; }
+            
+            .header-btn { font-size: 0.9rem !important; padding: 0.5rem 0.8rem !important; border-width: 1px !important; }
+            .action-btn { font-size: 1.1rem !important; padding: 1rem !important; border-width: 2px !important; border-radius: 0.8rem !important; }
+            
+            .inline-select { font-size: 1rem !important; padding: 0.2rem 1.5rem 0.2rem 0.5rem !important; }
+            #word-bank-container { font-size: 1rem !important; gap: 0.5rem !important; }
+            #word-bank-container div { padding: 0.5rem !important; }
+            
+            #self-eval-area-sentaku, #self-eval-area-takuitsu { padding: 1rem !important; border-top-width: 2px !important; }
+            .eval-btn, .btn-next-action { font-size: 1.1rem !important; padding: 1rem !important; border-width: 2px !important; border-radius: 0.8rem !important; }
+            .eval-target-box { font-size: 1rem !important; padding: 0.5rem 0.8rem !important; border-width: 1px !important; }
+            .eval-target-box input[type="checkbox"] { width: 1.2rem !important; height: 1.2rem !important; }
+            .eval-target-box span { font-size: 1rem !important; }
+            #eval-target-label { font-size: 1rem !important; }
+            #eval-guide-text { font-size: 0.85rem !important; margin-bottom: 0.5rem !important; }
+            .btn-mistake-action { font-size: 0.9rem !important; padding: 0.5rem 1rem !important; }
+        }
     </style>
 </head>
 <body class="bg-slate-100 text-slate-800 h-[100dvh] w-screen flex flex-col lg:flex-row overflow-hidden font-sans">
@@ -72,7 +99,7 @@
         <button onclick="resumeTimer()" class="w-full max-w-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-black py-6 rounded-2xl text-3xl shadow-[0_8px_0_#166534] active:translate-y-[6px]">▶ 戻ったよ！（再開）</button>
     </div>
 
-    <!-- 未解答警告モーダル (選択式用) -->
+    <!-- 未解答警告モーダル -->
     <div id="warning-modal" class="fixed inset-0 z-[100] hidden flex-col items-center justify-center bg-gray-900/40 backdrop-blur-sm p-6">
         <div class="bg-white rounded-3xl shadow-2xl p-6 md:p-8 max-w-sm w-full text-center border-4 border-red-400 animate-bounce">
             <div class="text-6xl mb-4">⚠️</div>
@@ -104,25 +131,25 @@
     <!-- スタート画面 -->
     <div id="start-screen" class="absolute inset-0 bg-indigo-900 z-50 flex flex-col items-center justify-start text-white p-4 md:p-10 overflow-y-auto">
         <div class="flex justify-between items-center w-full max-w-5xl mb-6 mt-4">
-            <h1 class="text-3xl md:text-5xl lg:text-6xl font-black tracking-wider text-yellow-300">社労士 統合特訓 (択一/選択)</h1>
-            <button onclick="toggleSound()" id="sound-toggle-start-btn" class="bg-slate-700 hover:bg-slate-600 text-white text-lg font-bold px-6 py-3 rounded-xl border-2 border-slate-500">🔇 音声オフ</button>
+            <h1 class="text-2xl md:text-5xl lg:text-6xl font-black tracking-wider text-yellow-300">社労士 統合特訓 (択一/選択)</h1>
+            <button onclick="toggleSound()" id="sound-toggle-start-btn" class="bg-slate-700 hover:bg-slate-600 text-white text-sm md:text-lg font-bold px-4 md:px-6 py-2 md:py-3 rounded-xl border-2 border-slate-500">🔇 音声オフ</button>
         </div>
         
-        <div class="bg-white text-slate-800 p-6 md:p-12 rounded-[2rem] shadow-2xl max-w-5xl w-full mb-10">
+        <div class="bg-white text-slate-800 p-4 md:p-12 rounded-[2rem] shadow-2xl max-w-5xl w-full mb-10">
             
             <div class="flex justify-end mb-2">
                 <button onclick="document.getElementById('api-settings-wrapper').classList.toggle('hidden')" class="text-sm md:text-base font-bold text-slate-400 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-full transition-colors border border-slate-200">⚙️ API設定・モデル変更</button>
             </div>
             
             <div id="api-settings-wrapper" class="hidden">
-                <div class="mb-6 p-5 bg-yellow-50 border-2 border-yellow-200 rounded-xl flex flex-col md:flex-row gap-4">
+                <div class="mb-6 p-4 md:p-5 bg-yellow-50 border-2 border-yellow-200 rounded-xl flex flex-col md:flex-row gap-4">
                     <div class="flex-1">
                         <label class="block text-xs font-bold text-yellow-700 mb-1">🔑 Gemini APIキー</label>
-                        <input type="password" id="api-key-input" class="w-full border-2 border-yellow-300 p-3 rounded-lg text-lg focus:outline-none">
+                        <input type="password" id="api-key-input" class="w-full border-2 border-yellow-300 p-3 rounded-lg text-base focus:outline-none">
                     </div>
                     <div class="flex-1">
                         <label class="block text-xs font-bold text-yellow-700 mb-1">🤖 確実に動くAIモデルを選択</label>
-                        <select id="api-model-input" class="w-full border-2 border-yellow-300 p-3 rounded-lg text-lg focus:outline-none font-bold bg-white">
+                        <select id="api-model-input" class="w-full border-2 border-yellow-300 p-3 rounded-lg text-base focus:outline-none font-bold bg-white">
                             <option value="gemini-2.5-flash">gemini-2.5-flash (通常・ルール準拠)</option>
                             <option value="gemini-1.5-flash-latest">gemini-1.5-flash (予備・高速)</option>
                             <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (高度検証)</option>
@@ -134,13 +161,12 @@
             <!-- 🌟 ダッシュボード＆作戦会議エリア -->
             <div class="bg-slate-50 rounded-3xl p-4 md:p-8 mb-8 border-4 border-slate-200 shadow-inner">
                 <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
-                    <h2 class="text-2xl md:text-3xl font-black flex items-center gap-2">
+                    <h2 class="text-xl md:text-3xl font-black flex items-center gap-2">
                         <span>📈 統合ダッシュボード</span>
-                        <span class="text-sm md:text-base font-bold text-slate-500 bg-white px-3 py-1 rounded-full border" id="loading-status">☁️ 統合データ読み込み中...</span>
+                        <span class="text-xs md:text-base font-bold text-slate-500 bg-white px-2 py-1 rounded-full border" id="loading-status">☁️ 統合データ読み込み中...</span>
                     </h2>
-                    <button onclick="openNapMenu()" class="bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border-2 border-indigo-500 font-bold px-4 py-2 rounded-xl text-sm md:text-base shadow-sm active:scale-95 transition-all flex items-center gap-1.5">
-                        <span>💤</span>
-                        <span>仮眠</span>
+                    <button onclick="openNapMenu()" class="bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border-2 border-indigo-500 font-bold px-3 py-1.5 rounded-xl text-xs md:text-base shadow-sm active:scale-95 transition-all flex items-center gap-1.5">
+                        <span>💤</span><span>仮眠</span>
                     </button>
                 </div>
 
@@ -148,14 +174,14 @@
                     <img src="coach.jpg" class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white shadow object-cover shrink-0">
                     <div>
                         <p class="text-xs md:text-sm font-black text-pink-500 mb-1">専属講師からのアドバイス</p>
-                        <p class="text-base md:text-xl font-bold text-slate-800" id="dash-ai-comment">データを読み込んでいるよ。</p>
+                        <p class="text-sm md:text-xl font-bold text-slate-800" id="dash-ai-comment">データを読み込んでいるよ。</p>
                     </div>
                 </div>
 
                 <div class="flex flex-col md:flex-row gap-4 mb-6 bg-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
                     <div class="flex-1">
-                        <h3 class="text-base font-black mb-1.5 text-slate-700">🧘 講師モード</h3>
-                        <select id="condition-select" class="w-full bg-pink-50 border-2 border-pink-200 text-base md:text-lg font-black p-3 rounded-xl focus:outline-none">
+                        <h3 class="text-sm md:text-base font-black mb-1.5 text-slate-700">🧘 講師モード</h3>
+                        <select id="condition-select" class="w-full bg-pink-50 border-2 border-pink-200 text-sm md:text-lg font-black p-3 rounded-xl focus:outline-none">
                             <option value="おまかせ">🤖 おまかせ</option>
                             <option value="普通">普通（穏やかで自然に寄り添う）</option>
                             <option value="厳しめ">厳しめ（相手を信じて少し背中を押す）</option>
@@ -164,8 +190,8 @@
                         </select>
                     </div>
                     <div class="flex-1">
-                        <h3 class="text-base font-black mb-1.5 text-slate-700">🌡️ あなたの体調</h3>
-                        <select id="health-select" class="w-full bg-green-50 border-2 border-green-200 text-base md:text-lg font-black p-3 rounded-xl focus:outline-none">
+                        <h3 class="text-sm md:text-base font-black mb-1.5 text-slate-700">🌡️ あなたの体調</h3>
+                        <select id="health-select" class="w-full bg-green-50 border-2 border-green-200 text-sm md:text-lg font-black p-3 rounded-xl focus:outline-none">
                             <option value="元気">元気</option>
                             <option value="普通" selected>普通</option>
                             <option value="疲れ気味">疲れ気味</option>
@@ -177,65 +203,65 @@
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8 items-start" id="dash-master-bars"></div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-                    <button onclick="triggerAnalysisStrategy()" class="bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-indigo-300 p-4 md:p-6 rounded-2xl text-left active:scale-95 shadow-sm hover:shadow-md transition-all">
-                        <h3 class="text-lg md:text-xl font-black text-indigo-800 mb-1">📊 AI分析＆弱点特訓</h3>
+                    <button onclick="triggerAnalysisStrategy()" class="bg-gradient-to-br from-purple-100 to-indigo-100 border-2 border-indigo-300 p-4 rounded-2xl text-left active:scale-95 shadow-sm hover:shadow-md transition-all">
+                        <h3 class="text-base md:text-xl font-black text-indigo-800 mb-1">📊 AI分析＆弱点特訓</h3>
                         <p class="text-indigo-600 font-bold text-xs md:text-sm">チャットで弱点克服プランを相談</p>
                     </button>
-                    <button onclick="triggerEbbinghausStrategy()" class="bg-gradient-to-br from-emerald-100 to-teal-100 border-2 border-teal-300 p-4 md:p-6 rounded-2xl text-left active:scale-95 shadow-sm hover:shadow-md transition-all">
-                        <h3 class="text-lg md:text-xl font-black text-teal-800 mb-1">🧠 忘却曲線ベース復習</h3>
+                    <button onclick="triggerEbbinghausStrategy()" class="bg-gradient-to-br from-emerald-100 to-teal-100 border-2 border-teal-300 p-4 rounded-2xl text-left active:scale-95 shadow-sm hover:shadow-md transition-all">
+                        <h3 class="text-base md:text-xl font-black text-teal-800 mb-1">🧠 忘却曲線ベース復習</h3>
                         <p class="text-teal-600 font-bold text-xs md:text-sm">放置問題や苦手問題の復習を相談</p>
                     </button>
                 </div>
 
                 <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 md:p-6 shadow-md flex flex-col">
-                    <h3 class="text-xl md:text-2xl font-black text-indigo-800 mb-2">💬 専属講師と今日の作戦会議</h3>
+                    <h3 class="text-lg md:text-2xl font-black text-indigo-800 mb-2">💬 専属講師と今日の作戦会議</h3>
                     <div id="strategy-chat-log" class="mb-4 max-h-48 overflow-y-auto flex flex-col gap-2 p-2 bg-white/50 rounded-xl border border-indigo-100">
                         <div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">
                             今日は「択一」と「選択」どっちをやる？スキマ時間でサクッとでも、両方混ぜる「ミックス特訓」でも合わせるよ！
                         </div>
                     </div>
                     <div class="flex gap-2 shrink-0">
-                        <input type="text" id="strategy-input" class="flex-1 bg-white border-2 border-indigo-300 text-base md:text-lg p-3 rounded-xl font-bold focus:outline-none" placeholder="要望を入力...">
-                        <button onclick="sendStrategyMessage()" class="bg-indigo-600 text-white font-black px-4 md:px-6 py-3 rounded-xl text-base hover:bg-indigo-700 active:scale-95">送信</button>
+                        <input type="text" id="strategy-input" class="flex-1 bg-white border-2 border-indigo-300 text-sm md:text-lg p-3 rounded-xl font-bold focus:outline-none" placeholder="要望を入力...">
+                        <button onclick="sendStrategyMessage()" class="bg-indigo-600 text-white font-black px-4 py-3 rounded-xl text-sm md:text-base hover:bg-indigo-700 active:scale-95">送信</button>
                     </div>
                     <div class="mt-4 flex justify-center">
-                        <button id="btn-strategy-start" onclick="executeStrategyPlan()" class="w-full max-w-md bg-gradient-to-r from-pink-500 to-red-500 text-white font-black py-4 rounded-2xl text-xl shadow-lg active:scale-95 hidden">🔥 このプランで特訓スタート！</button>
+                        <button id="btn-strategy-start" onclick="executeStrategyPlan()" class="w-full max-w-md bg-gradient-to-r from-pink-500 to-red-500 text-white font-black py-4 rounded-2xl text-lg md:text-xl shadow-lg active:scale-95 hidden">🔥 このプランで特訓スタート！</button>
                     </div>
                 </div>
             </div>
 
             <!-- 🌟 クイックスタートボタン -->
-            <h2 class="text-2xl md:text-3xl font-black mb-4 border-b-2 border-slate-200 pb-2">🎯 クイックスタート</h2>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-10">
-                <button onclick="startTraining('quick', '択一')" class="bg-blue-100 hover:bg-blue-200 text-blue-800 border-2 border-blue-300 font-black py-5 rounded-2xl shadow-sm active:scale-95 text-xl transition-all">全科目 (択一式)</button>
-                <button onclick="startTraining('quick', '選択')" class="bg-pink-100 hover:bg-pink-200 text-pink-800 border-2 border-pink-300 font-black py-5 rounded-2xl shadow-sm active:scale-95 text-xl transition-all">全科目 (選択式)</button>
-                <button onclick="startTraining('quick', 'ミックス')" class="bg-gradient-to-r from-purple-100 to-indigo-100 hover:from-purple-200 hover:to-indigo-200 text-indigo-900 border-2 border-indigo-300 font-black py-5 rounded-2xl shadow-sm active:scale-95 text-xl transition-all">🔥 全科目 (ミックス)</button>
+            <h2 class="text-xl md:text-3xl font-black mb-4 border-b-2 border-slate-200 pb-2">🎯 クイックスタート</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 md:gap-4 mb-10">
+                <button onclick="startTraining('quick', '択一')" class="bg-blue-100 hover:bg-blue-200 text-blue-800 border-2 border-blue-300 font-black py-4 md:py-5 rounded-2xl shadow-sm active:scale-95 text-lg md:text-xl transition-all">全科目 (択一式)</button>
+                <button onclick="startTraining('quick', '選択')" class="bg-pink-100 hover:bg-pink-200 text-pink-800 border-2 border-pink-300 font-black py-4 md:py-5 rounded-2xl shadow-sm active:scale-95 text-lg md:text-xl transition-all">全科目 (選択式)</button>
+                <button onclick="startTraining('quick', 'ミックス')" class="bg-gradient-to-r from-purple-100 to-indigo-100 hover:from-purple-200 hover:to-indigo-200 text-indigo-900 border-2 border-indigo-300 font-black py-4 md:py-5 rounded-2xl shadow-sm active:scale-95 text-lg md:text-xl transition-all">🔥 全科目 (ミックス)</button>
             </div>
 
-            <h2 class="text-2xl md:text-3xl font-black mb-4">📚 詳細に項目を指定して作成</h2>
-            <div class="flex flex-wrap gap-3 mb-4 items-center">
-                <button onclick="checkAllChapters(true)" class="bg-indigo-100 text-indigo-700 px-6 py-3 rounded-xl font-bold text-lg">☑ すべて選択</button>
-                <button onclick="checkAllChapters(false)" class="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-bold text-lg">☐ すべて解除</button>
+            <h2 class="text-xl md:text-3xl font-black mb-4">📚 詳細に項目を指定して作成</h2>
+            <div class="flex flex-wrap gap-2 md:gap-3 mb-4 items-center">
+                <button onclick="checkAllChapters(true)" class="bg-indigo-100 text-indigo-700 px-4 md:px-6 py-2 md:py-3 rounded-xl font-bold text-sm md:text-lg">☑ すべて選択</button>
+                <button onclick="checkAllChapters(false)" class="bg-slate-100 text-slate-600 px-4 md:px-6 py-2 md:py-3 rounded-xl font-bold text-sm md:text-lg">☐ すべて解除</button>
                 
-                <label class="ml-auto bg-green-50 border-2 border-green-200 px-4 py-3 rounded-xl flex items-center gap-2 cursor-pointer font-bold text-green-800 text-lg hover:bg-green-100">
-                    <input type="checkbox" id="exclude-perfect-check" class="w-6 h-6" checked>
+                <label class="ml-auto bg-green-50 border-2 border-green-200 px-3 md:px-4 py-2 md:py-3 rounded-xl flex items-center gap-1 md:gap-2 cursor-pointer font-bold text-green-800 text-sm md:text-lg hover:bg-green-100 mt-2 sm:mt-0 w-full sm:w-auto justify-center">
+                    <input type="checkbox" id="exclude-perfect-check" class="w-5 h-5 md:w-6 md:h-6" checked>
                     🟢 完璧な問題を除外する
                 </label>
             </div>
             
-            <div id="subject-accordion-container" class="w-full border-4 border-slate-200 rounded-3xl mb-8 bg-slate-50 overflow-hidden max-h-96 overflow-y-auto"></div>
+            <div id="subject-accordion-container" class="w-full border-2 md:border-4 border-slate-200 rounded-2xl md:rounded-3xl mb-8 bg-slate-50 overflow-hidden max-h-96 overflow-y-auto"></div>
 
-            <h2 class="text-xl font-black mb-3">⏱️ 全体の目標時間</h2>
-            <select id="time-limit-select" onchange="toggleCustomTime()" class="w-full bg-blue-50 border-4 border-blue-200 text-xl md:text-2xl font-black p-4 rounded-2xl mb-4 focus:outline-none">
+            <h2 class="text-lg md:text-xl font-black mb-3">⏱️ 全体の目標時間</h2>
+            <select id="time-limit-select" onchange="toggleCustomTime()" class="w-full bg-blue-50 border-2 md:border-4 border-blue-200 text-base md:text-xl font-black p-3 md:p-4 rounded-xl md:rounded-2xl mb-4 focus:outline-none">
                 <option value="無制限">無制限（限界までやる）</option>
                 <option value="1分">テスト用: 1分</option>
                 <option value="15分">15分（スキマ時間）</option>
                 <option value="30分">30分（集中）</option>
                 <option value="custom">⏰ 自分で終了時刻を指定</option>
             </select>
-            <input type="time" id="custom-time-input" class="hidden w-full border-4 border-blue-300 p-4 rounded-2xl text-xl font-bold mb-6 focus:outline-none text-center">
+            <input type="time" id="custom-time-input" class="hidden w-full border-2 md:border-4 border-blue-300 p-3 md:p-4 rounded-xl md:rounded-2xl text-lg font-bold mb-6 focus:outline-none text-center">
 
-            <button onclick="startTraining('normal')" class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black py-6 rounded-3xl text-3xl shadow-xl active:scale-95">🚀 カスタム特訓スタート！！</button>
+            <button onclick="startTraining('normal')" class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black py-5 md:py-6 rounded-2xl md:rounded-3xl text-2xl md:text-3xl shadow-xl active:scale-95">🚀 カスタム特訓スタート！！</button>
         </div>
     </div>
 
@@ -243,51 +269,51 @@
     <main id="main-area" class="hidden w-full lg:w-[55%] h-[55dvh] lg:h-full flex-col bg-white shadow-xl z-10 shrink-0 border-r border-slate-200">
         
         <div class="bg-indigo-900 text-white shrink-0 shadow-md z-20">
-            <div class="p-3 md:p-5 flex justify-between items-center gap-2">
-                <div class="flex items-center gap-2 shrink-0 flex-wrap">
-                    <button onclick="location.reload()" class="header-btn bg-white/10 px-3 py-2 rounded-xl text-sm md:text-base font-bold border border-slate-500">🚪 終了</button>
-                    <button onclick="openNapMenu()" class="header-btn bg-indigo-950/80 px-3 py-2 rounded-xl text-sm md:text-base font-bold text-indigo-200 border border-indigo-500">💤 仮眠</button>
-                    <span id="q-type-badge-header" class="bg-indigo-700 px-2 py-1 rounded text-xs md:text-sm font-bold ml-2">読込中</span>
+            <div class="p-2 md:p-5 flex justify-between items-center gap-1 md:gap-2">
+                <div class="flex items-center gap-1 md:gap-2 shrink-0 flex-wrap">
+                    <button onclick="location.reload()" class="header-btn bg-white/10 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold border border-slate-500">🚪 終了</button>
+                    <button onclick="openNapMenu()" class="header-btn bg-indigo-950/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-indigo-200 border border-indigo-500">💤 仮眠</button>
+                    <span id="q-type-badge-header" class="bg-indigo-700 px-1 md:px-2 py-0.5 md:py-1 rounded text-[10px] md:text-sm font-bold ml-1">読込中</span>
                 </div>
-                <div class="flex items-center gap-3 ml-auto">
-                    <span id="question-progress" class="text-sm md:text-lg font-bold bg-indigo-800 px-4 py-2 rounded-full">1 / 10問</span>
-                    <span id="time-display" class="text-sm md:text-lg font-bold bg-slate-800 text-yellow-400 px-4 py-2 rounded-full w-24 text-center">⏳ --秒</span>
+                <div class="flex items-center gap-1 md:gap-3 ml-auto">
+                    <span id="question-progress" class="text-xs md:text-lg font-bold bg-indigo-800 px-2 md:px-4 py-1 md:py-2 rounded-full">1 / 10問</span>
+                    <span id="time-display" class="text-xs md:text-lg font-bold bg-slate-800 text-yellow-400 px-2 md:px-4 py-1 md:py-2 rounded-full w-16 md:w-24 text-center">⏳ --秒</span>
                 </div>
             </div>
-            <div class="bg-indigo-950 text-indigo-200 text-sm md:text-base px-6 py-2 text-center font-bold truncate" id="current-playlist-title">準備中</div>
-            <div class="w-full h-2 bg-indigo-950 overflow-hidden"><div id="timer-bar" class="h-full w-full"></div></div>
+            <div class="bg-indigo-950 text-indigo-200 text-xs md:text-base px-3 md:px-6 py-1 md:py-2 text-center font-bold truncate" id="current-playlist-title">準備中</div>
+            <div class="w-full h-1.5 md:h-2 bg-indigo-950 overflow-hidden"><div id="timer-bar" class="h-full w-full"></div></div>
         </div>
 
-        <div class="flex-1 flex flex-col p-4 md:p-6 lg:p-8 overflow-y-auto relative justify-between min-h-0">
-            <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
-                <div class="flex items-center gap-2">
-                    <span class="bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded" id="q-subject-badge">科目</span>
-                    <h2 class="text-base md:text-xl font-black text-slate-800" id="q-chapter-text">項目・条文</h2>
+        <div class="flex-1 flex flex-col p-3 md:p-6 lg:p-8 overflow-y-auto relative justify-between min-h-0">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2 md:pb-3 mb-2 md:mb-4 shrink-0">
+                <div class="flex items-center gap-1.5 md:gap-2">
+                    <span class="bg-indigo-600 text-white text-[10px] md:text-xs font-bold px-1.5 md:px-2 py-0.5 md:py-1 rounded" id="q-subject-badge">科目</span>
+                    <h2 class="text-sm md:text-xl font-black text-slate-800 truncate max-w-[150px] md:max-w-none" id="q-chapter-text">項目・条文</h2>
                 </div>
-                <div class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded" id="q-history-stats">挑戦:0 過去正答:0%</div>
+                <div class="text-[10px] md:text-xs font-bold text-slate-400 bg-slate-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded" id="q-history-stats">挑戦:0 過去正答:0%</div>
             </div>
             
             <!-- ▼ 択一式 UI コンテナ -->
             <div id="takuitsu-ui" class="hidden flex-1 flex-col min-h-0">
-                <div class="flex-1 overflow-y-auto mb-6 pr-3">
-                    <h2 class="text-3xl md:text-5xl lg:text-6xl font-normal leading-relaxed md:leading-loose text-slate-800 tracking-wide" id="question-text-takuitsu">択一式の問題文</h2>
+                <div class="flex-1 overflow-y-auto mb-3 md:mb-6 pr-2 md:pr-3">
+                    <h2 class="text-lg md:text-3xl lg:text-5xl font-normal leading-relaxed md:leading-loose text-slate-800 tracking-wide" id="question-text-takuitsu">択一式の問題文</h2>
                 </div>
-                <div class="shrink-0 flex space-x-6 pb-4 md:pb-8 answer-btn-box-takuitsu h-28 lg:h-32">
-                    <button onclick="answerTakuitsu('〇')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-3xl border-8 border-blue-400 active:scale-95 text-6xl md:text-8xl shadow-xl flex items-center justify-center transition-transform py-2 leading-none">〇</button>
-                    <button onclick="answerTakuitsu('✖')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-3xl border-8 border-red-400 active:scale-95 text-6xl md:text-8xl shadow-xl flex items-center justify-center transition-transform py-2 leading-none">✖</button>
+                <div class="shrink-0 flex space-x-3 md:space-x-6 pb-2 md:pb-8 answer-btn-box-takuitsu h-20 md:h-28 lg:h-32">
+                    <button onclick="answerTakuitsu('〇')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-2xl md:rounded-3xl border-4 md:border-8 border-blue-400 active:scale-95 text-4xl md:text-6xl shadow-md flex items-center justify-center transition-transform py-1 md:py-2 leading-none">〇</button>
+                    <button onclick="answerTakuitsu('✖')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-2xl md:rounded-3xl border-4 md:border-8 border-red-400 active:scale-95 text-4xl md:text-6xl shadow-md flex items-center justify-center transition-transform py-1 md:py-2 leading-none">✖</button>
                 </div>
             </div>
 
             <!-- ▼ 選択式 UI コンテナ -->
             <div id="sentaku-ui" class="hidden flex-1 flex-col min-h-0">
-                <div id="question-text-sentaku" class="text-[16px] md:text-[18px] leading-[2.8] text-slate-800 font-medium bg-slate-50 p-5 md:p-6 rounded-2xl border border-slate-200 shadow-inner overflow-y-auto flex-1">
+                <div id="question-text-sentaku" class="text-[14px] md:text-[16px] lg:text-[18px] leading-[2.2] md:leading-[2.8] text-slate-800 font-medium bg-slate-50 p-3 md:p-5 rounded-xl md:rounded-2xl border border-slate-200 shadow-inner overflow-y-auto flex-1">
                 </div>
-                <div class="bg-white border-2 border-slate-200 p-4 rounded-xl shadow-sm mt-4 mb-2 shrink-0">
-                    <div class="flex justify-between items-end mb-3">
-                        <h3 class="text-sm md:text-base font-black text-slate-600">✂️ 語群（タップで消去可能）</h3>
-                        <span class="text-[11px] md:text-xs text-slate-500 font-bold bg-slate-100 px-2 py-1 rounded">※上の空欄から直接解答</span>
+                <div class="bg-white border md:border-2 border-slate-200 p-2 md:p-4 rounded-lg md:rounded-xl shadow-sm mt-2 md:mt-4 mb-1 shrink-0">
+                    <div class="flex justify-between items-end mb-1 md:mb-3">
+                        <h3 class="text-xs md:text-sm font-black text-slate-600">✂️ 語群</h3>
+                        <span class="text-[9px] md:text-xs text-slate-500 font-bold bg-slate-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded">上の空欄から直接解答</span>
                     </div>
-                    <div id="word-bank-container" class="grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 text-[14px] md:text-[15px] font-bold text-slate-700">
+                    <div id="word-bank-container" class="grid grid-cols-2 sm:grid-cols-4 gap-y-1 gap-x-1 md:gap-y-2 md:gap-x-2 text-[11px] md:text-[14px] font-bold text-slate-700">
                     </div>
                 </div>
             </div>
@@ -296,20 +322,20 @@
 
     <!-- 右側：AI・解説エリア (45%) -->
     <aside id="aside-area" class="hidden w-full lg:w-[45%] h-[45dvh] lg:h-full flex-col bg-slate-50 relative">
-        <div class="p-4 md:p-6 bg-white border-b border-slate-200 shrink-0 shadow-sm">
+        <div class="p-3 md:p-6 bg-white border-b border-slate-200 shrink-0 shadow-sm">
             <div class="flex items-start">
-                <div class="w-16 h-16 md:w-20 md:h-20 lg:w-16 lg:h-16 rounded-full bg-pink-100 border-4 border-white shadow-lg overflow-hidden shrink-0 flex items-center justify-center">
+                <div class="w-12 h-12 md:w-16 md:h-16 lg:w-16 lg:h-16 rounded-full bg-pink-100 border-2 md:border-4 border-white shadow-md overflow-hidden shrink-0 flex items-center justify-center">
                     <img src="coach.jpg" alt="AI講師" class="w-full h-full object-cover shrink-0">
                 </div>
-                <div class="ml-4 flex-grow">
-                    <div class="bg-pink-50 rounded-3xl rounded-tl-none p-4 shadow-md border-4 border-pink-100 relative">
-                        <p class="text-slate-800 font-bold leading-relaxed text-sm md:text-base" id="ai-message">準備ができたらスタートしてね！</p>
-                        <div id="ai-fix-action" class="mt-4 p-4 bg-white rounded-xl border-4 border-red-300 shadow-sm hidden">
-                            <p class="text-sm md:text-lg font-black text-red-600 mb-2">🚨 AIが矛盾・法改正を発見！</p>
-                            <p id="ai-fix-reason" class="text-sm md:text-base text-slate-700 font-bold mb-3"></p>
-                            <div class="flex gap-3">
-                                <button onclick="applyFixToGAS()" class="flex-1 bg-green-500 text-white font-bold py-3 rounded-lg text-sm md:text-base shadow">✅ 上書き修正</button>
-                                <button onclick="ignoreFix()" class="bg-slate-300 text-slate-700 font-bold px-4 py-3 rounded-lg text-sm md:text-base">❌ 無視</button>
+                <div class="ml-2 md:ml-4 flex-grow">
+                    <div class="bg-pink-50 rounded-2xl md:rounded-3xl rounded-tl-none p-2 md:p-4 shadow-sm border-2 border-pink-100 relative">
+                        <p class="text-slate-800 font-bold leading-relaxed text-xs md:text-sm" id="ai-message">準備ができたらスタートしてね！</p>
+                        <div id="ai-fix-action" class="mt-2 p-2 bg-white rounded-lg border-2 border-red-300 shadow-sm hidden">
+                            <p class="text-xs font-black text-red-600 mb-1">🚨 AIが矛盾・法改正を発見！</p>
+                            <p id="ai-fix-reason" class="text-xs text-slate-700 font-bold mb-2"></p>
+                            <div class="flex gap-2">
+                                <button onclick="applyFixToGAS()" class="flex-1 bg-green-500 text-white font-bold py-1.5 rounded text-xs shadow">✅ 修正</button>
+                                <button onclick="ignoreFix()" class="bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded text-xs">❌ 無視</button>
                             </div>
                         </div>
                     </div>
@@ -317,67 +343,67 @@
             </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 pb-48">
-            <div id="action-takuitsu" class="hidden flex-col gap-3">
-                <button onclick="showHintTakuitsu()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-3 rounded-xl shadow-sm border-2 border-yellow-300 text-lg active:scale-95 transition-all">
+        <div class="flex-1 overflow-y-auto p-3 md:p-6 flex flex-col gap-3 pb-32 md:pb-48">
+            <div id="action-takuitsu" class="hidden flex-col gap-2">
+                <button onclick="showHintTakuitsu()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm border-2 border-yellow-300 text-sm md:text-lg active:scale-95 transition-all">
                     💡 AIにヒントをもらう
                 </button>
             </div>
 
-            <div id="action-sentaku" class="hidden flex-col gap-3">
-                <button onclick="showContextHint()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-3 rounded-xl shadow-sm border-2 border-yellow-300 text-lg active:scale-95 transition-all">
+            <div id="action-sentaku" class="hidden flex-col gap-2">
+                <button onclick="showContextHint()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm border-2 border-yellow-300 text-sm md:text-lg active:scale-95 transition-all">
                     💡 文脈ヒント（手がかりをハイライト）
                 </button>
-                <button onclick="submitSentakuAnswers()" class="action-btn w-full bg-indigo-500 hover:bg-indigo-600 text-white font-black py-4 rounded-xl shadow-[0_4px_0_#3730a3] active:translate-y-[4px] active:shadow-none text-xl transition-all">
+                <button onclick="submitSentakuAnswers()" class="action-btn w-full bg-indigo-500 hover:bg-indigo-600 text-white font-black py-3 md:py-4 rounded-lg md:rounded-xl shadow-[0_3px_0_#3730a3] active:translate-y-[3px] active:shadow-none text-base md:text-xl transition-all">
                     📝 解答して解説を見る
                 </button>
-                <button onclick="fillRandomAnswers()" class="text-xs text-center text-slate-400 mt-1">※テスト用: ランダムに埋める</button>
+                <button onclick="fillRandomAnswers()" class="text-[10px] md:text-xs text-center text-slate-400 mt-1">※テスト用: ランダムに埋める</button>
             </div>
 
-            <div id="explanation-area" class="hidden flex-col gap-4">
-                <div class="bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm text-center flex justify-between items-center">
+            <div id="explanation-area" class="hidden flex-col gap-3">
+                <div class="bg-white p-3 md:p-5 rounded-xl md:rounded-2xl border-2 border-slate-200 shadow-sm text-center flex justify-between items-center">
                     <div class="flex-1"></div>
-                    <span id="score-badge" class="inline-block px-6 py-2 rounded-full text-2xl font-black text-white shadow-md">結果</span>
+                    <span id="score-badge" class="inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white shadow-md">結果</span>
                     <div class="flex-1 text-right">
-                        <button onclick="cancelMistake()" class="btn-mistake-action bg-slate-200 text-slate-600 font-bold py-2 px-4 rounded-xl text-sm lg:text-base border-2 border-slate-300 active:scale-95 shadow-sm">⚠️ 取消</button>
+                        <button onclick="cancelMistake()" class="btn-mistake-action bg-slate-200 text-slate-600 font-bold py-1.5 px-2 md:px-4 rounded-lg md:rounded-xl text-xs md:text-sm border-2 border-slate-300 active:scale-95 shadow-sm">⚠️ 取消</button>
                     </div>
                 </div>
                 
-                <div id="tts-area" class="hidden bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-sm flex flex-col gap-3">
-                    <h3 class="text-sm font-black text-blue-800">🎧 耳学問モード（完成条文の読み上げ）</h3>
-                    <div class="flex items-center gap-3">
-                        <input type="range" id="tts-speed" min="0.5" max="2.0" step="0.1" value="1.0" class="flex-1 cursor-pointer" oninput="document.getElementById('speed-val').textContent=this.value+'x'">
-                        <span id="speed-val" class="text-sm font-bold text-blue-900 w-10">1.0x</span>
-                        <button onclick="playCompletedArticle()" class="bg-blue-600 text-white font-bold px-4 py-2 rounded-lg active:scale-95 shadow">▶ 再生</button>
-                        <button onclick="stopAudio()" class="bg-slate-300 text-slate-700 font-bold px-3 py-2 rounded-lg active:scale-95">⏹</button>
+                <div id="tts-area" class="hidden bg-blue-50 p-2 md:p-4 rounded-lg md:rounded-xl border border-blue-200 shadow-sm flex flex-col gap-2">
+                    <h3 class="text-xs md:text-sm font-black text-blue-800">🎧 耳学問モード（完成条文読み上げ）</h3>
+                    <div class="flex items-center gap-2">
+                        <input type="range" id="tts-speed" min="0.5" max="2.0" step="0.1" value="1.0" class="flex-1 cursor-pointer h-2" oninput="document.getElementById('speed-val').textContent=this.value+'x'">
+                        <span id="speed-val" class="text-xs md:text-sm font-bold text-blue-900 w-8">1.0x</span>
+                        <button onclick="playCompletedArticle()" class="bg-blue-600 text-white font-bold px-2 md:px-4 py-1.5 md:py-2 rounded active:scale-95 shadow text-xs md:text-sm">▶ 再生</button>
+                        <button onclick="stopAudio()" class="bg-slate-300 text-slate-700 font-bold px-2 md:px-3 py-1.5 md:py-2 rounded active:scale-95 text-xs md:text-sm">⏹</button>
                     </div>
                 </div>
 
-                <button id="alchemy-btn" onclick="generateAlchemyQuestion()" class="hidden action-btn w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 text-lg animate-pulse border-2 border-white">
+                <button id="alchemy-btn" onclick="generateAlchemyQuestion()" class="hidden action-btn w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black py-2.5 md:py-4 rounded-lg md:rounded-xl shadow-sm active:scale-95 text-sm md:text-lg animate-pulse border md:border-2 border-white">
                     🔥 別の箇所を抜いて再挑戦（Pro AI錬金）
                 </button>
 
-                <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
-                    <h3 class="text-sm font-black text-slate-400 mb-2 border-b-2 pb-2">根拠条文</h3>
-                    <p class="text-indigo-700 font-bold mb-4 text-lg" id="article-text">法X条</p>
-                    <h3 class="text-sm font-black text-slate-400 mb-2 border-b-2 pb-2">解説</h3>
-                    <p class="text-slate-700 leading-relaxed font-normal text-base md:text-lg mb-4" id="explanation-text">解説</p>
+                <div class="bg-white rounded-xl md:rounded-2xl p-3 md:p-5 shadow-sm border border-slate-200">
+                    <h3 class="text-xs md:text-sm font-black text-slate-400 mb-1 md:mb-2 border-b md:border-b-2 pb-1 md:pb-2">根拠条文</h3>
+                    <p class="text-indigo-700 font-bold mb-3 md:mb-4 text-sm md:text-lg" id="article-text">法X条</p>
+                    <h3 class="text-xs md:text-sm font-black text-slate-400 mb-1 md:mb-2 border-b md:border-b-2 pb-1 md:pb-2">解説</h3>
+                    <p class="text-slate-700 leading-relaxed font-normal text-sm md:text-base mb-2 md:mb-4" id="explanation-text">解説</p>
                 </div>
             </div>
         </div>
 
-        <div id="self-eval-area-takuitsu" class="hidden absolute bottom-0 left-0 w-full p-3 md:p-4 bg-white/95 rounded-3xl border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
-            <button id="btn-next-takuitsu" onclick="nextQuestion()" class="btn-next-action w-full bg-green-500 text-white font-black py-4 rounded-2xl shadow-xl text-xl lg:text-2xl active:scale-95 transition-all">🟢 次へ進む</button>
-            <button id="btn-another-takuitsu" onclick="startAnotherRound()" class="hidden w-full bg-blue-500 text-white font-black py-4 rounded-2xl shadow-xl text-xl lg:text-2xl active:scale-95 transition-all">🔁 もう1周する</button>
+        <div id="self-eval-area-takuitsu" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-4 bg-white/95 rounded-t-2xl md:rounded-3xl border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
+            <button id="btn-next-takuitsu" onclick="nextQuestion()" class="btn-next-action w-full bg-green-500 text-white font-black py-2.5 md:py-4 rounded-xl md:rounded-2xl shadow-md md:shadow-xl text-lg md:text-xl active:scale-95 transition-all">🟢 次へ進む</button>
+            <button id="btn-another-takuitsu" onclick="startAnotherRound()" class="hidden w-full bg-blue-500 text-white font-black py-2.5 md:py-4 rounded-xl md:rounded-2xl shadow-md md:shadow-xl text-lg md:text-xl active:scale-95 transition-all">🔁 もう1周する</button>
         </div>
 
-        <div id="self-eval-area-sentaku" class="hidden absolute bottom-0 left-0 w-full p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
-            <p id="eval-guide-text" class="text-center text-[11px] font-bold text-slate-500 mb-2">間違えた空欄や、まぐれ当たりは必ず「迷った」を押して記録してね！</p>
-            <div class="flex gap-2 mb-3 justify-center" id="eval-target-buttons"></div>
+        <div id="self-eval-area-sentaku" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
+            <p id="eval-guide-text" class="text-center text-[9px] md:text-[11px] font-bold text-slate-500 mb-1 md:mb-2">間違えやまぐれ当たりは必ず「迷った」で記録してね！</p>
+            <div class="flex gap-1 md:gap-2 mb-2 md:mb-3 justify-center flex-wrap" id="eval-target-buttons"></div>
             
-            <div class="flex gap-3">
-                <button onclick="markEvalSentaku('迷った')" class="eval-btn flex-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border-2 border-yellow-300 font-black py-3 rounded-xl shadow-sm active:scale-95 transition-all">🟡 迷ったと記録</button>
-                <button id="btn-next-sentaku" onclick="nextQuestion()" class="eval-btn flex-[1.5] bg-slate-800 text-white font-black py-3 rounded-xl shadow-md active:scale-95 transition-all">次の問題へ ➡</button>
+            <div class="flex gap-2 md:gap-3">
+                <button onclick="markEvalSentaku('迷った')" class="eval-btn flex-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border md:border-2 border-yellow-300 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm active:scale-95 transition-all text-sm md:text-base">🟡 迷ったと記録</button>
+                <button id="btn-next-sentaku" onclick="nextQuestion()" class="eval-btn flex-[1.5] bg-slate-800 text-white font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-md active:scale-95 transition-all text-sm md:text-base">次の問題へ ➡</button>
             </div>
         </div>
     </aside>
@@ -434,6 +460,8 @@
         function toggleSound() {
             isMuted = !isMuted; unlockAudio();
             document.getElementById('sound-toggle-start-btn').innerHTML = isMuted ? "🔇 音声オフ" : "🔊 音声オン";
+            const inBtn = document.getElementById('sound-toggle-in-btn');
+            if(inBtn) inBtn.innerHTML = isMuted ? "🔇 音声オフ" : "🔊 音声オン";
         }
         function toggleCustomTime() {
             const selectVal = document.getElementById('time-limit-select').value;
@@ -588,7 +616,7 @@
             container.innerHTML = htmlContent;
 
             if(userApiKey) {
-                let prompt = `あなたは社労士試験の専属講師（18歳前後の若い女性）です。受講生の努力を肯定し、成績データをもとに今日のおすすめ科目を1〜2文（40文字程度）で明るく提案してください。不自然な役割語（〜わ、〜よ、〜ぞ等）は絶対禁止。データ: ${JSON.stringify(stats)}`;
+                let prompt = `あなたは社労士試験の専属講師（18歳前後の若い女性）です。受講生の努力を肯定し、成績データをもとに今日のおすすめ科目を1〜2文（40文字程度）で明るく提案してください。不自然な役割語（〜わ、〜よ、〜ぞ等）は絶対禁止。自然な口語体で。データ: ${JSON.stringify(stats)}`;
                 fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 }).then(res => res.json()).then(data => {
@@ -611,15 +639,15 @@
             });
             for (const [subjectName, chaptersSet] of Object.entries(subjectMap)) {
                 const header = document.createElement('div');
-                header.className = "bg-slate-200 p-5 font-black text-xl cursor-pointer border-b border-white flex justify-between";
+                header.className = "bg-slate-200 p-5 font-black text-sm md:text-xl cursor-pointer border-b border-white flex justify-between";
                 header.innerHTML = `<span>${subjectName}</span> <span>▼</span>`;
                 header.onclick = function() { this.nextElementSibling.classList.toggle('open'); };
                 
                 const content = document.createElement('div');
                 content.className = "accordion-content bg-white";
-                let checkboxHTML = `<div class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">`;
+                let checkboxHTML = `<div class="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">`;
                 Array.from(chaptersSet).forEach(c => {
-                    checkboxHTML += `<label class="flex items-center space-x-4 cursor-pointer p-4 hover:bg-indigo-50"><input type="checkbox" name="chapter-check" value="${subjectName}::${c}" class="w-8 h-8"><span class="text-base md:text-lg font-bold">${c}</span></label>`;
+                    checkboxHTML += `<label class="flex items-center space-x-2 md:space-x-4 cursor-pointer p-2 md:p-4 hover:bg-indigo-50"><input type="checkbox" name="chapter-check" value="${subjectName}::${c}" class="w-6 h-6 md:w-8 md:h-8"><span class="text-sm md:text-lg font-bold">${c}</span></label>`;
                 });
                 checkboxHTML += `</div>`;
                 content.innerHTML = checkboxHTML;
@@ -647,25 +675,24 @@
             if(!input) return;
             
             const logEl = document.getElementById('strategy-chat-log');
-            logEl.innerHTML += `<div class="self-end bg-indigo-100 text-indigo-900 p-3 rounded-2xl rounded-tr-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">${input}</div>`;
+            logEl.innerHTML += `<div class="self-end bg-indigo-100 text-indigo-900 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tr-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-xs md:text-base">${input}</div>`;
             logEl.scrollTop = logEl.scrollHeight;
             inputEl.value = "";
             
             const typingId = "typing-" + Date.now();
-            logEl.innerHTML += `<div id="${typingId}" class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base"><span class="typing">💬 考えてるよ...</span></div>`;
+            logEl.innerHTML += `<div id="${typingId}" class="self-start bg-white border-2 border-pink-200 text-slate-700 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-xs md:text-base"><span class="typing">💬 考えてるよ...</span></div>`;
             logEl.scrollTop = logEl.scrollHeight;
             
             const cond = document.getElementById('condition-select').value;
             const health = document.getElementById('health-select').value;
             
-            // 🌟 複数科目・複数項目の受託ロジックを強化したプロンプト
             let systemPrompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。受講生の要望を最優先で聞き入れ、的確に特訓プランをまとめてください。
 【現在のコンディション】
 ・講師モード: ${cond}
 ・受講生の体調: ${health}
 
 【最重要ルール: 要望の遵守】
-受講生が「4科目から1項目ずつ10問」「全科目から10問ずつ」「労働基準法と健康保険法をやって」など、科目数や問題数を具体的に指定した場合は、【絶対に勝手な提案ですり替えたり、減らしたり、別の科目に変更したりせず】、「了解！その通りに準備するね！」と受講生の指定をそのまま全肯定してプランを確定させてください。
+受講生が「4科目から1項目ずつ10問」「全科目から10問ずつ」など、科目数や問題数を具体的に指定した場合は、【絶対に勝手な提案ですり替えたり、減らしたりせず】、「了解！その通りに準備するね！」と受講生の指定をそのまま全肯定してプランを確定させてください。
 
 【話し方・口調】
 ・現代の普通の若い女性。普通の自然な口語体（1〜2文）で話す。
@@ -701,7 +728,7 @@
                 const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
                 let replyText = text.replace(/```json\n[\s\S]*?\n```/, '').trim();
                 
-                document.getElementById(typingId).outerHTML = `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">${replyText}</div>`;
+                document.getElementById(typingId).outerHTML = `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-xs md:text-base">${replyText}</div>`;
                 logEl.scrollTop = logEl.scrollHeight;
                 
                 if (jsonMatch) {
@@ -709,12 +736,11 @@
                     document.getElementById('btn-strategy-start').classList.remove('hidden');
                 }
             } catch(e) {
-                document.getElementById(typingId).outerHTML = `<div class="self-start bg-red-50 text-red-600 p-3 rounded-2xl max-w-[80%] shadow-sm font-bold text-sm md:text-base border border-red-200">⚠️ 通信エラーが発生したみたい。もう一度話しかけてみて！</div>`;
+                document.getElementById(typingId).outerHTML = `<div class="self-start bg-red-50 text-red-600 p-2 md:p-3 rounded-xl md:rounded-2xl max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-xs md:text-base border border-red-200">⚠️ 通信エラーが発生したみたい。もう一度話しかけてみて！</div>`;
                 logEl.scrollTop = logEl.scrollHeight;
             }
         }
 
-        // 🌟 複数科目・複数項目の作戦プラン実行ロジック
         function executeStrategyPlan() {
             if(!strategyPlan) return;
             
@@ -733,7 +759,6 @@
                 if (item.chapter) pool = pool.filter(q => q.項目 === item.chapter);
                 
                 if(pool.length > 0) {
-                    // 項目ごとに束ねる
                     let chapterMap = {};
                     pool.forEach(q => {
                         let c = q.項目 || "分類なし";
@@ -741,7 +766,6 @@
                         chapterMap[c].push(q);
                     });
                     
-                    // 各科目の未着手または最新正解率の低い項目から1項目選んで出題
                     let pickedChapter = Object.keys(chapterMap)[0];
                     let qs = (chapterMap[pickedChapter] || pool).sort(() => Math.random() - 0.5).slice(0, item.count || 10);
                     
@@ -765,7 +789,7 @@
             document.getElementById('aside-area').classList.remove('hidden');
             document.getElementById('aside-area').classList.add('flex');
             
-            startNextPlaylistSet();
+            startNextPlaylistSet(true);
         }
 
         function startTraining(mode, targetSubject = null, excludePerfect = false, count = 10) {
@@ -837,7 +861,7 @@
             document.getElementById('aside-area').classList.remove('hidden');
             document.getElementById('aside-area').classList.add('flex');
             
-            startNextPlaylistSet();
+            startNextPlaylistSet(true);
         }
 
         function globalTimerTick() {
@@ -857,15 +881,15 @@
             }
         }
 
-        function startNextPlaylistSet() {
+        function startNextPlaylistSet(isFirstOfAll = false) {
             if (currentPlaylistIndex >= playlistQueue.length) { alert("プレイリスト完走！お疲れ様！"); location.reload(); return; }
             const currentSet = playlistQueue[currentPlaylistIndex];
             currentQuestions = currentSet.questions; currentIndex = 0;
             document.getElementById('current-playlist-title').textContent = `🎧 [${currentPlaylistIndex + 1}/${playlistQueue.length}] ${currentSet.subjectName} - ${currentSet.chapterName}`;
-            loadQuestion();
+            loadQuestion(false, isFirstOfAll);
         }
 
-        function loadQuestion(isAlchemy = false) {
+        function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
             const q = currentQuestions[currentIndex];
             if (!q) return;
             
@@ -938,11 +962,15 @@
                 const wbContainer = document.getElementById('word-bank-container');
                 wbContainer.innerHTML = "";
                 currentWordBank.forEach((word, idx) => {
-                    wbContainer.innerHTML += `<div id="word-btn-${idx}" onclick="toggleStrike('${word}', this)" class="cursor-pointer border border-slate-300 p-2 rounded-lg text-center hover:bg-slate-50 transition-all select-none bg-white"><span class="word-num">${idx+1}</span>${word}</div>`;
+                    wbContainer.innerHTML += `<div id="word-btn-${idx}" onclick="toggleStrike('${word}', this)" class="cursor-pointer border border-slate-300 p-1 md:p-2 rounded md:rounded-lg text-center hover:bg-slate-50 transition-all select-none bg-white"><span class="word-num">${idx+1}</span>${word}</div>`;
                 });
             }
 
-            generateAiMessage(`start_${q._type === '択一' ? 'takuitsu' : 'sentaku'}`, { textOnly: false });
+            if (isFirstOfSet) {
+                generateAiMessage(`start_${q._type === '択一' ? 'takuitsu' : 'sentaku'}`, { textOnly: false });
+            } else {
+                generateAiMessage("next", { textOnly: true });
+            }
             verifyDataWithPro(q);
         }
 
@@ -969,7 +997,7 @@
             
             const badge = document.getElementById('score-badge');
             badge.textContent = isCorrect ? "大正解！ 🎉" : "不正解... 💦";
-            badge.className = isCorrect ? "inline-block px-6 py-2 rounded-full text-2xl font-black text-white bg-green-500 shadow-md mb-2 animate-bounce" : "inline-block px-6 py-2 rounded-full text-2xl font-black text-white bg-red-500 shadow-md mb-2";
+            badge.className = isCorrect ? "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-green-500 shadow-md mb-2 animate-bounce" : "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-red-500 shadow-md mb-2";
             document.getElementById('article-text').textContent = q.根拠条文 || "条文なし";
             document.getElementById('explanation-text').innerHTML = q.解説 || "解説なし";
             
@@ -1034,10 +1062,10 @@
                 const span = document.createElement('span');
                 span.className = 'mx-1 inline-block align-baseline';
                 if(val === correct) {
-                    score++; span.innerHTML = `<span class="bg-blue-100 text-blue-800 border-b-2 border-blue-500 font-bold px-2 py-1 rounded shadow-sm">${correct}</span>`;
+                    score++; span.innerHTML = `<span class="bg-blue-100 text-blue-800 border-b md:border-b-2 border-blue-500 font-bold px-1.5 md:px-2 py-0.5 md:py-1 rounded shadow-sm">${correct}</span>`;
                 } else {
                     trapsPicked.push(val);
-                    span.innerHTML = `<span class="bg-red-100 text-red-600 line-through font-bold px-1 rounded">${val}</span><span class="text-slate-400 mx-1 text-xs">➡</span><span class="bg-blue-100 text-blue-800 border-b-2 border-blue-500 font-bold px-2 py-1 rounded shadow-sm">${correct}</span>`;
+                    span.innerHTML = `<span class="bg-red-100 text-red-600 line-through font-bold px-1 rounded">${val}</span><span class="text-slate-400 mx-1 text-xs">➡</span><span class="bg-blue-100 text-blue-800 border-b md:border-b-2 border-blue-500 font-bold px-1.5 md:px-2 py-0.5 md:py-1 rounded shadow-sm">${correct}</span>`;
                 }
                 document.querySelectorAll(`.inline-select[data-letter="${letter}"]`).forEach(el => {
                     if(el.parentNode) el.parentNode.replaceChild(span.cloneNode(true), el);
@@ -1053,21 +1081,20 @@
             document.getElementById('self-eval-area-sentaku').classList.remove('hidden');
             
             document.getElementById('score-badge').textContent = `${score} / 5 点`;
-            document.getElementById('score-badge').className = score === 5 ? "inline-block px-6 py-2 rounded-full text-2xl font-black text-white bg-green-500 shadow-md mb-2 animate-bounce" : "inline-block px-6 py-2 rounded-full text-2xl font-black text-white bg-red-500 shadow-md mb-2";
+            document.getElementById('score-badge').className = score === 5 ? "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-green-500 shadow-md mb-2 animate-bounce" : "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-red-500 shadow-md mb-2";
             document.getElementById('article-text').textContent = currentQuestions[currentIndex].根拠条文 || "条文なし";
             document.getElementById('explanation-text').innerHTML = currentQuestions[currentIndex].解説 || "解説なし";
 
             const evalTargetContainer = document.getElementById('eval-target-buttons');
-            evalTargetContainer.innerHTML = '<span id="eval-target-label" class="text-xs font-bold text-slate-500 self-center mr-2">対象:</span>';
+            evalTargetContainer.innerHTML = '<span id="eval-target-label" class="text-[10px] md:text-xs font-bold text-slate-500 self-center mr-1 md:mr-2">対象:</span>';
             ['A','B','C','D','E'].forEach(letter => {
-                evalTargetContainer.innerHTML += `<label class="eval-target-box flex items-center gap-1 cursor-pointer bg-slate-100 px-2 py-1 rounded border border-slate-300"><input type="checkbox" name="eval-target" value="${letter}"><span class="font-bold text-sm">${letter}</span></label>`;
+                evalTargetContainer.innerHTML += `<label class="eval-target-box flex items-center gap-1 cursor-pointer bg-slate-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded border border-slate-300"><input type="checkbox" name="eval-target" value="${letter}"><span class="font-bold text-xs md:text-sm">${letter}</span></label>`;
             });
             if (currentIndex >= currentQuestions.length - 1) {
                 document.getElementById('btn-next-sentaku').textContent = (currentPlaylistIndex < playlistQueue.length - 1) ? "🟢 次の科目セットへ" : "🟢 特訓終了！判定へ";
             }
             generateAiMessage("result_sentaku", { score: score, textOnly: false });
         }
-        function closeWarningModal() { document.getElementById('warning-modal').classList.add('hidden'); document.getElementById('warning-modal').classList.remove('flex'); }
 
         // ==========================
         // 共通ロジック (保存・評価・次へ)
@@ -1116,7 +1143,7 @@
             if (currentIndex >= currentQuestions.length) {
                 currentPlaylistIndex++;
                 if (currentPlaylistIndex < playlistQueue.length) {
-                    startNextPlaylistSet();
+                    startNextPlaylistSet(); // 🌟 次の科目の最初の問題（isFirstOfSetはtrueで開始）
                 } else {
                     document.getElementById('explanation-area').classList.remove('hidden'); document.getElementById('explanation-area').classList.add('flex');
                     document.getElementById('self-eval-area-takuitsu').classList.add('hidden');
@@ -1129,7 +1156,7 @@
                     generateAiMessage("end_all", { totalPlayed: cumulativeQuestions, mistakes: todayMistakes.length, textOnly: false });
                 }
             } else { 
-                loadQuestion(currentQuestions[currentIndex].解説 && currentQuestions[currentIndex].解説.includes('錬金術')); 
+                loadQuestion(currentQuestions[currentIndex].解説 && currentQuestions[currentIndex].解説.includes('錬金術'), false); 
             }
         }
         function startAnotherRound() { location.reload(); }
@@ -1142,7 +1169,13 @@
             if ('speechSynthesis' in window) {
                 window.speechSynthesis.cancel();
                 const u = new SpeechSynthesisUtterance(currentFullText.replace(/<[^>]+>/g, ''));
-                u.lang = 'ja-JP'; u.rate = speed; window.speechSynthesis.speak(u);
+                u.lang = 'ja-JP'; u.rate = speed;
+                
+                const voices = window.speechSynthesis.getVoices();
+                const femaleVoice = voices.find(v => v.lang === 'ja-JP' && (v.name.includes('Kyoko') || v.name.includes('Otoya') || v.name.includes('Siri') || v.name.includes('Google 日本語')));
+                if(femaleVoice) u.voice = femaleVoice;
+
+                window.speechSynthesis.speak(u);
             }
         }
         function stopAudio() {
@@ -1163,7 +1196,11 @@
                 p.src = `data:audio/mp3;base64,${data.candidates[0].content.parts[0].inlineData.data}`; p.play();
             } catch (err) {
                 if ('speechSynthesis' in window) {
-                    const utterance = new SpeechSynthesisUtterance(cleanText); utterance.lang = 'ja-JP'; window.speechSynthesis.speak(utterance);
+                    const utterance = new SpeechSynthesisUtterance(cleanText); utterance.lang = 'ja-JP';
+                    const voices = window.speechSynthesis.getVoices();
+                    const femaleVoice = voices.find(v => v.lang === 'ja-JP' && (v.name.includes('Kyoko') || v.name.includes('Otoya') || v.name.includes('Siri') || v.name.includes('Google 日本語')));
+                    if(femaleVoice) utterance.voice = femaleVoice;
+                    window.speechSynthesis.speak(utterance);
                 }
             }
         }
@@ -1178,6 +1215,7 @@
             
             if (situation === "start_takuitsu") prompt += `択一式の特訓スタート。短く前向きに気合を入れて。`;
             else if (situation === "start_sentaku") prompt += `選択式の特訓スタート。「文脈を意識して埋めてみてね」と励まして。`;
+            else if (situation === "next") prompt += `次の問題に進みました。「よし、次いこう！」のように短く促して。`;
             else if (situation === "hint_takuitsu") prompt += `択一式のヒント。答えは言わず、見るべきポイントを1文で示して。問題:${extraData.questionText} 解説:${extraData.explanation}`;
             else if (situation === "hint_sentaku") prompt += `選択式のヒント。「キーワードを黄色くしたから確認してみて」とアドバイスして。`;
             else if (situation === "answer_takuitsu") prompt += `択一式解答。結果は【${extraData.isCorrect ? "正解" : "不正解"}】。解説から最重要ポイントを1文で要約して。解説:${extraData.explanation}`;
