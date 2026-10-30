@@ -36,30 +36,22 @@
 
         /* 💡 黄金基準：iPad・タッチ端末専用の強制拡大スタイル */
         @media (hover: none) and (pointer: coarse) {
-            /* ▼ 問題文 */
             #question-text-area { font-size: 2.3rem !important; line-height: 2.1 !important; }
             .inline-select { font-size: 1.1em !important; padding: 0.3rem 2.2rem 0.3rem 0.8rem !important; }
             
-            /* ▼ 語群：文字のみを拡大 */
             #word-bank-container { font-size: 1.8rem !important; gap: 0.8rem !important; }
             #word-bank-container div { padding: 1.0rem !important; }
             
-            /* ▼ AIコメント＆解説：さらに読みやすく拡大 */
             #ai-message { font-size: 2.0rem !important; line-height: 1.6 !important; }
             #explanation-text { font-size: 2.0rem !important; line-height: 1.8 !important; font-weight: 400 !important; }
             #article-text { font-size: 1.8rem !important; }
             
-            /* ▼ ヘッダーの終了・仮眠ボタン */
             .header-btn { font-size: 1.6rem !important; padding: 1.0rem 1.8rem !important; border-width: 2px !important; }
-            
-            /* ▼ ヒント・解答・錬金術などのアクションボタン */
             .action-btn { font-size: 1.8rem !important; padding: 1.8rem !important; border-width: 3px !important; border-radius: 1.2rem !important; }
 
-            /* ▼ 右下の自己評価エリア（迷った・次へ） */
             #self-eval-area { padding: 2rem 2rem 3rem 2rem !important; border-top-width: 4px !important; }
             .eval-btn { font-size: 2rem !important; padding: 1.8rem !important; border-width: 3px !important; border-radius: 1.2rem !important; }
             
-            /* ▼ チェックボックス：タッチしやすいようさらに巨大化 */
             .eval-target-box { font-size: 1.8rem !important; padding: 1.0rem 1.4rem !important; border-width: 2px !important; }
             .eval-target-box input[type="checkbox"] { width: 2.4rem !important; height: 2.4rem !important; }
             .eval-target-box span { font-size: 1.8rem !important; }
@@ -91,9 +83,14 @@
     <div id="nap-overlay" class="fixed inset-0 bg-black/95 z-[120] hidden flex-col items-center justify-center text-indigo-200 backdrop-blur-xl p-6 text-center">
         <span class="text-7xl md:text-9xl mb-6 animate-pulse">💤</span>
         <h2 class="text-3xl md:text-5xl font-black mb-4 text-indigo-400">仮眠モード</h2>
+        <p class="text-lg md:text-2xl mb-8">お疲れ様。時間になったら起こすね。</p>
         <div id="nap-setup" class="w-full max-w-xl bg-slate-900 p-8 rounded-3xl border-2 border-slate-700">
             <button onclick="startNap(15)" class="w-full bg-indigo-600 text-white font-black py-5 rounded-2xl text-2xl mb-4">15分 仮眠する (推奨)</button>
-            <button onclick="cancelNapMenu()" class="mt-4 text-slate-400 font-bold underline">キャンセル</button>
+            <div class="flex gap-2 mt-4">
+                <input type="time" id="nap-time-input" class="flex-1 bg-slate-800 border-2 border-slate-600 text-white text-xl p-3 rounded-xl text-center">
+                <button onclick="startNapCustom()" class="bg-indigo-700 text-white font-black px-6 rounded-xl text-xl">開始</button>
+            </div>
+            <button onclick="cancelNapMenu()" class="mt-8 text-slate-400 font-bold underline">キャンセル</button>
         </div>
         <div id="nap-running" class="hidden flex-col items-center w-full max-w-xl">
             <div class="text-7xl font-black mb-10 font-mono tracking-wider text-indigo-300" id="nap-countdown">15:00</div>
@@ -110,12 +107,10 @@
         
         <div class="bg-white text-slate-800 p-6 md:p-12 rounded-[2rem] shadow-2xl max-w-5xl w-full mb-10">
             
-            <!-- ★ API設定トグルボタン -->
             <div class="flex justify-end mb-2">
                 <button onclick="document.getElementById('api-settings-wrapper').classList.toggle('hidden')" class="text-sm md:text-base font-bold text-slate-400 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-full transition-colors border border-slate-200">⚙️ API設定・モデル変更</button>
             </div>
             
-            <!-- ★ API設定エリア（初期状態はhidden） -->
             <div id="api-settings-wrapper" class="hidden">
                 <div class="mb-6 p-5 bg-yellow-50 border-2 border-yellow-200 rounded-xl flex flex-col md:flex-row gap-4">
                     <div class="flex-1">
@@ -142,7 +137,7 @@
                     <img src="coach.jpg" class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white shadow object-cover shrink-0">
                     <div>
                         <p class="text-xs md:text-sm font-black text-pink-500 mb-1">今日の一言診断</p>
-                        <p class="text-base md:text-xl font-bold text-slate-800" id="dash-ai-comment">データを読み込んでいるわ。</p>
+                        <p class="text-base md:text-xl font-bold text-slate-800" id="dash-ai-comment">データを読み込んでいるよ。</p>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8" id="dash-master-bars"></div>
@@ -150,7 +145,7 @@
                 <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 md:p-6 shadow-md flex flex-col">
                     <h3 class="text-xl md:text-2xl font-black text-indigo-800 mb-2">💬 専属講師と今日の作戦会議</h3>
                     <div id="strategy-chat-log" class="mb-4 max-h-48 overflow-y-auto flex flex-col gap-2 p-2 bg-white/50 rounded-xl border border-indigo-100">
-                        <div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">選択式は反復が命よ！今日はどの科目を何問やる？</div>
+                        <div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">選択式は反復が命！今日はどの科目を何問やる？</div>
                     </div>
                     <div class="flex gap-2 shrink-0">
                         <input type="text" id="strategy-input" class="flex-1 bg-white border-2 border-indigo-300 text-base md:text-lg p-3 rounded-xl font-bold focus:outline-none" placeholder="要望を入力...">
@@ -162,7 +157,6 @@
                 </div>
             </div>
 
-            <!-- 🌟 科目別プレイリスト作成ボタン -->
             <h2 class="text-2xl md:text-3xl font-black mb-4 border-b-2 border-slate-200 pb-2">🎯 科目別 特訓スタート</h2>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
                 <button onclick="startTraining('subject', '労働基準法(選択)')" class="bg-blue-100 hover:bg-blue-200 text-blue-800 border-2 border-blue-300 font-black py-5 rounded-2xl shadow-sm active:scale-95 text-xl transition-all">労働基準法</button>
@@ -171,7 +165,6 @@
                 <button onclick="startTraining('subject', '厚生年金保険法(選択)')" class="bg-orange-100 hover:bg-orange-200 text-orange-800 border-2 border-orange-300 font-black py-5 rounded-2xl shadow-sm active:scale-95 text-xl transition-all">厚生年金保険法</button>
             </div>
 
-            <!-- 通常プレイリスト作成 -->
             <h2 class="text-2xl md:text-3xl font-black mb-4">📚 詳細に項目を指定して作成</h2>
             <div class="flex flex-wrap gap-3 mb-4 items-center">
                 <button onclick="checkAllChapters(true)" class="bg-indigo-100 text-indigo-700 px-6 py-3 rounded-xl font-bold text-lg">☑ すべて選択</button>
@@ -184,7 +177,7 @@
         </div>
     </div>
 
-    <!-- 左側：問題エリア (55%) ※起動時は非表示(hidden)で貫通バグを防止 -->
+    <!-- 左側：問題エリア (55%) -->
     <main id="main-area" class="hidden w-full lg:w-[55%] h-[55dvh] lg:h-full flex-col bg-white shadow-xl z-10 shrink-0 border-r border-slate-200">
         <div class="bg-indigo-900 text-white shrink-0 shadow-md z-20">
             <div class="p-3 md:p-5 flex justify-between items-center gap-2">
@@ -209,12 +202,10 @@
                 <div class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded" id="q-history-stats">挑戦:0 過去正答:0%</div>
             </div>
             
-            <!-- 選択式 インライン問題文 -->
             <div id="question-text-area" class="text-[16px] md:text-[18px] leading-[2.8] text-slate-800 font-medium bg-slate-50 p-5 md:p-6 rounded-2xl border border-slate-200 shadow-inner">
                 <!-- JSでプルダウン付きのテキストに置換 -->
             </div>
 
-            <!-- 語群エリア -->
             <div class="bg-white border-2 border-slate-200 p-4 rounded-xl shadow-sm mt-6 mb-2">
                 <div class="flex justify-between items-end mb-3">
                     <h3 class="text-sm md:text-base font-black text-slate-600">✂️ 語群（タップで消去可能）</h3>
@@ -227,7 +218,7 @@
         </div>
     </main>
 
-    <!-- 右側：AI・解説エリア (45%) ※起動時は非表示(hidden)で貫通バグを防止 -->
+    <!-- 右側：AI・解説エリア (45%) -->
     <aside id="aside-area" class="hidden w-full lg:w-[45%] h-[45dvh] lg:h-full flex-col bg-slate-50 relative">
         <div class="p-4 md:p-6 bg-white border-b border-slate-200 shrink-0 shadow-sm">
             <div class="flex items-start">
@@ -236,15 +227,13 @@
                 </div>
                 <div class="ml-4 flex-grow">
                     <div class="bg-pink-50 rounded-3xl rounded-tl-none p-4 shadow-md border-4 border-pink-100 relative">
-                        <p class="text-slate-800 font-bold leading-relaxed text-sm md:text-base" id="ai-message">選択式は文脈を読む力が試されるわ！推測して埋めてみて！</p>
+                        <p class="text-slate-800 font-bold leading-relaxed text-sm md:text-base" id="ai-message">選択式は文脈を読む力が試されるね！推測して埋めてみて！</p>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- 内部スクロール（アクション＆解説） -->
         <div class="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 pb-48">
-            
             <div id="action-btn-area" class="flex flex-col gap-3">
                 <button onclick="showContextHint()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-3 rounded-xl shadow-sm border-2 border-yellow-300 text-lg active:scale-95 transition-all">
                     💡 文脈ヒント（手がかりをハイライト）
@@ -255,14 +244,12 @@
                 <button onclick="fillRandomAnswers()" class="text-xs text-center text-slate-400 mt-1">※テスト用: ランダムに埋める</button>
             </div>
 
-            <!-- 解説・結果エリア -->
             <div id="explanation-area" class="hidden flex-col gap-4">
                 <div class="bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm text-center">
                     <span id="score-badge" class="inline-block px-6 py-2 rounded-full text-2xl font-black text-white shadow-md mb-2">3 / 5 点</span>
-                    <p class="text-sm font-bold text-slate-500">A〜Eごとの判定とダミー記録を保存したわ。</p>
+                    <p class="text-sm font-bold text-slate-500">A〜Eごとの判定とダミー記録を保存したよ。</p>
                 </div>
                 
-                <!-- 🌟 耳学問モード（TTS倍速） -->
                 <div class="bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-sm flex flex-col gap-3">
                     <h3 class="text-sm font-black text-blue-800">🎧 耳学問モード（完成条文の読み上げ）</h3>
                     <div class="flex items-center gap-3">
@@ -273,12 +260,10 @@
                     </div>
                 </div>
 
-                <!-- 🌟 錬金術ボタン -->
                 <button onclick="generateAlchemyQuestion()" class="action-btn w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 text-lg animate-pulse border-2 border-white">
                     🔥 別の箇所を抜いて再挑戦（Pro AI錬金）
                 </button>
 
-                <!-- 解説文 -->
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
                     <h3 class="text-sm font-black text-slate-400 mb-2 border-b-2 pb-2">根拠条文</h3>
                     <p class="text-indigo-700 font-bold mb-4 text-lg" id="article-text">法X条</p>
@@ -288,12 +273,9 @@
             </div>
         </div>
 
-        <!-- 🌟 自己評価ボタン（右下固定・A〜E個別評価対応） -->
         <div id="self-eval-area" class="hidden absolute bottom-0 left-0 w-full p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
             <p id="eval-guide-text" class="text-center text-[11px] font-bold text-slate-500 mb-2">間違えた空欄や、まぐれ当たりは必ず「迷った」を押して記録してね！</p>
-            <div class="flex gap-2 mb-3 justify-center" id="eval-target-buttons">
-                <!-- JSでA〜Eの選択ボタンを生成 -->
-            </div>
+            <div class="flex gap-2 mb-3 justify-center" id="eval-target-buttons"></div>
             
             <div class="flex gap-3">
                 <button onclick="markEval('迷った')" class="eval-btn flex-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border-2 border-yellow-300 font-black py-3 rounded-xl shadow-sm active:scale-95 transition-all">🟡 迷ったと記録</button>
@@ -307,7 +289,6 @@
     <script>
         const GAS_URL = "https://script.google.com/a/macros/sr-nakao.com/s/AKfycbyHu72D7p9XrmynRKYbt_4HOfhJ47D3xEdv-SgqTWS1iSrxWo6KuhZnzTbMvitQ7r0_Eg/exec";
         
-        // ★元のスプレッドシートURLへ完全復元★
         const SUBJECTS = [
             { id: "rouki_s", name: "労働基準法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=743168881&single=true&output=csv" },
             { id: "anei_s", name: "安全衛生法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=2064794651&single=true&output=csv" },
@@ -385,7 +366,7 @@
             if (parsedSubjectsCount === SUBJECTS.length) {
                 if (allDatabase.length === 0) {
                     document.getElementById('loading-status').textContent = `✅ 準備完了 (モックデータ起動中)`;
-                    loadMockData(); // CSV未設定時はモックをセット
+                    loadMockData();
                 } else {
                     document.getElementById('loading-status').textContent = `✅ 完了 (${allDatabase.length}問)`;
                 }
@@ -400,7 +381,7 @@
                     _id: "sentaku_mock_" + i,
                     _subjectName: "労働基準法(選択)",
                     項目: "総則",
-                    問題文: `労働条件は、労働者が人たるに値する【A】を営むための必要を充たすべきものでなければならない。この法律で定める労働条件の基準は【B】のものであるから、労働関係の当事者は、この基準を理由として労働条件を【C】させてはならないことはもとより、その【D】を図るように【E】なければならない。`,
+                    問題文: `労働条件は、労働者が人たるに値する【A】を営むための必要を充たすべきものでなければならない。\n\nこの法律で定める労働条件の基準は【B】のものであるから、労働関係の当事者は、この基準を理由として労働条件を【C】させてはならないことはもとより、その【D】を図るように【E】なければならない。`,
                     正解A: "生活", 正解B: "最低", 正解C: "低下", 正解D: "向上", 正解E: "努め",
                     ダミー: "健康,幸福,最高,維持,合意,上昇,改善,努力し,義務づけられ,保障,人権,対等,決定,遵守,尊重",
                     根拠条文: "労基法第1条（労働条件の原則）",
@@ -458,7 +439,7 @@
             }
 
             if(userApiKey) {
-                let prompt = `あなたは社労士試験の専属コーチです。以下の成績データを見て、受講生に「今日一番やるべき科目」を1〜2文（40文字程度）でズバッと指摘して発破をかけてください。進捗率(progressRate)がすべて0の場合は「今日から選択式の特訓スタートね！まずは好きな科目からやってみよう！」と元気よく声をかけて。データ: ${JSON.stringify(stats)}`;
+                let prompt = `あなたは社労士試験の専属コーチ（18歳前後の明るい女性）です。以下の成績データを見て、受講生に「今日一番やるべき科目」を1〜2文（40文字程度）でズバッと指摘して発破をかけてください。進捗率(progressRate)がすべて0の場合は「今日から選択式の特訓スタートだね！まずは好きな科目からやってみよう！」と元気よく声をかけて。「～わ」「～よ」といった不自然な役割語は使わず、現代の自然な口語体で話してください。データ: ${JSON.stringify(stats)}`;
                 fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 }).then(res => res.json()).then(data => {
@@ -507,7 +488,6 @@
                 return; 
             }
             
-            // 以下省略なし（作戦会議チャット等の元の処理がそのまま続きます）
             const inputEl = document.getElementById('strategy-input');
             const input = inputEl.value.trim();
             if(!input) return;
@@ -521,7 +501,7 @@
             logEl.innerHTML += `<div id="${typingId}" class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base"><span class="typing">💬 考えてるよ...</span></div>`;
             logEl.scrollTop = logEl.scrollHeight;
             
-            let systemPrompt = `あなたは社労士試験の専属コーチです。受講生と今日の学習プラン（プレイリスト）について対話してください。セリフのみを出力してください。`;
+            let systemPrompt = `あなたは社労士試験の専属コーチです。受講生と今日の学習プラン（プレイリスト）について対話してください。セリフのみを出力してください。【重要】「～わ」「～よ」といった過剰な女性語は使わず、現代の一般的で自然な口語体で話すこと。`;
             let apiMessages = [{ role: "user", parts: [{ text: systemPrompt + " 受講生の要望: " + input }] }];
 
             try {
@@ -612,7 +592,7 @@
             currentWordBank = [q.正解A, q.正解B, q.正解C, q.正解D, q.正解E, ...dummies].filter(w=>w).slice(0,20);
             currentWordBank.sort(() => Math.random() - 0.5);
 
-            // スプレッドシート上の改行（\n）をHTMLの改行タグ（<br>）に変換する処理を追加
+            // スプレッドシート上の改行（\n）をHTMLの改行タグ（<br>）に変換
             let htmlText = q.問題文.replace(/\n/g, '<br>');
             ['A','B','C','D','E'].forEach(letter => {
                 let options = `<option value="" selected disabled>【 ${letter} 】</option>`;
@@ -630,6 +610,7 @@
                 wbContainer.innerHTML += `<div id="word-btn-${idx}" onclick="toggleStrike('${word}', this)" class="cursor-pointer border border-slate-300 p-2 rounded-lg text-center hover:bg-slate-50 transition-all select-none bg-white"><span class="word-num">${idx+1}</span>${word}</div>`;
             });
 
+            // APIを使った自然な口調でのコメント生成
             generateAiMessage("start_sentaku", { textOnly: false });
         }
 
@@ -812,23 +793,31 @@ ${currentFullText}`;
             });
         }
 
+        // 定型文処理を削除し、APIによる自然なコメントに変更
         function nextQuestion() {
             stopAudio();
             currentIndex++;
             if (currentIndex >= currentQuestions.length) {
                 alert("このセットは終了です！ダッシュボードへ戻ります。");
                 location.reload();
-            } else { loadQuestion(currentQuestions[currentIndex].解説 && currentQuestions[currentIndex].解説.includes('錬金術')); }
+            } else { 
+                loadQuestion(currentQuestions[currentIndex].解説 && currentQuestions[currentIndex].解説.includes('錬金術')); 
+                generateAiMessage("next", { textOnly: true });
+            }
         }
 
+        // APIによる自然なコメントの生成（定型文・過剰な役割語を排除）
         async function generateAiMessage(situation, extraData = {}) {
             const aiMessageEl = document.getElementById('ai-message');
             if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
             
-            let prompt = `あなたは社労士試験の専属コーチ（明るい女性）です。セリフ本文のみを出力。\n`;
-            if (situation === "start_sentaku") prompt += `選択式問題が始まりました。「文脈を読む力が試されるわ！推測して埋めてみて！」といったニュアンスで励まして。`;
-            else if (situation === "hint") prompt += `ヒントボタンが押されました。「手がかりになる語尾や接続詞をハイライトしたわ！前後の文脈をよく見て！」とアドバイスして。`;
-            else if (situation === "result_sentaku") prompt += `選択式の解答が完了し、5点満点中${extraData.score}点でした。点数に応じたコメントと、「まぐれ当たりや迷った空欄は下のボタンで記録してね。耳学問モードもおすすめよ！」と促して。`;
+            let prompt = `あなたは社労士試験の専属コーチ（18歳前後の明るい女性）です。絶対にセリフ本文のみを出力し、カッコや設定説明は含めないでください。
+【重要】「～わ」「～よ」といった過剰な女性語（アニメのような役割語）は使わず、現代の一般的な若者が使う、親しみやすく自然でリアルな口語体で話してください。\n`;
+            
+            if (situation === "start_sentaku") prompt += `選択式問題が始まりました。「文脈を読む力が試されるから、推測して埋めてみてね」といったニュアンスで励まして。`;
+            else if (situation === "next") prompt += `次の問題に進みました。「よし、次いこう！」のように短く促して。`;
+            else if (situation === "hint") prompt += `ヒントボタンが押されました。「手がかりになる語尾や接続詞をハイライトしたから、前後の文脈をよく見てね」とアドバイスして。`;
+            else if (situation === "result_sentaku") prompt += `選択式の解答が完了し、5点満点中${extraData.score}点でした。点数に応じたコメントと、「まぐれ当たりや迷った空欄は下のボタンで記録しておいてね。耳学問モードもおすすめ！」と自然に促して。`;
 
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
