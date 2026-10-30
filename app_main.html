@@ -36,16 +36,19 @@
 
         /* 💡 黄金基準：iPad・タッチ端末専用の強制拡大スタイル */
         @media (hover: none) and (pointer: coarse) {
+            /* ▼ 共通・解説・AIコメント */
             #ai-message { font-size: 2.0rem !important; line-height: 1.6 !important; }
             #explanation-text { font-size: 2.0rem !important; line-height: 1.8 !important; font-weight: 400 !important; }
             #article-text { font-size: 1.8rem !important; }
             .header-btn { font-size: 1.6rem !important; padding: 1.0rem 1.8rem !important; border-width: 2px !important; }
             .action-btn { font-size: 1.8rem !important; padding: 1.8rem !important; border-width: 3px !important; border-radius: 1.2rem !important; }
             
+            /* ▼ 択一式専用 */
             #question-text-takuitsu { font-size: 2.5rem !important; line-height: 1.7 !important; font-weight: 400 !important; }
             .answer-btn-box-takuitsu { height: 9rem !important; }
             .answer-btn-takuitsu { font-size: 6.5rem !important; border-width: 6px !important; }
             
+            /* ▼ 選択式専用 */
             #question-text-sentaku { font-size: 2.3rem !important; line-height: 2.1 !important; }
             .inline-select { font-size: 1.1em !important; padding: 0.3rem 2.2rem 0.3rem 0.8rem !important; }
             #word-bank-container { font-size: 1.8rem !important; gap: 0.8rem !important; }
@@ -58,6 +61,7 @@
             #eval-target-label { font-size: 1.6rem !important; }
             #eval-guide-text { font-size: 1.4rem !important; margin-bottom: 1.2rem !important; }
             
+            /* ▼ 択一評価専用 */
             .btn-next-action { font-size: 1.75rem !important; padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
             .btn-mistake-action { font-size: 1.25rem !important; padding: 0.75rem 1.25rem !important; }
         }
@@ -133,15 +137,47 @@
             
             <!-- 🌟 ダッシュボード＆作戦会議エリア -->
             <div class="bg-slate-50 rounded-3xl p-4 md:p-8 mb-8 border-4 border-slate-200 shadow-inner">
-                <h2 class="text-2xl md:text-3xl font-black mb-4 flex items-center gap-2">
-                    <span>📈 統合ダッシュボード</span>
-                    <span class="text-sm md:text-base font-bold text-slate-500 bg-white px-3 py-1 rounded-full border" id="loading-status">☁️ 統合データ読み込み中...</span>
-                </h2>
-                <div class="bg-pink-50 border-2 border-pink-200 rounded-2xl p-4 mb-6 flex items-start gap-4 shadow-sm">
+                <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+                    <h2 class="text-2xl md:text-3xl font-black flex items-center gap-2">
+                        <span>📈 統合ダッシュボード</span>
+                        <span class="text-sm md:text-base font-bold text-slate-500 bg-white px-3 py-1 rounded-full border" id="loading-status">☁️ 統合データ読み込み中...</span>
+                    </h2>
+                    <!-- 💤 ダッシュボード横に新設した仮眠ボタン -->
+                    <button onclick="openNapMenu()" class="bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border-2 border-indigo-500 font-bold px-4 py-2 rounded-xl text-sm md:text-base shadow-sm active:scale-95 transition-all flex items-center gap-1.5">
+                        <span>💤</span>
+                        <span>仮眠</span>
+                    </button>
+                </div>
+
+                <!-- 専属講師からのアドバイス（年齢表記を削除） -->
+                <div class="bg-pink-50 border-2 border-pink-200 rounded-2xl p-4 mb-4 flex items-start gap-4 shadow-sm">
                     <img src="coach.jpg" class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white shadow object-cover shrink-0">
                     <div>
-                        <p class="text-xs md:text-sm font-black text-pink-500 mb-1">専属講師（18歳）からのアドバイス</p>
+                        <p class="text-xs md:text-sm font-black text-pink-500 mb-1">専属講師からのアドバイス</p>
                         <p class="text-base md:text-xl font-bold text-slate-800" id="dash-ai-comment">データを読み込んでいるよ。</p>
+                    </div>
+                </div>
+
+                <!-- 🌟 専属講師からのアドバイスのすぐ下に移動した「講師モード」と「体調」 -->
+                <div class="flex flex-col md:flex-row gap-4 mb-6 bg-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
+                    <div class="flex-1">
+                        <h3 class="text-base font-black mb-1.5 text-slate-700">🧘 講師モード</h3>
+                        <select id="condition-select" class="w-full bg-pink-50 border-2 border-pink-200 text-base md:text-lg font-black p-3 rounded-xl focus:outline-none">
+                            <option value="おまかせ">🤖 おまかせ</option>
+                            <option value="普通">普通（穏やかで自然に寄り添う）</option>
+                            <option value="厳しめ">厳しめ（相手を信じて少し背中を押す）</option>
+                            <option value="熱血">熱血（前向きに引っ張って限界を超える）</option>
+                            <option value="ルーレット">🎲 ルーレット</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="text-base font-black mb-1.5 text-slate-700">🌡️ あなたの体調</h3>
+                        <select id="health-select" class="w-full bg-green-50 border-2 border-green-200 text-base md:text-lg font-black p-3 rounded-xl focus:outline-none">
+                            <option value="元気">元気</option>
+                            <option value="普通" selected>普通</option>
+                            <option value="疲れ気味">疲れ気味</option>
+                            <option value="眠い">眠い</option>
+                        </select>
                     </div>
                 </div>
                 
@@ -195,23 +231,6 @@
             </div>
             
             <div id="subject-accordion-container" class="w-full border-4 border-slate-200 rounded-3xl mb-8 bg-slate-50 overflow-hidden max-h-96 overflow-y-auto"></div>
-
-            <div class="flex flex-col md:flex-row gap-6 mb-8">
-                <div class="flex-1">
-                    <h2 class="text-xl font-black mb-3">🧘 講師モード</h2>
-                    <select id="condition-select" class="w-full bg-pink-50 border-4 border-pink-200 text-xl md:text-2xl font-black p-4 rounded-2xl">
-                        <option value="おまかせ">🤖 おまかせ</option>
-                        <option value="普通">普通（穏やかで自然に寄り添う）</option>
-                        <option value="厳しめ">厳しめ（相手を信じて少し背中を押す）</option>
-                        <option value="熱血">熱血（前向きに引っ張って限界を超える）</option>
-                        <option value="ルーレット">🎲 ルーレット</option>
-                    </select>
-                </div>
-                <div class="flex-1">
-                    <h2 class="text-xl font-black mb-3">🌡️ あなたの体調</h2>
-                    <select id="health-select" class="w-full bg-green-50 border-4 border-green-200 text-xl md:text-2xl font-black p-4 rounded-2xl"><option value="元気">元気</option><option value="普通" selected>普通</option><option value="疲れ気味">疲れ気味</option><option value="眠い">眠い</option></select>
-                </div>
-            </div>
 
             <h2 class="text-xl font-black mb-3">⏱️ 全体の目標時間</h2>
             <select id="time-limit-select" onchange="toggleCustomTime()" class="w-full bg-blue-50 border-4 border-blue-200 text-xl md:text-2xl font-black p-4 rounded-2xl mb-4 focus:outline-none">
@@ -290,7 +309,7 @@
                     <img src="coach.jpg" alt="AI講師" class="w-full h-full object-cover shrink-0">
                 </div>
                 <div class="ml-4 flex-grow">
-                    <div class="bg-pink-50 rounded-3xl rounded-tl-none p-4 md:p-5 lg:p-4 shadow-md border-4 border-pink-100 relative">
+                    <div class="bg-pink-50 rounded-3xl rounded-tl-none p-4 shadow-md border-4 border-pink-100 relative">
                         <p class="text-slate-800 font-bold leading-relaxed text-sm md:text-base" id="ai-message">準備ができたらスタートしてね！</p>
                         <div id="ai-fix-action" class="mt-4 p-4 bg-white rounded-xl border-4 border-red-300 shadow-sm hidden">
                             <p class="text-sm md:text-lg font-black text-red-600 mb-2">🚨 AIが矛盾・法改正を発見！</p>
@@ -644,18 +663,26 @@
             logEl.scrollTop = logEl.scrollHeight;
             
             const cond = document.getElementById('condition-select').value;
+            const health = document.getElementById('health-select').value;
             
-            // 🌟 自然な若い女性の話し方（無理な語尾・キャラ付けを完全排除）
-            let systemPrompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。受講生の頑張りやスキマ時間を絶対に否定せず、前向きにサポートしてください。
-【話し方のルール】
-・言葉遣いは現代の普通の若い女性。普通の話し言葉で話してください。
-・「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」「〜かしら」等の不自然な役割語やキャラ付けは【絶対禁止】です。
-・「おい」「お前」「待て」「言い訳」などの高圧的な説教や暴言は論外、絶対に許されません。
+            // 🌟 体調を反映した専属講師プロンプト
+            let systemPrompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。受講生の努力を肯定し、前向きにサポートしてください。
+【現在のコンディション】
+・講師モード: ${cond}
+・受講生の体調: ${health}
 
-【各モードの性格】
-・「熱血」の場合: 無理やり語尾で熱血感を出すのではなく、「ここまでできたのすごい！」「アタシもついていくから一緒に頑張ろう！」「もうちょっとできるんじゃない？限界超えてみよう！」とポジティブに引っ張っていく性格。
-・「厳しめ」の場合: 相手の力を信じているからこそ、「その調子なら、あとちょっと頑張れそうじゃない？」「せっかくのいい流れだし、もう5問だけやってみない？」と自然にハッパをかける性格。
-・「普通」の場合: 親身で穏やかに寄り添い、「スキマ時間にえらいね！無理のない範囲で進めていこう！」と温かく接する性格。
+【体調に応じた対応ルール】
+・受講生が「眠い」「疲れ気味」の場合:
+  - 決して無理強いはせず、まずは「お疲れ様！」「少しでもやろうとする姿勢すごいよ！」と肯定する。
+  - 「熱血」モードなら: 「疲れてるのに机に向かうなんて最高に偉い！じゃあサクッと5問だけやって、限界超えて休もう！アタシも集中して付き合うから！」と短時間集中を元気に提案。
+  - 「厳しめ」モードなら: 「疲れてるみたいだし、今日は無理に広げず、5問〜10問だけピシッと解いて終わりにしよ？そのほうが質も上がるしね」とメリハリを促す。
+  - 「普通」モードなら: 「体調大丈夫？今日は軽めに5問くらい復習して、早めに休もうね」と優しく調整。
+・受講生が「元気」な場合: 積極的に多めの問題数や苦手科目の挑戦を提案してください。
+
+【言葉遣いの絶対ルール】
+・言葉遣いは現代の普通の若い女性。普通の自然な口語体で話してください。
+・「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」「〜かしら」等の不自然な役割語やキャラ付けは【絶対禁止】。
+・高圧的な説教や暴言（おい、お前、待て等）は絶対禁止。
 
 【成績データ】${JSON.stringify(getStatsSummary())}
 
