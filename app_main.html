@@ -34,7 +34,7 @@
         option.hidden-option { display: none !important; }
         .highlight-clue { background-color: #fef08a; padding: 0 2px; border-radius: 2px; font-weight: bold; border-bottom: 2px solid #eab308; }
 
-        /* 💡 黄金基準：iPad等のタッチ端末専用の強制拡大スタイル */
+        /* 💡 黄金基準：iPad・タッチ端末専用の強制拡大スタイル */
         @media (hover: none) and (pointer: coarse) {
             #ai-message { font-size: 2.0rem !important; line-height: 1.6 !important; }
             #explanation-text { font-size: 2.0rem !important; line-height: 1.8 !important; font-weight: 400 !important; }
@@ -268,6 +268,7 @@
     <!-- 左側：問題エリア (55%) -->
     <main id="main-area" class="hidden w-full lg:w-[55%] h-[55dvh] lg:h-full flex-col bg-white shadow-xl z-10 shrink-0 border-r border-slate-200">
         
+        <!-- ▼ 共通ヘッダー -->
         <div class="bg-indigo-900 text-white shrink-0 shadow-md z-20">
             <div class="p-2 md:p-5 flex justify-between items-center gap-1 md:gap-2">
                 <div class="flex items-center gap-1 md:gap-2 shrink-0 flex-wrap">
@@ -285,6 +286,7 @@
         </div>
 
         <div class="flex-1 flex flex-col p-3 md:p-6 lg:p-8 overflow-y-auto relative justify-between min-h-0">
+            <!-- 共通 問題メタ情報 -->
             <div class="flex items-center justify-between border-b border-slate-100 pb-2 md:pb-3 mb-2 md:mb-4 shrink-0">
                 <div class="flex items-center gap-1.5 md:gap-2">
                     <span class="bg-indigo-600 text-white text-[10px] md:text-xs font-bold px-1.5 md:px-2 py-0.5 md:py-1 rounded" id="q-subject-badge">科目</span>
@@ -344,6 +346,7 @@
         </div>
 
         <div class="flex-1 overflow-y-auto p-3 md:p-6 flex flex-col gap-3 pb-32 md:pb-48">
+            
             <div id="action-takuitsu" class="hidden flex-col gap-2">
                 <button onclick="showHintTakuitsu()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm border-2 border-yellow-300 text-sm md:text-lg active:scale-95 transition-all">
                     💡 AIにヒントをもらう
@@ -616,7 +619,13 @@
             container.innerHTML = htmlContent;
 
             if(userApiKey) {
-                let prompt = `あなたは社労士試験の専属講師（18歳前後の若い女性）です。受講生の努力を肯定し、成績データをもとに今日のおすすめ科目を1〜2文（40文字程度）で明るく提案してください。不自然な役割語（〜わ、〜よ、〜ぞ等）は絶対禁止。自然な口語体で。データ: ${JSON.stringify(stats)}`;
+                const cond = document.getElementById('condition-select').value;
+                let prompt = `あなたは社労士試験の専属講師（18歳前後の若い女性）です。成績データを見て、受講生に「今日一番やるべき科目」を1〜2文（40文字程度）で明るく提案してください。
+【絶対ルール】
+1. 定型文は一切使わず、データに基づき毎回考えて出力すること。
+2. モード（${cond}）の性格は、不自然な役割語やアニメ口調（〜わ、〜よ、〜ぞ、〜だ等）ではなく、提案する「内容」で表現すること。現代の自然な口語体を徹底してください。
+データ: ${JSON.stringify(stats)}`;
+                
                 fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 }).then(res => res.json()).then(data => {
@@ -694,10 +703,11 @@
 【最重要ルール: 要望の遵守】
 受講生が「4科目から1項目ずつ10問」「全科目から10問ずつ」など、科目数や問題数を具体的に指定した場合は、【絶対に勝手な提案ですり替えたり、減らしたりせず】、「了解！その通りに準備するね！」と受講生の指定をそのまま全肯定してプランを確定させてください。
 
-【話し方・口調】
-・現代の普通の若い女性。普通の自然な口語体（1〜2文）で話す。
-・「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」「〜かしら」等の不自然な役割語は【絶対禁止】。
-・高圧的な説教や命令口調（おい、お前、待て等）は論外、絶対に許されません。
+【話し方・口調の絶対ルール】
+1. 定型文は一切使わず、毎回必ず自分の言葉で生成すること。
+2. 現代の普通の若い女性の自然な口語体（1〜2文）で話すこと。
+3. モード（${cond}）による性格の違いは、不自然な言葉遣い（「～だ」「～しろ」「～わ」「～よ」「～ぞ」などのアニメ口調）ではなく、「話す内容（アプローチ方法）」で表現すること。無理やり性格や性別を意識させる変な言葉遣いは絶対禁止。
+4. 高圧的な説教や命令口調（おい、お前、待て等）は論外、絶対に許されません。
 
 【成績データ】${JSON.stringify(getStatsSummary())}
 
@@ -968,8 +978,6 @@
 
             if (isFirstOfSet) {
                 generateAiMessage(`start_${q._type === '択一' ? 'takuitsu' : 'sentaku'}`, { textOnly: false });
-            } else {
-                generateAiMessage("next", { textOnly: true });
             }
             verifyDataWithPro(q);
         }
@@ -1095,6 +1103,7 @@
             }
             generateAiMessage("result_sentaku", { score: score, textOnly: false });
         }
+        function closeWarningModal() { document.getElementById('warning-modal').classList.add('hidden'); document.getElementById('warning-modal').classList.remove('flex'); }
 
         // ==========================
         // 共通ロジック (保存・評価・次へ)
@@ -1143,7 +1152,7 @@
             if (currentIndex >= currentQuestions.length) {
                 currentPlaylistIndex++;
                 if (currentPlaylistIndex < playlistQueue.length) {
-                    startNextPlaylistSet(); // 🌟 次の科目の最初の問題（isFirstOfSetはtrueで開始）
+                    startNextPlaylistSet();
                 } else {
                     document.getElementById('explanation-area').classList.remove('hidden'); document.getElementById('explanation-area').classList.add('flex');
                     document.getElementById('self-eval-area-takuitsu').classList.add('hidden');
@@ -1210,19 +1219,23 @@
             if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
             
             const cond = document.getElementById('condition-select').value;
-            let prompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。モードは「${cond}」です。セリフ本文のみを1〜2文で出力してください。
-【重要】受講生を肯定し、隙間時間や少しの頑張りも褒めてください。決して暴言や高圧的な説教はせず、親しみやすい自然な普通の口語で話してください。「〜だぞ」「〜だろ」「〜わ」「〜よ」等の不自然な役割語は絶対禁止です。\n`;
+            let prompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。受講生のモードは「${cond}」です。
+【絶対ルール】
+1. セリフ本文のみを1〜2文で出力すること。
+2. 定型文は一切使わず、毎回必ず状況に合わせて自分の言葉で考えて生成すること。
+3. 決して暴言や高圧的な説教はせず、親しみやすい現代の一般的な若い女性の自然な口語体で話すこと。
+4. モード（熱血や厳しめ等）による性格の違いは、不自然な言葉遣い（「～だ」「～しろ」「～だわ」「～よ」「～ぞ」などのアニメ口調）で表現するのではなく、あくまで「話す内容やアプローチの仕方（熱血なら一緒に限界を超えようと励ます、厳しめなら相手を信じて少し高い目標を促すなど）」で表現すること。無理やり性格や性別を意識させるような変な言葉遣いは絶対にしないこと。\n`;
             
             if (situation === "start_takuitsu") prompt += `択一式の特訓スタート。短く前向きに気合を入れて。`;
-            else if (situation === "start_sentaku") prompt += `選択式の特訓スタート。「文脈を意識して埋めてみてね」と励まして。`;
-            else if (situation === "next") prompt += `次の問題に進みました。「よし、次いこう！」のように短く促して。`;
+            else if (situation === "start_sentaku") prompt += `選択式の特訓スタート。文脈を意識して埋めてみてと励まして。`;
+            else if (situation === "next") prompt += `次の問題に進みました。短く促して。`;
             else if (situation === "hint_takuitsu") prompt += `択一式のヒント。答えは言わず、見るべきポイントを1文で示して。問題:${extraData.questionText} 解説:${extraData.explanation}`;
-            else if (situation === "hint_sentaku") prompt += `選択式のヒント。「キーワードを黄色くしたから確認してみて」とアドバイスして。`;
+            else if (situation === "hint_sentaku") prompt += `選択式のヒント。キーワードを黄色くしたから確認してみてとアドバイスして。`;
             else if (situation === "answer_takuitsu") prompt += `択一式解答。結果は【${extraData.isCorrect ? "正解" : "不正解"}】。解説から最重要ポイントを1文で要約して。解説:${extraData.explanation}`;
-            else if (situation === "result_sentaku") prompt += `選択式解答完了。5点中${extraData.score}点。点数に応じたコメントと、「迷ったところは下のボタンで記録しておいてね」と促して。`;
+            else if (situation === "result_sentaku") prompt += `選択式解答完了。5点中${extraData.score}点。点数に応じたコメントと、迷ったところは下のボタンで記録しておいてと促して。`;
             else if (situation === "end_all") prompt += `全問題終了。頑張りを心から労い、次への励ましを。`;
-            else if (situation === "nap_start") prompt += `受講生が仮眠。「しっかり休んでね。時間になったら起こすからね」と優しく伝えて。`;
-            else if (situation === "nap_end") prompt += `仮眠終了。「すっきりした？さあ、もうひと頑張りいこう！」と明るく声かけして。`;
+            else if (situation === "nap_start") prompt += `受講生が仮眠。しっかり休んでね。時間になったら起こすからねと優しく伝えて。`;
+            else if (situation === "nap_end") prompt += `仮眠終了。すっきりした？さあ、もうひと頑張りいこうと明るく声かけして。`;
 
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
@@ -1234,7 +1247,7 @@
                 if(aiMessageEl) { aiMessageEl.textContent = text; aiMessageEl.classList.remove('text-red-500'); }
                 if (!extraData.textOnly) speakText(text); 
             } catch(e) {
-                if(aiMessageEl) { aiMessageEl.textContent = `今日も一緒に一問ずつ進めていこう！`; aiMessageEl.classList.remove('text-red-500'); }
+                if(aiMessageEl) { aiMessageEl.textContent = `今日も一緒に一問ずつ進めていこうね！`; aiMessageEl.classList.remove('text-red-500'); }
             }
         }
 
