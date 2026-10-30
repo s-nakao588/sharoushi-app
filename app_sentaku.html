@@ -154,8 +154,17 @@
                 </div>
             </div>
 
+            <!-- 🌟 科目別プレイリスト作成ボタン -->
+            <h2 class="text-2xl md:text-3xl font-black mb-4 border-b-2 border-slate-200 pb-2">🎯 科目別 特訓スタート</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10">
+                <button onclick="startTraining('subject', '労働基準法(選択)')" class="bg-blue-100 hover:bg-blue-200 text-blue-800 border-2 border-blue-300 font-black py-5 rounded-2xl shadow-sm active:scale-95 text-xl transition-all">労働基準法</button>
+                <button onclick="startTraining('subject', '安全衛生法(選択)')" class="bg-teal-100 hover:bg-teal-200 text-teal-800 border-2 border-teal-300 font-black py-5 rounded-2xl shadow-sm active:scale-95 text-xl transition-all">安全衛生法</button>
+                <button onclick="startTraining('subject', '健康保険法(選択)')" class="bg-pink-100 hover:bg-pink-200 text-pink-800 border-2 border-pink-300 font-black py-5 rounded-2xl shadow-sm active:scale-95 text-xl transition-all">健康保険法</button>
+                <button onclick="startTraining('subject', '厚生年金保険法(選択)')" class="bg-orange-100 hover:bg-orange-200 text-orange-800 border-2 border-orange-300 font-black py-5 rounded-2xl shadow-sm active:scale-95 text-xl transition-all">厚生年金保険法</button>
+            </div>
+
             <!-- 通常プレイリスト作成 -->
-            <h2 class="text-2xl md:text-3xl font-black mb-4">📚 自分でプレイリストを作成</h2>
+            <h2 class="text-2xl md:text-3xl font-black mb-4">📚 詳細に項目を指定して作成</h2>
             <div class="flex flex-wrap gap-3 mb-4 items-center">
                 <button onclick="checkAllChapters(true)" class="bg-indigo-100 text-indigo-700 px-6 py-3 rounded-xl font-bold text-lg">☑ すべて選択</button>
                 <button onclick="checkAllChapters(false)" class="bg-slate-100 text-slate-600 px-6 py-3 rounded-xl font-bold text-lg">☐ すべて解除</button>
@@ -163,12 +172,12 @@
             
             <div id="subject-accordion-container" class="w-full border-4 border-slate-200 rounded-3xl mb-8 bg-slate-50 overflow-hidden max-h-72 overflow-y-auto"></div>
 
-            <button onclick="startTraining('normal')" class="w-full bg-gradient-to-r from-blue-600 to-indigo-700 text-white font-black py-6 rounded-3xl text-3xl shadow-xl active:scale-95">🚀 全科目ランダム特訓スタート！！</button>
+            <button onclick="startTraining('normal')" class="w-full bg-gradient-to-r from-indigo-500 to-indigo-700 text-white font-black py-6 rounded-3xl text-3xl shadow-xl active:scale-95">🚀 カスタム特訓スタート！！</button>
         </div>
     </div>
 
-    <!-- 左側：問題エリア (55%) -->
-    <main class="w-full lg:w-[55%] h-[55dvh] lg:h-full flex flex-col bg-white shadow-xl z-10 shrink-0 border-r border-slate-200">
+    <!-- 左側：問題エリア (55%) ※起動時は非表示(hidden)で貫通バグを防止 -->
+    <main id="main-area" class="hidden w-full lg:w-[55%] h-[55dvh] lg:h-full flex-col bg-white shadow-xl z-10 shrink-0 border-r border-slate-200">
         <div class="bg-indigo-900 text-white shrink-0 shadow-md z-20">
             <div class="p-3 md:p-5 flex justify-between items-center gap-2">
                 <div class="flex items-center gap-2 shrink-0 flex-wrap">
@@ -210,8 +219,8 @@
         </div>
     </main>
 
-    <!-- 右側：AI・解説エリア (45%) -->
-    <aside class="w-full lg:w-[45%] h-[45dvh] lg:h-full flex flex-col bg-slate-50 relative">
+    <!-- 右側：AI・解説エリア (45%) ※起動時は非表示(hidden)で貫通バグを防止 -->
+    <aside id="aside-area" class="hidden w-full lg:w-[45%] h-[45dvh] lg:h-full flex-col bg-slate-50 relative">
         <div class="p-4 md:p-6 bg-white border-b border-slate-200 shrink-0 shadow-sm">
             <div class="flex items-start">
                 <div class="w-16 h-16 md:w-20 md:h-20 lg:w-16 lg:h-16 rounded-full bg-pink-100 border-4 border-white shadow-lg overflow-hidden shrink-0 flex items-center justify-center">
@@ -291,12 +300,13 @@
         const GAS_URL = "https://script.google.com/a/macros/sr-nakao.com/s/AKfycbyHu72D7p9XrmynRKYbt_4HOfhJ47D3xEdv-SgqTWS1iSrxWo6KuhZnzTbMvitQ7r0_Eg/exec";
         
         // ==============================================================
-        // ★修正箇所: URLを抽出した本番CSVに書き換え★
+        // ★元のスプレッドシートURLへ完全復元★
         // ==============================================================
         const SUBJECTS = [
-            { id: "rouki_s", name: "労働基準法(選択)", url: "https://raw.githubusercontent.com/s-nakao588/sharoushi-app/main/労基_選択_抽出_新.csv" },
-            { id: "kounen_s", name: "厚生年金保険法(選択)", url: "https://raw.githubusercontent.com/s-nakao588/sharoushi-app/main/厚生年金_選択_抽出_新.csv" },
-            { id: "kenpo_s", name: "健康保険法(選択)", url: "https://raw.githubusercontent.com/s-nakao588/sharoushi-app/main/健康保険_選択_抽出_新.csv" }
+            { id: "rouki_s", name: "労働基準法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=743168881&single=true&output=csv" },
+            { id: "anei_s", name: "安全衛生法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=2064794651&single=true&output=csv" },
+            { id: "kenpo_s", name: "健康保険法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=1172602320&single=true&output=csv" },
+            { id: "kounen_s", name: "厚生年金保険法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=268551140&single=true&output=csv" }
         ];
 
         let allDatabase = [], userHistory = {}, playlistQueue = [], currentQuestions = [];
@@ -470,7 +480,7 @@
 
         function checkAllChapters(check) { document.querySelectorAll('input[name="chapter-check"]').forEach(cb => cb.checked = check); }
 
-        function startTraining(mode) {
+        function startTraining(mode, targetSubject = null) {
             if(allDatabase.length === 0) { alert("問題データがありません。CSVの設定を確認してください。"); return; }
             userApiKey = document.getElementById('api-key-input').value.trim();
             userModel = document.getElementById('api-model-input').value;
@@ -490,13 +500,24 @@
                 } else {
                     qs = [...allDatabase]; // 未選択時は全問
                 }
+            } else if (mode === 'subject' && targetSubject) {
+                // 特定の科目のみを抽出
+                qs = allDatabase.filter(q => q._subjectName === targetSubject);
             }
             
             if(qs.length === 0) { alert("出題できる問題がありません。"); return; }
             qs = qs.sort(()=>Math.random()-0.5).slice(0, 10);
-            playlistQueue = [{ subjectName: "選択式 特訓", chapterName: "選択式", questions: qs }];
+            
+            playlistQueue = [{ subjectName: mode === 'subject' ? targetSubject : "選択式 特訓", chapterName: "選択式", questions: qs }];
             currentPlaylistIndex = 0;
+            
+            // ★スタート画面を隠し、非表示にしていた問題・解説エリアを表示（貫通バグ完全解消）
             document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('main-area').classList.remove('hidden');
+            document.getElementById('main-area').classList.add('flex');
+            document.getElementById('aside-area').classList.remove('hidden');
+            document.getElementById('aside-area').classList.add('flex');
+            
             startNextPlaylistSet();
         }
 
@@ -625,4 +646,143 @@
             document.getElementById('explanation-area').classList.add('flex');
             document.getElementById('self-eval-area').classList.remove('hidden');
             
-            document.getElementById('score-badge
+            document.getElementById('score-badge').textContent = `${score} / 5 点`;
+            document.getElementById('score-badge').className = score === 5 ? "inline-block px-6 py-2 rounded-full text-2xl font-black text-white bg-green-500 shadow-md mb-2 animate-bounce" : "inline-block px-6 py-2 rounded-full text-2xl font-black text-white bg-red-500 shadow-md mb-2";
+            document.getElementById('article-text').textContent = q.根拠条文 || "条文なし";
+            document.getElementById('explanation-text').innerHTML = q.解説 || "解説なし";
+
+            const evalTargetContainer = document.getElementById('eval-target-buttons');
+            evalTargetContainer.innerHTML = '<span id="eval-target-label" class="text-xs font-bold text-slate-500 self-center mr-2">対象:</span>';
+            ['A','B','C','D','E'].forEach(letter => {
+                evalTargetContainer.innerHTML += `<label class="eval-target-box flex items-center gap-1 cursor-pointer bg-slate-100 px-2 py-1 rounded border border-slate-300"><input type="checkbox" name="eval-target" value="${letter}"><span class="font-bold text-sm">${letter}</span></label>`;
+            });
+
+            generateAiMessage("result_sentaku", { score: score, textOnly: false });
+        }
+
+        async function saveSentakuToGAS(q_id, score, traps) {
+            try {
+                const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_sentaku', q_id: q_id, score: score, traps: traps }) });
+                const data = await res.json();
+                if(data.success) {
+                    if(!userHistory[q_id]) userHistory[q_id] = {};
+                    userHistory[q_id].playCount = data.playCount;
+                    userHistory[q_id].correctCount = data.correctCount;
+                }
+            } catch(e) { }
+        }
+
+        function closeWarningModal() { document.getElementById('warning-modal').classList.add('hidden'); document.getElementById('warning-modal').classList.remove('flex'); }
+
+        function playCompletedArticle() {
+            const speed = parseFloat(document.getElementById('tts-speed').value);
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const u = new SpeechSynthesisUtterance(currentFullText.replace(/<[^>]+>/g, ''));
+                u.lang = 'ja-JP'; u.rate = speed;
+                window.speechSynthesis.speak(u);
+            }
+        }
+        function stopAudio() {
+            if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+            const p = document.getElementById('tts-player');
+            if(p) { p.pause(); p.currentTime=0; }
+        }
+
+        async function generateAlchemyQuestion() {
+            const btn = document.querySelector('button[onclick="generateAlchemyQuestion()"]');
+            btn.textContent = "🔥 錬金中... (Pro AIが思考中)";
+            btn.classList.add('opacity-50', 'pointer-events-none');
+            
+            const prompt = `あなたは社労士試験の天才問題作成者です。以下の【完成条文】から、新たな選択式問題を作成してください。
+【条件】
+1. 現在とは違う重要キーワードを5箇所選び、【A】〜【E】の空欄に置き換えること。
+
+2. 巧妙なダミー語句を15個作成すること。
+3. 以下のJSONフォーマットのみを絶対に出力すること。余計な文章は不要。
+\`\`\`json
+{
+  "問題文": "新しい空欄【A】〜【E】を含んだ条文テキスト",
+  "正解A": "語句", "正解B": "語句", "正解C": "語句", "正解D": "語句", "正解E": "語句",
+  "ダミー": "ダミー1,ダミー2,ダミー3..." // 必ずカンマ区切りで15個
+}
+\`\`\`
+【完成条文】
+${currentFullText}`;
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${userApiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (!res.ok) throw new Error("Pro API Error");
+                const data = await res.json();
+                const text = data.candidates[0].content.parts[0].text;
+                const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+                if (jsonMatch) {
+                    const newQ = JSON.parse(jsonMatch[1]);
+                    newQ._subjectName = currentQuestions[currentIndex]._subjectName;
+                    newQ.解説 = "【錬金術による派生問題】\n" + (currentQuestions[currentIndex].解説 || "");
+                    newQ.根拠条文 = currentQuestions[currentIndex].根拠条文 || "錬金生成";
+                    
+                    currentQuestions.splice(currentIndex + 1, 0, newQ);
+                    btn.textContent = "✨ 錬金成功！次の問題へ進んで！";
+                    btn.classList.replace('from-purple-500', 'from-green-500');
+                    btn.classList.replace('to-pink-500', 'to-emerald-500');
+                } else { throw new Error("JSON Parse Error"); }
+            } catch (e) {
+                alert("錬金術に失敗しました。時間をおいて再試行してください。\n" + e.message);
+                btn.textContent = "🔥 別の箇所を抜いて再挑戦（Pro AI錬金）";
+                btn.classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
+
+        function markEval(status) {
+            const checked = Array.from(document.querySelectorAll('input[name="eval-target"]:checked')).map(cb => cb.value);
+            if(checked.length === 0) { alert("対象の空欄(A~E)を選択してください"); return; }
+            
+            const statusStr = `${status}(${checked.join(',')})`;
+            const q = currentQuestions[currentIndex];
+            fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_status', q_id: q._id, status: statusStr }) });
+            
+            document.querySelectorAll('input[name="eval-target"]:checked').forEach(cb => {
+                cb.parentElement.classList.add('opacity-30', 'bg-yellow-200');
+                cb.checked = false;
+            });
+        }
+
+        function nextQuestion() {
+            stopAudio();
+            currentIndex++;
+            if (currentIndex >= currentQuestions.length) {
+                alert("このセットは終了です！ダッシュボードへ戻ります。");
+                location.reload();
+            } else { loadQuestion(currentQuestions[currentIndex].解説 && currentQuestions[currentIndex].解説.includes('錬金術')); }
+        }
+
+        async function generateAiMessage(situation, extraData = {}) {
+            const aiMessageEl = document.getElementById('ai-message');
+            if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
+            
+            let prompt = `あなたは社労士試験の専属コーチ（明るい女性）です。セリフ本文のみを出力。\n`;
+            if (situation === "start_sentaku") prompt += `選択式問題が始まりました。「文脈を読む力が試されるわ！推測して埋めてみて！」といったニュアンスで励まして。`;
+            else if (situation === "hint") prompt += `ヒントボタンが押されました。「手がかりになる語尾や接続詞をハイライトしたわ！前後の文脈をよく見て！」とアドバイスして。`;
+            else if (situation === "result_sentaku") prompt += `選択式の解答が完了し、5点満点中${extraData.score}点でした。点数に応じたコメントと、「まぐれ当たりや迷った空欄は下のボタンで記録してね。耳学問モードもおすすめよ！」と促して。`;
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+                if (!res.ok) throw new Error("API Error");
+                const data = await res.json();
+                const text = data.candidates[0].content.parts[0].text;
+                if(aiMessageEl) { aiMessageEl.textContent = text; aiMessageEl.classList.remove('text-red-500'); }
+            } catch(e) {
+                if(aiMessageEl) { aiMessageEl.textContent = `⚠️ API通信エラー`; aiMessageEl.classList.add('text-red-500'); }
+            }
+        }
+        
+        function openNapMenu() { document.getElementById('nap-overlay').classList.remove('hidden'); document.getElementById('nap-overlay').classList.add('flex'); }
+        function cancelNapMenu() { document.getElementById('nap-overlay').classList.add('hidden'); document.getElementById('nap-overlay').classList.remove('flex'); }
+    </script>
+</body>
+</html>
