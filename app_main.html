@@ -36,19 +36,16 @@
 
         /* 💡 黄金基準：iPad・タッチ端末専用の強制拡大スタイル */
         @media (hover: none) and (pointer: coarse) {
-            /* ▼ 共通・解説・AIコメント */
             #ai-message { font-size: 2.0rem !important; line-height: 1.6 !important; }
             #explanation-text { font-size: 2.0rem !important; line-height: 1.8 !important; font-weight: 400 !important; }
             #article-text { font-size: 1.8rem !important; }
             .header-btn { font-size: 1.6rem !important; padding: 1.0rem 1.8rem !important; border-width: 2px !important; }
             .action-btn { font-size: 1.8rem !important; padding: 1.8rem !important; border-width: 3px !important; border-radius: 1.2rem !important; }
             
-            /* ▼ 択一式専用 */
             #question-text-takuitsu { font-size: 2.5rem !important; line-height: 1.7 !important; font-weight: 400 !important; }
             .answer-btn-box-takuitsu { height: 9rem !important; }
             .answer-btn-takuitsu { font-size: 6.5rem !important; border-width: 6px !important; }
             
-            /* ▼ 選択式専用 */
             #question-text-sentaku { font-size: 2.3rem !important; line-height: 2.1 !important; }
             .inline-select { font-size: 1.1em !important; padding: 0.3rem 2.2rem 0.3rem 0.8rem !important; }
             #word-bank-container { font-size: 1.8rem !important; gap: 0.8rem !important; }
@@ -61,7 +58,6 @@
             #eval-target-label { font-size: 1.6rem !important; }
             #eval-guide-text { font-size: 1.4rem !important; margin-bottom: 1.2rem !important; }
             
-            /* ▼ 択一評価専用 */
             .btn-next-action { font-size: 1.75rem !important; padding-top: 1.25rem !important; padding-bottom: 1.25rem !important; }
             .btn-mistake-action { font-size: 1.25rem !important; padding: 0.75rem 1.25rem !important; }
         }
@@ -144,7 +140,7 @@
                 <div class="bg-pink-50 border-2 border-pink-200 rounded-2xl p-4 mb-6 flex items-start gap-4 shadow-sm">
                     <img src="coach.jpg" class="w-12 h-12 md:w-16 md:h-16 rounded-full border-2 border-white shadow object-cover shrink-0">
                     <div>
-                        <p class="text-xs md:text-sm font-black text-pink-500 mb-1">今日の一言診断</p>
+                        <p class="text-xs md:text-sm font-black text-pink-500 mb-1">専属講師（18歳）からのアドバイス</p>
                         <p class="text-base md:text-xl font-bold text-slate-800" id="dash-ai-comment">データを読み込んでいるよ。</p>
                     </div>
                 </div>
@@ -166,7 +162,7 @@
                     <h3 class="text-xl md:text-2xl font-black text-indigo-800 mb-2">💬 専属講師と今日の作戦会議</h3>
                     <div id="strategy-chat-log" class="mb-4 max-h-48 overflow-y-auto flex flex-col gap-2 p-2 bg-white/50 rounded-xl border border-indigo-100">
                         <div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">
-                            今日は「択一」と「選択」どっちをやる？もちろん両方混ぜる「ミックス特訓」もできるよ！
+                            今日は「択一」と「選択」どっちをやる？スキマ時間でサクッとでも、両方混ぜる「ミックス特訓」でも合わせるよ！
                         </div>
                     </div>
                     <div class="flex gap-2 shrink-0">
@@ -203,7 +199,13 @@
             <div class="flex flex-col md:flex-row gap-6 mb-8">
                 <div class="flex-1">
                     <h2 class="text-xl font-black mb-3">🧘 講師モード</h2>
-                    <select id="condition-select" class="w-full bg-pink-50 border-4 border-pink-200 text-xl md:text-2xl font-black p-4 rounded-2xl"><option value="おまかせ">🤖 おまかせ</option><option value="普通">普通</option><option value="厳しめ">厳しめ</option><option value="熱血">熱血</option><option value="ルーレット">🎲 ルーレット</option></select>
+                    <select id="condition-select" class="w-full bg-pink-50 border-4 border-pink-200 text-xl md:text-2xl font-black p-4 rounded-2xl">
+                        <option value="おまかせ">🤖 おまかせ</option>
+                        <option value="普通">普通（穏やかで自然に寄り添う）</option>
+                        <option value="厳しめ">厳しめ（相手を信じて少し背中を押す）</option>
+                        <option value="熱血">熱血（前向きに引っ張って限界を超える）</option>
+                        <option value="ルーレット">🎲 ルーレット</option>
+                    </select>
                 </div>
                 <div class="flex-1">
                     <h2 class="text-xl font-black mb-3">🌡️ あなたの体調</h2>
@@ -225,10 +227,9 @@
         </div>
     </div>
 
-    <!-- 左側：問題エリア (55%) ※起動時は非表示(hidden) -->
+    <!-- 左側：問題エリア (55%) -->
     <main id="main-area" class="hidden w-full lg:w-[55%] h-[55dvh] lg:h-full flex-col bg-white shadow-xl z-10 shrink-0 border-r border-slate-200">
         
-        <!-- ▼ 共通ヘッダー -->
         <div class="bg-indigo-900 text-white shrink-0 shadow-md z-20">
             <div class="p-3 md:p-5 flex justify-between items-center gap-2">
                 <div class="flex items-center gap-2 shrink-0 flex-wrap">
@@ -246,7 +247,6 @@
         </div>
 
         <div class="flex-1 flex flex-col p-4 md:p-6 lg:p-8 overflow-y-auto relative justify-between min-h-0">
-            <!-- 共通 問題メタ情報 -->
             <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4 shrink-0">
                 <div class="flex items-center gap-2">
                     <span class="bg-indigo-600 text-white text-xs font-bold px-2 py-1 rounded" id="q-subject-badge">科目</span>
@@ -255,7 +255,7 @@
                 <div class="text-xs font-bold text-slate-400 bg-slate-100 px-2 py-1 rounded" id="q-history-stats">挑戦:0 過去正答:0%</div>
             </div>
             
-            <!-- ▼ 択一式 UI コンテナ (表示切り替え) -->
+            <!-- ▼ 択一式 UI コンテナ -->
             <div id="takuitsu-ui" class="hidden flex-1 flex-col min-h-0">
                 <div class="flex-1 overflow-y-auto mb-6 pr-3">
                     <h2 class="text-3xl md:text-5xl lg:text-6xl font-normal leading-relaxed md:leading-loose text-slate-800 tracking-wide" id="question-text-takuitsu">択一式の問題文</h2>
@@ -266,10 +266,9 @@
                 </div>
             </div>
 
-            <!-- ▼ 選択式 UI コンテナ (表示切り替え) -->
+            <!-- ▼ 選択式 UI コンテナ -->
             <div id="sentaku-ui" class="hidden flex-1 flex-col min-h-0">
                 <div id="question-text-sentaku" class="text-[16px] md:text-[18px] leading-[2.8] text-slate-800 font-medium bg-slate-50 p-5 md:p-6 rounded-2xl border border-slate-200 shadow-inner overflow-y-auto flex-1">
-                    <!-- 選択式プルダウン配置 -->
                 </div>
                 <div class="bg-white border-2 border-slate-200 p-4 rounded-xl shadow-sm mt-4 mb-2 shrink-0">
                     <div class="flex justify-between items-end mb-3">
@@ -277,14 +276,13 @@
                         <span class="text-[11px] md:text-xs text-slate-500 font-bold bg-slate-100 px-2 py-1 rounded">※上の空欄から直接解答</span>
                     </div>
                     <div id="word-bank-container" class="grid grid-cols-2 sm:grid-cols-4 gap-y-2 gap-x-2 text-[14px] md:text-[15px] font-bold text-slate-700">
-                        <!-- JSで20個生成 -->
                     </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <!-- 右側：AI・解説エリア (45%) ※起動時は非表示(hidden) -->
+    <!-- 右側：AI・解説エリア (45%) -->
     <aside id="aside-area" class="hidden w-full lg:w-[45%] h-[45dvh] lg:h-full flex-col bg-slate-50 relative">
         <div class="p-4 md:p-6 bg-white border-b border-slate-200 shrink-0 shadow-sm">
             <div class="flex items-start">
@@ -308,17 +306,14 @@
         </div>
 
         <div class="flex-1 overflow-y-auto p-4 md:p-6 flex flex-col gap-4 pb-48">
-            
-            <!-- ▼ 択一式用アクションボタン -->
             <div id="action-takuitsu" class="hidden flex-col gap-3">
                 <button onclick="showHintTakuitsu()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-3 rounded-xl shadow-sm border-2 border-yellow-300 text-lg active:scale-95 transition-all">
                     💡 AIにヒントをもらう
                 </button>
             </div>
 
-            <!-- ▼ 選択式用アクションボタン -->
             <div id="action-sentaku" class="hidden flex-col gap-3">
-                <button onclick="showHintSentaku()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-3 rounded-xl shadow-sm border-2 border-yellow-300 text-lg active:scale-95 transition-all">
+                <button onclick="showContextHint()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-3 rounded-xl shadow-sm border-2 border-yellow-300 text-lg active:scale-95 transition-all">
                     💡 文脈ヒント（手がかりをハイライト）
                 </button>
                 <button onclick="submitSentakuAnswers()" class="action-btn w-full bg-indigo-500 hover:bg-indigo-600 text-white font-black py-4 rounded-xl shadow-[0_4px_0_#3730a3] active:translate-y-[4px] active:shadow-none text-xl transition-all">
@@ -327,7 +322,6 @@
                 <button onclick="fillRandomAnswers()" class="text-xs text-center text-slate-400 mt-1">※テスト用: ランダムに埋める</button>
             </div>
 
-            <!-- 共通 解説・結果エリア -->
             <div id="explanation-area" class="hidden flex-col gap-4">
                 <div class="bg-white p-5 rounded-2xl border-2 border-slate-200 shadow-sm text-center flex justify-between items-center">
                     <div class="flex-1"></div>
@@ -337,7 +331,6 @@
                     </div>
                 </div>
                 
-                <!-- 🌟 耳学問モード（選択式のみ表示） -->
                 <div id="tts-area" class="hidden bg-blue-50 p-4 rounded-xl border border-blue-200 shadow-sm flex flex-col gap-3">
                     <h3 class="text-sm font-black text-blue-800">🎧 耳学問モード（完成条文の読み上げ）</h3>
                     <div class="flex items-center gap-3">
@@ -348,12 +341,10 @@
                     </div>
                 </div>
 
-                <!-- 🌟 錬金術ボタン（選択式のみ表示） -->
                 <button id="alchemy-btn" onclick="generateAlchemyQuestion()" class="hidden action-btn w-full bg-gradient-to-r from-purple-500 to-pink-500 text-white font-black py-4 rounded-xl shadow-lg active:scale-95 text-lg animate-pulse border-2 border-white">
                     🔥 別の箇所を抜いて再挑戦（Pro AI錬金）
                 </button>
 
-                <!-- 解説文 -->
                 <div class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
                     <h3 class="text-sm font-black text-slate-400 mb-2 border-b-2 pb-2">根拠条文</h3>
                     <p class="text-indigo-700 font-bold mb-4 text-lg" id="article-text">法X条</p>
@@ -363,13 +354,11 @@
             </div>
         </div>
 
-        <!-- ▼ 択一式 自己評価ボタン -->
         <div id="self-eval-area-takuitsu" class="hidden absolute bottom-0 left-0 w-full p-3 md:p-4 bg-white/95 rounded-3xl border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
             <button id="btn-next-takuitsu" onclick="nextQuestion()" class="btn-next-action w-full bg-green-500 text-white font-black py-4 rounded-2xl shadow-xl text-xl lg:text-2xl active:scale-95 transition-all">🟢 次へ進む</button>
             <button id="btn-another-takuitsu" onclick="startAnotherRound()" class="hidden w-full bg-blue-500 text-white font-black py-4 rounded-2xl shadow-xl text-xl lg:text-2xl active:scale-95 transition-all">🔁 もう1周する</button>
         </div>
 
-        <!-- ▼ 選択式 自己評価ボタン -->
         <div id="self-eval-area-sentaku" class="hidden absolute bottom-0 left-0 w-full p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
             <p id="eval-guide-text" class="text-center text-[11px] font-bold text-slate-500 mb-2">間違えた空欄や、まぐれ当たりは必ず「迷った」を押して記録してね！</p>
             <div class="flex gap-2 mb-3 justify-center" id="eval-target-buttons"></div>
@@ -386,7 +375,6 @@
     <script>
         const GAS_URL = "https://script.google.com/a/macros/sr-nakao.com/s/AKfycbyHu72D7p9XrmynRKYbt_4HOfhJ47D3xEdv-SgqTWS1iSrxWo6KuhZnzTbMvitQ7r0_Eg/exec";
         
-        // 🌟 択一式(4つ) ＋ 選択式(4つ) を統合
         const SUBJECTS = [
             // 択一式
             { id: "rouki", type: "択一", name: "労働基準法(択一)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?output=csv" },
@@ -409,11 +397,9 @@
         let globalTimerInterval = null, globalTimeLeftSeconds = null, isTimeUp = false;
         let napInterval = null, napSecondsLeft = 0;
         
-        // 択一用変数
         let setCorrectCount = 0, cumulativeQuestions = 0, todayMistakes = [];
-        // 選択用変数
         let eliminatedWords = new Set(), currentWordBank = [], currentAnswers = {}, currentFullText = "";
-        let lastAnswerWasCorrect = false; // 共通
+        let lastAnswerWasCorrect = false;
         let strategyHistory = [], strategyPlan = null;
 
         window.onload = function() {
@@ -504,7 +490,7 @@
                     stats[subj].chapters[chap].played++;
                     
                     let hArr = String(hist.historyStr).split(',');
-                    let latest = hArr[hArr.length - 1]; // 最新の履歴
+                    let latest = hArr[hArr.length - 1];
                     let lScore = 0;
                     let mScore = q._type === '選択' ? 5 : 1;
                     
@@ -543,12 +529,12 @@
             container.innerHTML = "";
             
             let htmlContent = "";
+            let idx = 0;
             for (const subj of Object.keys(stats)) {
                 let s = stats[subj];
                 let mColor = s.masterRate >= 80 ? 'bg-green-500' : (s.masterRate >= 50 ? 'bg-yellow-400' : 'bg-red-400');
                 
-                // 項目ごとのHTML組み立て
-                let chaptersHtml = `<div class="mt-3 hidden border-t border-slate-200 pt-3 text-left w-full" id="dash-chap-${subj.replace(/[^\w]/g,'')}">`;
+                let chaptersHtml = `<div class="mt-3 hidden border-t border-slate-200 pt-3 text-left w-full" id="dash-chap-${idx}">`;
                 for (let chap in s.chapters) {
                     let c = s.chapters[chap];
                     let cmColor = c.masterRate >= 80 ? 'bg-green-500' : (c.masterRate >= 50 ? 'bg-yellow-400' : 'bg-red-400');
@@ -568,8 +554,8 @@
                 chaptersHtml += `</div>`;
                 
                 htmlContent += `
-                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center flex flex-col justify-start cursor-pointer hover:bg-slate-50 transition-colors" onclick="document.getElementById('dash-chap-${subj.replace(/[^\w]/g,'')}').classList.toggle('hidden')">
-                        <p class="text-xs md:text-sm font-bold text-slate-500 mb-2 truncate" title="${subj}">${subj} <span class="text-[10px] text-slate-400">▼</span></p>
+                    <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center flex flex-col justify-start cursor-pointer hover:bg-slate-50 transition-colors" onclick="document.getElementById('dash-chap-${idx}').classList.toggle('hidden')">
+                        <p class="text-xs md:text-sm font-bold text-slate-700 mb-2 break-words" title="${subj}">${subj} <span class="text-[10px] text-slate-400">▼</span></p>
                         <div class="mb-2">
                             <p class="text-[10px] md:text-xs font-bold text-slate-600 mb-1">進捗: ${s.progressRate}%</p>
                             <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
@@ -585,11 +571,12 @@
                         ${chaptersHtml}
                     </div>
                 `;
+                idx++;
             }
             container.innerHTML = htmlContent;
 
             if(userApiKey) {
-                let prompt = `あなたは社労士試験の専属コーチ（18歳前後の明るい女性）です。成績データを見て、受講生に「今日一番やるべき科目」を1〜2文（40文字程度）でズバッと指摘して発破をかけてください。進捗率が0の場合は「今日から特訓スタートだね！択一も選択も両方できるよ！」と元気よく声をかけて。「～わ」「～よ」等の不自然な役割語は使わず、現代の自然な口語体で話してください。データ: ${JSON.stringify(stats)}`;
+                let prompt = `あなたは社労士試験の専属講師（18歳前後の若い女性）です。受講生の努力を肯定し、成績データをもとに今日のおすすめ科目を1〜2文（40文字程度）で明るく提案してください。不自然な役割語（〜わ、〜よ、〜ぞ等）は絶対禁止。データ: ${JSON.stringify(stats)}`;
                 fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 }).then(res => res.json()).then(data => {
@@ -597,7 +584,7 @@
                         document.getElementById('dash-ai-comment').textContent = data.candidates[0].content.parts[0].text;
                     }
                 }).catch(e => {
-                    document.getElementById('dash-ai-comment').textContent = "APIの通信エラーみたい。もう一度リロードしてみてね。";
+                    document.getElementById('dash-ai-comment').textContent = "今日も自分のペースで一問ずつ進めていこう！";
                 });
             }
         }
@@ -657,15 +644,29 @@
             logEl.scrollTop = logEl.scrollHeight;
             
             const cond = document.getElementById('condition-select').value;
-            let systemPrompt = `あなたは社労士試験の専属コーチです。性格は「${cond}」。受講生と学習プランについて対話してください。自然な口語体で話すこと。
+            
+            // 🌟 自然な若い女性の話し方（無理な語尾・キャラ付けを完全排除）
+            let systemPrompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。受講生の頑張りやスキマ時間を絶対に否定せず、前向きにサポートしてください。
+【話し方のルール】
+・言葉遣いは現代の普通の若い女性。普通の話し言葉で話してください。
+・「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」「〜かしら」等の不自然な役割語やキャラ付けは【絶対禁止】です。
+・「おい」「お前」「待て」「言い訳」などの高圧的な説教や暴言は論外、絶対に許されません。
+
+【各モードの性格】
+・「熱血」の場合: 無理やり語尾で熱血感を出すのではなく、「ここまでできたのすごい！」「アタシもついていくから一緒に頑張ろう！」「もうちょっとできるんじゃない？限界超えてみよう！」とポジティブに引っ張っていく性格。
+・「厳しめ」の場合: 相手の力を信じているからこそ、「その調子なら、あとちょっと頑張れそうじゃない？」「せっかくのいい流れだし、もう5問だけやってみない？」と自然にハッパをかける性格。
+・「普通」の場合: 親身で穏やかに寄り添い、「スキマ時間にえらいね！無理のない範囲で進めていこう！」と温かく接する性格。
+
 【成績データ】${JSON.stringify(getStatsSummary())}
-【ルール】
-1. セリフのみ出力。
-2. プラン（択一式/選択式など）が完全に確定し合意した場合のみ、最後に以下のJSONを付与してください。
+
+【出力形式】
+1. 1〜2文の短い普通の口語体で返答してください。
+2. プランが確定し受講生が合意した時のみ、最後に以下のJSONを付与してください。
 \`\`\`json
 { "subject": "労働基準法(択一)", "count": 10, "excludePerfect": true }
 \`\`\`
 ※ subjectは「全科目(択一)」「全科目(選択)」「全科目(ミックス)」、または個別の科目名を指定。`;
+
             let apiMessages = [{ role: "user", parts: [{ text: systemPrompt + " 受講生の要望: " + input }] }];
 
             try {
@@ -687,7 +688,7 @@
                     document.getElementById('btn-strategy-start').classList.remove('hidden');
                 }
             } catch(e) {
-                document.getElementById(typingId).outerHTML = `<div class="self-start bg-red-50 text-red-600 p-3 rounded-2xl max-w-[80%] shadow-sm font-bold text-sm md:text-base border border-red-200">⚠️ APIエラー: ${e.message}</div>`;
+                document.getElementById(typingId).outerHTML = `<div class="self-start bg-red-50 text-red-600 p-3 rounded-2xl max-w-[80%] shadow-sm font-bold text-sm md:text-base border border-red-200">⚠️ 通信エラーが発生したみたい。もう一度話しかけてみて！</div>`;
                 logEl.scrollTop = logEl.scrollHeight;
             }
         }
@@ -708,7 +709,6 @@
             cumulativeQuestions = 0; setCorrectCount = 0; todayMistakes = []; usedQuestionIds = new Set();
             playlistQueue = []; totalQuestionsToPlay = 0;
             
-            // 目標時間設定
             const timeLimitVal = document.getElementById('time-limit-select').value;
             if (timeLimitVal === '無制限') globalTimeLeftSeconds = null;
             else if (timeLimitVal === 'custom') {
@@ -797,13 +797,11 @@
             document.getElementById('q-subject-badge').textContent = q._subjectName;
             document.getElementById('q-chapter-text').textContent = q.項目 || (isAlchemy ? "Pro AI 錬金問題" : "条文");
             
-            // 履歴表示
             const hist = userHistory[q._id] || { playCount: 0, correctCount: 0 };
             let maxScore = q._type === '選択' ? (hist.playCount * 5) : hist.playCount;
             const rate = hist.playCount > 0 ? Math.round((hist.correctCount / maxScore) * 100) : 0;
             document.getElementById('q-history-stats').textContent = `挑戦:${hist.playCount} 過去正答:${rate}%`;
 
-            // UIリセット
             document.getElementById('explanation-area').classList.add('hidden');
             document.getElementById('ai-fix-action').classList.add('hidden');
             
@@ -815,7 +813,6 @@
             document.getElementById('q-type-badge-header').textContent = q._type + "式モード";
 
             if (q._type === '択一') {
-                // 択一 UIの表示
                 document.getElementById('takuitsu-ui').classList.remove('hidden');
                 document.getElementById('sentaku-ui').classList.add('hidden');
                 document.getElementById('action-takuitsu').classList.remove('hidden');
@@ -826,7 +823,6 @@
                 
                 document.getElementById('question-text-takuitsu').innerHTML = q.問題文.replace(/\n/g, '<br>');
                 
-                // タイマーアニメーション（60秒）
                 clearInterval(timerInterval);
                 const timerBar = document.getElementById('timer-bar');
                 timerBar.style.animation = 'none'; void timerBar.offsetWidth; timerBar.style.animation = `timer-run 60s linear forwards`;
@@ -836,7 +832,6 @@
                 }, 1000);
 
             } else {
-                // 選択 UIの表示
                 document.getElementById('takuitsu-ui').classList.add('hidden');
                 document.getElementById('sentaku-ui').classList.remove('hidden');
                 document.getElementById('action-takuitsu').classList.add('hidden');
@@ -1043,7 +1038,7 @@
                 document.getElementById('self-eval-area-takuitsu').classList.add('hidden');
                 document.getElementById('self-eval-area-sentaku').classList.add('hidden');
                 
-                document.getElementById('self-eval-area-takuitsu').classList.remove('hidden'); // 流用
+                document.getElementById('self-eval-area-takuitsu').classList.remove('hidden');
                 document.getElementById('btn-next-takuitsu').classList.add('hidden'); 
                 document.getElementById('btn-another-takuitsu').classList.remove('hidden');
                 
@@ -1092,16 +1087,19 @@
             const aiMessageEl = document.getElementById('ai-message');
             if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
             
-            let prompt = `あなたは社労士試験の専属コーチ（18歳前後の明るい女性）です。絶対にセリフ本文のみを出力。「～わ」「～よ」といった不自然な役割語は使わず、現代の自然な口語体で。\n`;
-            if (situation === "start_takuitsu") prompt += `択一式の問題が始まります。短く気合を入れて。`;
-            else if (situation === "start_sentaku") prompt += `選択式の問題が始まります。「文脈を推測してね」と励まして。`;
-            else if (situation === "hint_takuitsu") prompt += `択一式のヒントです。答えは言わず、着眼点を1文で示して。問題:${extraData.questionText} 解説:${extraData.explanation}`;
-            else if (situation === "hint_sentaku") prompt += `選択式のヒントです。「手がかりになる言葉をハイライトしたから見てみて」とアドバイスして。`;
-            else if (situation === "answer_takuitsu") prompt += `択一式解答。結果は【${extraData.isCorrect ? "正解" : "不正解"}】。解説の要点を1文で要約して。解説:${extraData.explanation}`;
-            else if (situation === "result_sentaku") prompt += `選択式解答完了。5点満点中${extraData.score}点。点数に応じたコメントと、「まぐれ当たりや迷った空欄は下のボタンで記録して。耳学問モードもおすすめ」と促して。`;
-            else if (situation === "end_all") prompt += `全問題が終了しました。労いと復習を促すコメントを。`;
-            else if (situation === "nap_start") prompt += `受講生が仮眠を取ります。「しっかり休んでね。時間になったら起こすから」と優しく伝えて。`;
-            else if (situation === "nap_end") prompt += `仮眠から起きました。「さあ、再開だ！」と元気よく喝を入れて。`;
+            const cond = document.getElementById('condition-select').value;
+            let prompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。モードは「${cond}」です。セリフ本文のみを1〜2文で出力してください。
+【重要】受講生を肯定し、隙間時間や少しの頑張りも褒めてください。決して暴言や高圧的な説教はせず、親しみやすい自然な普通の口語で話してください。「〜だぞ」「〜だろ」「〜わ」「〜よ」等の不自然な役割語は絶対禁止です。\n`;
+            
+            if (situation === "start_takuitsu") prompt += `択一式の特訓スタート。短く前向きに気合を入れて。`;
+            else if (situation === "start_sentaku") prompt += `選択式の特訓スタート。「文脈を意識して埋めてみてね」と励まして。`;
+            else if (situation === "hint_takuitsu") prompt += `択一式のヒント。答えは言わず、見るべきポイントを1文で示して。問題:${extraData.questionText} 解説:${extraData.explanation}`;
+            else if (situation === "hint_sentaku") prompt += `選択式のヒント。「キーワードを黄色くしたから確認してみて」とアドバイスして。`;
+            else if (situation === "answer_takuitsu") prompt += `択一式解答。結果は【${extraData.isCorrect ? "正解" : "不正解"}】。解説から最重要ポイントを1文で要約して。解説:${extraData.explanation}`;
+            else if (situation === "result_sentaku") prompt += `選択式解答完了。5点中${extraData.score}点。点数に応じたコメントと、「迷ったところは下のボタンで記録しておいてね」と促して。`;
+            else if (situation === "end_all") prompt += `全問題終了。頑張りを心から労い、次への励ましを。`;
+            else if (situation === "nap_start") prompt += `受講生が仮眠。「しっかり休んでね。時間になったら起こすからね」と優しく伝えて。`;
+            else if (situation === "nap_end") prompt += `仮眠終了。「すっきりした？さあ、もうひと頑張りいこう！」と明るく声かけして。`;
 
             try {
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
@@ -1113,7 +1111,7 @@
                 if(aiMessageEl) { aiMessageEl.textContent = text; aiMessageEl.classList.remove('text-red-500'); }
                 if (!extraData.textOnly) speakText(text); 
             } catch(e) {
-                if(aiMessageEl) { aiMessageEl.textContent = `⚠️ API通信エラー`; aiMessageEl.classList.add('text-red-500'); }
+                if(aiMessageEl) { aiMessageEl.textContent = `今日も一緒に一問ずつ進めていこう！`; aiMessageEl.classList.remove('text-red-500'); }
             }
         }
 
@@ -1148,7 +1146,7 @@
                 const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${userApiKey}`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
                 });
-                if (!res.ok) throw new Error("Pro API Error");
+                if (!res.ok) throw new Error("Pro AI Error");
                 const data = await res.json();
                 const jsonMatch = data.candidates[0].content.parts[0].text.match(/```json\n([\s\S]*?)\n```/);
                 if (jsonMatch) {
