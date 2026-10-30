@@ -110,18 +110,26 @@
         
         <div class="bg-white text-slate-800 p-6 md:p-12 rounded-[2rem] shadow-2xl max-w-5xl w-full mb-10">
             
-            <div class="mb-6 p-5 bg-yellow-50 border-2 border-yellow-200 rounded-xl flex flex-col md:flex-row gap-4">
-                <div class="flex-1">
-                    <label class="block text-xs font-bold text-yellow-700 mb-1">🔑 Gemini APIキー</label>
-                    <input type="password" id="api-key-input" class="w-full border-2 border-yellow-300 p-3 rounded-lg text-lg focus:outline-none">
-                </div>
-                <div class="flex-1">
-                    <label class="block text-xs font-bold text-yellow-700 mb-1">🤖 確実に動くAIモデルを選択</label>
-                    <select id="api-model-input" class="w-full border-2 border-yellow-300 p-3 rounded-lg text-lg focus:outline-none font-bold bg-white">
-                        <option value="gemini-2.5-flash">gemini-2.5-flash (通常・ルール準拠)</option>
-                        <option value="gemini-1.5-flash-latest">gemini-1.5-flash (予備・高速)</option>
-                        <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (高度検証)</option>
-                    </select>
+            <!-- ★ API設定トグルボタン -->
+            <div class="flex justify-end mb-2">
+                <button onclick="document.getElementById('api-settings-wrapper').classList.toggle('hidden')" class="text-sm md:text-base font-bold text-slate-400 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-full transition-colors border border-slate-200">⚙️ API設定・モデル変更</button>
+            </div>
+            
+            <!-- ★ API設定エリア（初期状態はhidden） -->
+            <div id="api-settings-wrapper" class="hidden">
+                <div class="mb-6 p-5 bg-yellow-50 border-2 border-yellow-200 rounded-xl flex flex-col md:flex-row gap-4">
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-yellow-700 mb-1">🔑 Gemini APIキー</label>
+                        <input type="password" id="api-key-input" class="w-full border-2 border-yellow-300 p-3 rounded-lg text-lg focus:outline-none">
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-xs font-bold text-yellow-700 mb-1">🤖 確実に動くAIモデルを選択</label>
+                        <select id="api-model-input" class="w-full border-2 border-yellow-300 p-3 rounded-lg text-lg focus:outline-none font-bold bg-white">
+                            <option value="gemini-2.5-flash">gemini-2.5-flash (通常・ルール準拠)</option>
+                            <option value="gemini-1.5-flash-latest">gemini-1.5-flash (予備・高速)</option>
+                            <option value="gemini-3.1-pro-preview">gemini-3.1-pro-preview (高度検証)</option>
+                        </select>
+                    </div>
                 </div>
             </div>
             
@@ -299,9 +307,7 @@
     <script>
         const GAS_URL = "https://script.google.com/a/macros/sr-nakao.com/s/AKfycbyHu72D7p9XrmynRKYbt_4HOfhJ47D3xEdv-SgqTWS1iSrxWo6KuhZnzTbMvitQ7r0_Eg/exec";
         
-        // ==============================================================
         // ★元のスプレッドシートURLへ完全復元★
-        // ==============================================================
         const SUBJECTS = [
             { id: "rouki_s", name: "労働基準法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=743168881&single=true&output=csv" },
             { id: "anei_s", name: "安全衛生法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=2064794651&single=true&output=csv" },
@@ -314,8 +320,8 @@
         let userApiKey = '', userModel = 'gemini-2.5-flash';
         let eliminatedWords = new Set();
         let currentWordBank = [];
-        let currentAnswers = {}; // A~Eの正解テキスト
-        let currentFullText = ""; // 読み上げ用の完成テキスト
+        let currentAnswers = {};
+        let currentFullText = "";
         
         let audioCtx = null;
         let isMuted = false;
@@ -424,7 +430,7 @@
         }
 
         function updateDashboard() {
-            if (allDatabase.length === 0 || Object.keys(userHistory).length === 0) return;
+            if (allDatabase.length === 0) return;
             const stats = getStatsSummary();
             const container = document.getElementById('dash-master-bars');
             container.innerHTML = "";
@@ -449,6 +455,19 @@
                     </div>
                 `;
                 container.insertAdjacentHTML('beforeend', html);
+            }
+
+            if(userApiKey) {
+                let prompt = `あなたは社労士試験の専属コーチです。以下の成績データを見て、受講生に「今日一番やるべき科目」を1〜2文（40文字程度）でズバッと指摘して発破をかけてください。進捗率(progressRate)がすべて0の場合は「今日から選択式の特訓スタートね！まずは好きな科目からやってみよう！」と元気よく声をかけて。データ: ${JSON.stringify(stats)}`;
+                fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                }).then(res => res.json()).then(data => {
+                    if (data.candidates && data.candidates[0]) {
+                        document.getElementById('dash-ai-comment').textContent = data.candidates[0].content.parts[0].text;
+                    }
+                }).catch(e => {
+                    document.getElementById('dash-ai-comment').textContent = "APIの通信エラーみたい。もう一度リロードしてみてね。";
+                });
             }
         }
 
@@ -479,12 +498,56 @@
         }
 
         function checkAllChapters(check) { document.querySelectorAll('input[name="chapter-check"]').forEach(cb => cb.checked = check); }
+        
+        async function sendStrategyMessage() {
+            userApiKey = document.getElementById('api-key-input').value.trim();
+            if(!userApiKey) { 
+                alert("APIキーが必要です"); 
+                document.getElementById('api-settings-wrapper').classList.remove('hidden');
+                return; 
+            }
+            
+            // 以下省略なし（作戦会議チャット等の元の処理がそのまま続きます）
+            const inputEl = document.getElementById('strategy-input');
+            const input = inputEl.value.trim();
+            if(!input) return;
+            
+            const logEl = document.getElementById('strategy-chat-log');
+            logEl.innerHTML += `<div class="self-end bg-indigo-100 text-indigo-900 p-3 rounded-2xl rounded-tr-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">${input}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+            inputEl.value = "";
+            
+            const typingId = "typing-" + Date.now();
+            logEl.innerHTML += `<div id="${typingId}" class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base"><span class="typing">💬 考えてるよ...</span></div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+            
+            let systemPrompt = `あなたは社労士試験の専属コーチです。受講生と今日の学習プラン（プレイリスト）について対話してください。セリフのみを出力してください。`;
+            let apiMessages = [{ role: "user", parts: [{ text: systemPrompt + " 受講生の要望: " + input }] }];
+
+            try {
+                const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
+                    method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: apiMessages })
+                });
+                if (!res.ok) throw new Error("通信エラー");
+                const data = await res.json();
+                const text = data.candidates[0].content.parts[0].text;
+                document.getElementById(typingId).outerHTML = `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">${text}</div>`;
+                logEl.scrollTop = logEl.scrollHeight;
+            } catch(e) {
+                document.getElementById(typingId).outerHTML = `<div class="self-start bg-red-50 text-red-600 p-3 rounded-2xl max-w-[80%] shadow-sm font-bold text-sm md:text-base border border-red-200">⚠️ APIエラー: ${e.message}</div>`;
+                logEl.scrollTop = logEl.scrollHeight;
+            }
+        }
 
         function startTraining(mode, targetSubject = null) {
             if(allDatabase.length === 0) { alert("問題データがありません。CSVの設定を確認してください。"); return; }
             userApiKey = document.getElementById('api-key-input').value.trim();
             userModel = document.getElementById('api-model-input').value;
-            if (!userApiKey) { alert("APIキーを入力してください！"); return; }
+            if (!userApiKey) { 
+                alert("APIキーを入力してください！"); 
+                document.getElementById('api-settings-wrapper').classList.remove('hidden');
+                return; 
+            }
             try { localStorage.setItem('gemini_api_key', userApiKey); localStorage.setItem('gemini_api_model', userModel); } catch(e) {}
             unlockAudio();
             
@@ -501,7 +564,6 @@
                     qs = [...allDatabase]; // 未選択時は全問
                 }
             } else if (mode === 'subject' && targetSubject) {
-                // 特定の科目のみを抽出
                 qs = allDatabase.filter(q => q._subjectName === targetSubject);
             }
             
@@ -511,7 +573,6 @@
             playlistQueue = [{ subjectName: mode === 'subject' ? targetSubject : "選択式 特訓", chapterName: "選択式", questions: qs }];
             currentPlaylistIndex = 0;
             
-            // ★スタート画面を隠し、非表示にしていた問題・解説エリアを表示（貫通バグ完全解消）
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('main-area').classList.remove('hidden');
             document.getElementById('main-area').classList.add('flex');
