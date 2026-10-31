@@ -223,7 +223,6 @@
                         <h3 class="text-base md:text-xl font-black text-indigo-800 mb-1">📊 AI分析＆弱点特訓</h3>
                         <p class="text-indigo-600 font-bold text-xs md:text-sm">チャットで弱点克服プランを相談</p>
                     </button>
-                    <!-- 🌟 忘却曲線ベースの自動チャット起動 -->
                     <button onclick="triggerEbbinghausStrategy()" class="bg-gradient-to-br from-emerald-100 to-teal-100 border-2 border-teal-300 p-4 md:p-6 rounded-2xl text-left active:scale-95 shadow-sm hover:shadow-md transition-all">
                         <h3 class="text-base md:text-xl font-black text-teal-800 mb-1">🧠 忘却曲線ベース復習</h3>
                         <p class="text-teal-600 font-bold text-xs md:text-sm">放置問題や苦手問題の復習を相談</p>
@@ -280,7 +279,6 @@
                 <div class="flex items-center gap-1 md:gap-2 shrink-0 flex-wrap">
                     <button onclick="location.reload()" class="header-btn bg-white/10 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold border border-slate-500">🚪 終了</button>
                     <button onclick="openNapMenu()" class="header-btn bg-indigo-950/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-indigo-200 border border-indigo-500">💤 仮眠</button>
-                    <!-- 🌟 千本ノック用 白旗ボタン -->
                     <button id="btn-surrender" onclick="surrenderSenbonKnock()" class="hidden header-btn bg-red-600/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-red-500">🏳️ 降参</button>
                     <span id="q-type-badge-header" class="bg-indigo-700 px-1 md:px-2 py-0.5 md:py-1 rounded text-[10px] md:text-sm font-bold ml-1">読込中</span>
                 </div>
@@ -302,10 +300,10 @@
                 <div class="text-[10px] md:text-xs font-bold text-slate-400 bg-slate-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded" id="q-history-stats">挑戦:0 過去正答:0%</div>
             </div>
             
-            <!-- ▼ 択一式 UI コンテナ -->
+            <!-- ▼ 択一式 UI コンテナ (PCサイズの適正化) -->
             <div id="takuitsu-ui" class="hidden flex-1 flex-col min-h-0">
                 <div class="flex-1 overflow-y-auto mb-3 md:mb-6 pr-2 md:pr-3">
-                    <h2 class="text-lg md:text-3xl lg:text-5xl font-normal leading-relaxed md:leading-loose text-slate-800 tracking-wide" id="question-text-takuitsu">択一式の問題文</h2>
+                    <h2 class="text-lg md:text-xl lg:text-2xl font-normal leading-relaxed md:leading-loose text-slate-800 tracking-wide" id="question-text-takuitsu">択一式の問題文</h2>
                 </div>
                 <div class="shrink-0 flex space-x-3 md:space-x-6 pb-2 md:pb-8 answer-btn-box-takuitsu h-20 md:h-28 lg:h-32">
                     <button onclick="answerTakuitsu('〇')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-2xl md:rounded-3xl border-4 md:border-8 border-blue-400 active:scale-95 text-4xl md:text-6xl shadow-md flex items-center justify-center transition-transform py-1 md:py-2 leading-none">〇</button>
@@ -410,10 +408,8 @@
                 <button onclick="markEvalTakuitsu('わからん')" class="eval-btn-takuitsu flex-1 bg-red-50 hover:bg-red-500 hover:text-white text-red-700 border md:border-2 border-red-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm active:scale-95 transition-all text-sm md:text-base">🔴 わからん</button>
             </div>
             
-            <!-- 🌟 千本ノック等のイベント用「次へ」ボタン -->
             <button id="btn-next-only-takuitsu" onclick="nextQuestion()" class="hidden w-full bg-slate-800 text-white font-black py-2.5 md:py-4 rounded-xl md:rounded-2xl shadow-md text-lg active:scale-95 mt-2 transition-all">次の問題へ ➡</button>
             
-            <!-- 🌟 無限ドリルメニュー -->
             <div id="infinite-drill-menu" class="hidden flex-col gap-2 mt-2 w-full">
                 <button onclick="startInfiniteDrill('okawari')" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 md:py-3 rounded-xl border border-indigo-200 shadow-sm active:scale-95 text-sm md:text-base">🍚 同じ項目のおかわり</button>
                 <button onclick="startInfiniteDrill('nextChapter')" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 md:py-3 rounded-xl border border-blue-200 shadow-sm active:scale-95 text-sm md:text-base">➡ 関連する次の項目へ</button>
@@ -463,19 +459,16 @@
         let lastAnswerWasCorrect = false;
         let strategyHistory = [], strategyPlan = null;
 
-        // 🌟 時間記録関連
         let activeSubjectForTime = null; 
         let studyTimerInterval = null;
         let continuousStudyTimeSec = 0; 
 
-        // 🌟 放置検知・イベント用フラグ
         let idleTimeoutWarn = null;
         let idleTimeoutPenalty = null;
         let isReviewAdded = false;
         let isExtensionAdded = false;
         let hasRestRecommended = false;
         
-        // 🌟 性格別ゲームイベントフラグ
         let isSenbonKnock = false; 
         let isTimeAttack = false;
         let isBonusMode = false;
@@ -518,7 +511,6 @@
             return `${m}分`;
         }
 
-        // 🌟 効果音 (正解・不正解・笛)
         function playCorrectSound() {
             if(!audioCtx || isMuted) return;
             const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
@@ -541,10 +533,9 @@
             osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.3);
         }
 
-        // 🌟 放置監視タイマー
         function startIdleTimers() {
             clearIdleTimers();
-            if (isSenbonKnock) return; // 千本ノック時は監視無効
+            if (isSenbonKnock) return; 
             idleTimeoutWarn = setTimeout(() => { generateAiMessage("idle_warn", { textOnly: false }); }, 15000);
             idleTimeoutPenalty = setTimeout(() => { 
                 if (continuousStudyTimeSec < 3600) {
@@ -1033,7 +1024,6 @@
                 const timerBar = document.getElementById('timer-bar');
                 timerBar.style.animation = 'none'; void timerBar.offsetWidth; 
                 
-                // 🔥 タイムアタックなら15秒、千本ノックなら20秒、それ以外は60秒
                 currentLimit = isTimeAttack ? 15 : (isSenbonKnock ? 20 : 60);
                 timerBar.style.animation = `timer-run ${currentLimit}s linear forwards`;
                 timeLeft = currentLimit;
@@ -1085,9 +1075,6 @@
             verifyDataWithPro(q);
         }
 
-        // ==========================
-        // 択一式の解答ロジック
-        // ==========================
         function answerTakuitsu(userAnswer) {
             stopStudyTimer(); 
             flushStudyTimes(); 
@@ -1152,9 +1139,6 @@
             generateAiMessage("hint_takuitsu", { questionText: q.問題文, explanation: q.解説 || "", textOnly: true });
         }
 
-        // ==========================
-        // 選択式の解答ロジック
-        // ==========================
         function toggleStrike(word, el) {
             el.classList.toggle('line-through'); el.classList.toggle('text-slate-300');
             el.classList.toggle('bg-slate-100'); el.classList.toggle('opacity-50');
@@ -1249,9 +1233,6 @@
         }
         function closeWarningModal() { document.getElementById('warning-modal').classList.add('hidden'); document.getElementById('warning-modal').classList.remove('flex'); }
 
-        // ==========================
-        // 共通ロジック (保存・評価・次へ)
-        // ==========================
         async function saveToGAS(q_id, actionStr, isCorrect, score, traps) {
             try {
                 let payload = { action: actionStr, q_id: q_id };
@@ -1307,10 +1288,9 @@
             }
         }
 
-        // 🌟 千本ノック専用：白旗降参
         function surrenderSenbonKnock() {
             document.getElementById('btn-surrender').classList.add('hidden');
-            currentIndex = currentQuestions.length; // プレイリスト終了扱いにする
+            currentIndex = currentQuestions.length; 
             nextQuestion();
         }
 
@@ -1324,12 +1304,9 @@
                 if (currentPlaylistIndex < playlistQueue.length) {
                     startNextPlaylistSet();
                 } else {
-                    // 全キュー完走
                     if (isTimeUp && continuousStudyTimeSec >= 3600 && !isExtensionAdded) {
-                        // 🌟 時間切れ ＆ 連続勉強1時間以上 -> AI延長・ゲームイベント判定
                         judgeTimeUpExtension();
                     } else if (!hasRestRecommended && !isSenbonKnock && !isTimeAttack && !isBonusMode) {
-                        // 🌟 イベント終了時は直接リザルトへ。通常終了時は休憩勧奨を判定。
                         judgeRestRecommendation();
                     } else {
                         finishAllPlaylists();
@@ -1340,7 +1317,6 @@
             }
         }
 
-        // 🌟 時間切れ時のAI判定・追加・性格別イベント
         async function judgeTimeUpExtension() {
             isExtensionAdded = true; 
             const aiMessageEl = document.getElementById('ai-message');
@@ -1367,8 +1343,8 @@
                     speakText(judge.message);
                     
                     if (judge.action === 'extend') {
-                        hasRestRecommended = true; // イベント後はすぐに終了画面・無限ドリルメニューへ移行
-                        eventQuestionsAnswered = 0; eventCorrectCount = 0; // 実績カウントリセット
+                        hasRestRecommended = true; 
+                        eventQuestionsAnswered = 0; eventCorrectCount = 0; 
                         
                         let qs = [];
                         let pool = allDatabase.filter(q => q._type === '択一');
@@ -1398,10 +1374,9 @@
                 }
             } catch(e) {}
             
-            judgeRestRecommendation(); // 延長しないなら通常の休憩判定へ
+            judgeRestRecommendation(); 
         }
 
-        // 🌟 休憩の勧奨判定
         async function judgeRestRecommendation() {
             hasRestRecommended = true;
             const aiMessageEl = document.getElementById('ai-message');
@@ -1458,7 +1433,6 @@
             finishAllPlaylists();
         }
 
-        // 🌟 プレイリスト完走＆無限ドリルUI＆イベント別AIメッセージ
         function finishAllPlaylists() {
             document.getElementById('explanation-area').classList.remove('hidden'); document.getElementById('explanation-area').classList.add('flex');
             document.getElementById('self-eval-area-takuitsu').classList.remove('hidden');
@@ -1473,7 +1447,6 @@
             const nextOnly = document.getElementById('btn-next-only-takuitsu');
             if (nextOnly) nextOnly.classList.add('hidden');
             
-            // 無限ドリルメニューの表示
             document.getElementById('infinite-drill-menu').classList.remove('hidden');
             document.getElementById('infinite-drill-menu').classList.add('flex');
             
@@ -1485,7 +1458,6 @@
             }
         }
 
-        // 🌟 無限ドリルの抽出ロジック
         function startInfiniteDrill(mode) {
             flushStudyTimes();
             
@@ -1541,7 +1513,6 @@
             resetGameFlags();
             currentPlaylistIndex = 0; isReviewAdded = false; isExtensionAdded = false; hasRestRecommended = false;
             
-            // 評価エリアをデフォルトに戻す
             document.getElementById('infinite-drill-menu').classList.add('hidden');
             document.getElementById('infinite-drill-menu').classList.remove('flex');
             const evalArea = document.getElementById('self-eval-area-takuitsu');
@@ -1564,9 +1535,6 @@
             startNextPlaylistSet(true);
         }
 
-        // ==========================
-        // TTS・プロンプト・その他
-        // ==========================
         async function speakText(text) {
             if (isMuted || !text) return; 
             let cleanText = text.replace(/<[^>]+>/g, '').trim(); if (!cleanText) return;
@@ -1615,7 +1583,6 @@
             else if (situation === "idle_warn") prompt += `解説画面で受講生が止まっています。「大丈夫？次進めそう？」と優しく催促して。`;
             else if (situation === "idle_penalty") prompt += `さらに放置されたので、目標時間を1分追加します。少しピシッと注意しつつも前向きに励まして。`;
             else if (situation === "idle_care") prompt += `放置されていますが、1時間以上勉強しているので疲れているのかもしれません。「そろそろ集中力切れてきた？無理せず休憩しようか」と優しく注意・提案して。`;
-            // 🌟 イベント終了専用プロンプト
             else if (situation === "end_event") {
                 let rate = extraData.qCount > 0 ? Math.round((extraData.correct / extraData.qCount) * 100) : 0;
                 if (extraData.eventType === "senbonKnock") {
