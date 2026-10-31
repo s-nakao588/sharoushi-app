@@ -34,8 +34,8 @@
         option.hidden-option { display: none !important; }
         .highlight-clue { background-color: #fef08a; padding: 0 2px; border-radius: 2px; font-weight: bold; border-bottom: 2px solid #eab308; }
 
-        /* 💡 黄金基準：iPad・タッチ端末専用の強制拡大スタイル */
-        @media (hover: none) and (pointer: coarse) {
+        /* 💡 iPad・タブレット専用（タッチ端末 ＆ 画面幅768px以上） */
+        @media (hover: none) and (pointer: coarse) and (min-width: 768px) {
             #ai-message { font-size: 2.0rem !important; line-height: 1.6 !important; }
             #explanation-text { font-size: 2.0rem !important; line-height: 1.8 !important; font-weight: 400 !important; }
             #article-text { font-size: 1.8rem !important; }
@@ -43,7 +43,7 @@
             .action-btn { font-size: 1.8rem !important; padding: 1.8rem !important; border-width: 3px !important; border-radius: 1.2rem !important; }
             
             #question-text-takuitsu { font-size: 2.5rem !important; line-height: 1.7 !important; font-weight: 400 !important; }
-            .answer-btn-box-takuitsu { height: 9rem !important; padding-bottom: 0 !important; }
+            .answer-btn-box-takuitsu { height: 11rem !important; padding-bottom: 1rem !important; }
             .answer-btn-takuitsu { font-size: 6.5rem !important; border-width: 6px !important; }
             
             #question-text-sentaku { font-size: 2.3rem !important; line-height: 2.1 !important; }
@@ -64,13 +64,13 @@
             .btn-mistake-action { font-size: 1.25rem !important; padding: 0.75rem 1.25rem !important; }
             
             /* iPad用絶対配置パディング調整 */
-            .takuitsu-q-container { padding-bottom: 10rem !important; }
+            .takuitsu-q-container { padding-bottom: 12rem !important; }
         }
 
-        /* 📱 スマホ専用レイアウト */
+        /* 📱 iPhone・スマホ専用（画面幅767px以下） */
         @media (max-width: 767px) {
             #question-text-takuitsu, #question-text-sentaku { font-size: 1.3rem !important; line-height: 1.6 !important; padding: 1rem !important; }
-            .answer-btn-box-takuitsu { height: 5.5rem !important; padding-bottom: 0 !important; }
+            .answer-btn-box-takuitsu { height: 6.5rem !important; padding-bottom: 0.5rem !important; }
             .answer-btn-takuitsu { font-size: 3.5rem !important; border-width: 3px !important; padding-top: 0.2rem !important; padding-bottom: 0.2rem !important; }
             
             #ai-message { font-size: 1.1rem !important; line-height: 1.5 !important; }
@@ -94,7 +94,7 @@
             .btn-mistake-action { font-size: 0.9rem !important; padding: 0.5rem 1rem !important; }
             
             /* スマホ用絶対配置パディング調整 */
-            .takuitsu-q-container { padding-bottom: 6.5rem !important; }
+            .takuitsu-q-container { padding-bottom: 7.5rem !important; }
         }
     </style>
 </head>
@@ -277,7 +277,7 @@
         </div>
     </div>
 
-    <!-- 🌟 左側：問題エリア (55%) -->
+    <!-- 🌟 左側：問題エリア (55%) ※下部余白を削ってボタンをピタッと配置 -->
     <main id="main-area" class="hidden w-full lg:w-[55%] h-[55dvh] lg:h-full flex-col bg-white shadow-xl z-10 shrink-0 border-r border-slate-200">
         
         <div class="bg-indigo-900 text-white shrink-0 shadow-md z-20">
@@ -285,6 +285,7 @@
                 <div class="flex items-center gap-1 md:gap-2 shrink-0 flex-wrap">
                     <button onclick="location.reload()" class="header-btn bg-white/10 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold border border-slate-500">🚪 終了</button>
                     <button onclick="openNapMenu()" class="header-btn bg-indigo-950/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-indigo-200 border border-indigo-500">💤 仮眠</button>
+                    <!-- 🌟 千本ノック用 白旗ボタン -->
                     <button id="btn-surrender" onclick="surrenderSenbonKnock()" class="hidden header-btn bg-red-600/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-red-500">🏳️ 降参</button>
                     <span id="q-type-badge-header" class="bg-indigo-700 px-1 md:px-2 py-0.5 md:py-1 rounded text-[10px] md:text-sm font-bold ml-1">読込中</span>
                 </div>
@@ -323,7 +324,7 @@
             <div id="sentaku-ui" class="hidden flex-1 flex-col min-h-0 mb-2 md:mb-4">
                 <div id="question-text-sentaku" class="text-[14px] md:text-[16px] lg:text-[18px] leading-[2.2] md:leading-[2.8] text-slate-800 font-medium bg-slate-50 p-3 md:p-5 rounded-xl md:rounded-2xl border border-slate-200 shadow-inner overflow-y-auto flex-1">
                 </div>
-                <div class="bg-white border md:border-2 border-slate-200 p-2 md:p-4 rounded-lg md:rounded-xl shadow-sm mt-2 md:mt-4 shrink-0">
+                <div class="bg-white border md:border-2 border-slate-200 p-2 md:p-4 rounded-lg md:rounded-xl shadow-sm mt-2 md:mt-4 mb-1 shrink-0">
                     <div class="flex justify-between items-end mb-1 md:mb-3">
                         <h3 class="text-xs md:text-sm font-black text-slate-600">✂️ 語群</h3>
                         <span class="text-[9px] md:text-xs text-slate-500 font-bold bg-slate-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded">上の空欄から直接解答</span>
@@ -413,14 +414,17 @@
         <div id="self-eval-area-takuitsu" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-4 bg-white/95 rounded-t-2xl md:rounded-3xl border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
             <p id="eval-guide-text-takuitsu" class="text-center text-[9px] md:text-[11px] font-bold text-slate-500 mb-1 md:mb-2">自己評価を選んで次へ進んでね！</p>
             
+            <!-- 🌟 評価ボタン（押すと強調され、「次へ」が有効化される） -->
             <div class="flex gap-2 md:gap-3 justify-center mb-2" id="takuitsu-eval-buttons">
                 <button id="eval-btn-kanpeki" onclick="selectEvalTakuitsu('完璧')" class="eval-btn-takuitsu flex-1 bg-green-50 hover:bg-green-500 hover:text-white text-green-700 border md:border-2 border-green-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">🟢 完璧</button>
                 <button id="eval-btn-mayotta" onclick="selectEvalTakuitsu('迷った')" class="eval-btn-takuitsu flex-1 bg-yellow-50 hover:bg-yellow-500 hover:text-white text-yellow-700 border md:border-2 border-yellow-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">🟡 迷った</button>
                 <button id="eval-btn-wakaran" onclick="selectEvalTakuitsu('わからん')" class="eval-btn-takuitsu flex-1 bg-red-50 hover:bg-red-500 hover:text-white text-red-700 border md:border-2 border-red-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">🔴 わからん</button>
             </div>
             
+            <!-- 🌟 「次へ」ボタン（通常時は評価選択までdisabled。イベント時は即有効） -->
             <button id="btn-next-takuitsu" onclick="submitEvalAndNext()" class="w-full bg-slate-800 text-white font-black py-2.5 md:py-4 rounded-xl md:rounded-2xl shadow-md text-lg transition-all opacity-50 cursor-not-allowed">評価を選択してください</button>
             
+            <!-- 🌟 無限ドリルメニュー -->
             <div id="infinite-drill-menu" class="hidden flex-col gap-2 mt-2 w-full">
                 <button onclick="startInfiniteDrill('okawari')" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 md:py-3 rounded-xl border border-indigo-200 shadow-sm active:scale-95 text-sm md:text-base">🍚 同じ項目のおかわり</button>
                 <button onclick="startInfiniteDrill('nextChapter')" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 md:py-3 rounded-xl border border-blue-200 shadow-sm active:scale-95 text-sm md:text-base">➡ 関連する次の項目へ</button>
@@ -429,6 +433,7 @@
             </div>
         </div>
 
+        <!-- 選択式の評価エリア（こちらは既存のまま「次へ」ボタンがある） -->
         <div id="self-eval-area-sentaku" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
             <p id="eval-guide-text" class="text-center text-[9px] md:text-[11px] font-bold text-slate-500 mb-1 md:mb-2">間違えやまぐれ当たりは必ず「迷った」で記録してね！</p>
             <div class="flex gap-1 md:gap-2 mb-2 md:mb-3 justify-center flex-wrap" id="eval-target-buttons"></div>
@@ -486,6 +491,7 @@
         let eventQuestionsAnswered = 0;
         let eventCorrectCount = 0;
         
+        // 🌟 状態管理用フラグ
         let isAnsweredTakuitsu = false;
         let currentTakuitsuEval = null;
 
@@ -1114,7 +1120,7 @@
         }
 
         // ==========================
-        // 🌟 択一式の解答ロジック（二重押し防止・視覚強化）
+        // 🌟 択一式の解答ロジック
         // ==========================
         function answerTakuitsu(userAnswer) {
             if (isAnsweredTakuitsu) return;
