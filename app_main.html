@@ -53,7 +53,7 @@
             
             #self-eval-area-sentaku, #self-eval-area-takuitsu { padding: 2rem 2rem 3rem 2rem !important; border-top-width: 4px !important; }
             
-            .eval-btn, .eval-btn-takuitsu, .btn-next-action { font-size: 2.2rem !important; padding-top: 1.6rem !important; padding-bottom: 1.6rem !important; border-width: 3px !important; border-radius: 1.2rem !important; }
+            .eval-btn, .eval-btn-takuitsu, #btn-next-takuitsu, .btn-next-action { font-size: 2.2rem !important; padding-top: 1.6rem !important; padding-bottom: 1.6rem !important; border-width: 3px !important; border-radius: 1.2rem !important; }
             
             .eval-target-box { font-size: 1.8rem !important; padding: 1.0rem 1.4rem !important; border-width: 2px !important; }
             .eval-target-box input[type="checkbox"] { width: 2.4rem !important; height: 2.4rem !important; }
@@ -82,7 +82,7 @@
             #word-bank-container div { padding: 0.5rem !important; }
             
             #self-eval-area-sentaku, #self-eval-area-takuitsu { padding: 1rem !important; border-top-width: 2px !important; }
-            .eval-btn, .eval-btn-takuitsu, .btn-next-action { font-size: 1.1rem !important; padding: 1rem !important; border-width: 2px !important; border-radius: 0.8rem !important; }
+            .eval-btn, .eval-btn-takuitsu, #btn-next-takuitsu, .btn-next-action { font-size: 1.1rem !important; padding: 1rem !important; border-width: 2px !important; border-radius: 0.8rem !important; }
             .eval-target-box { font-size: 1rem !important; padding: 0.5rem 0.8rem !important; border-width: 1px !important; }
             .eval-target-box input[type="checkbox"] { width: 1.2rem !important; height: 1.2rem !important; }
             .eval-target-box span { font-size: 1rem !important; }
@@ -271,7 +271,7 @@
         </div>
     </div>
 
-    <!-- 左側：問題エリア (55%) -->
+    <!-- 🌟 左側：問題エリア (55%) ※overflow-hidden でボタンを下に固定 -->
     <main id="main-area" class="hidden w-full lg:w-[55%] h-[55dvh] lg:h-full flex-col bg-white shadow-xl z-10 shrink-0 border-r border-slate-200">
         
         <div class="bg-indigo-900 text-white shrink-0 shadow-md z-20">
@@ -279,6 +279,7 @@
                 <div class="flex items-center gap-1 md:gap-2 shrink-0 flex-wrap">
                     <button onclick="location.reload()" class="header-btn bg-white/10 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold border border-slate-500">🚪 終了</button>
                     <button onclick="openNapMenu()" class="header-btn bg-indigo-950/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-indigo-200 border border-indigo-500">💤 仮眠</button>
+                    <!-- 🌟 千本ノック用 白旗ボタン -->
                     <button id="btn-surrender" onclick="surrenderSenbonKnock()" class="hidden header-btn bg-red-600/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-red-500">🏳️ 降参</button>
                     <span id="q-type-badge-header" class="bg-indigo-700 px-1 md:px-2 py-0.5 md:py-1 rounded text-[10px] md:text-sm font-bold ml-1">読込中</span>
                 </div>
@@ -291,7 +292,7 @@
             <div class="w-full h-1.5 md:h-2 bg-indigo-950 overflow-hidden"><div id="timer-bar" class="h-full w-full"></div></div>
         </div>
 
-        <div class="flex-1 flex flex-col p-3 md:p-6 lg:p-8 overflow-y-auto relative justify-between min-h-0">
+        <div class="flex-1 flex flex-col p-3 md:p-6 lg:p-8 overflow-hidden relative justify-between min-h-0">
             <div class="flex items-center justify-between border-b border-slate-100 pb-2 md:pb-3 mb-2 md:mb-4 shrink-0">
                 <div class="flex items-center gap-1.5 md:gap-2">
                     <span class="bg-indigo-600 text-white text-[10px] md:text-xs font-bold px-1.5 md:px-2 py-0.5 md:py-1 rounded" id="q-subject-badge">科目</span>
@@ -300,14 +301,15 @@
                 <div class="text-[10px] md:text-xs font-bold text-slate-400 bg-slate-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded" id="q-history-stats">挑戦:0 過去正答:0%</div>
             </div>
             
-            <!-- ▼ 択一式 UI コンテナ (PCサイズの適正化) -->
+            <!-- ▼ 択一式 UI コンテナ (スクロールは問題文のみに限定) -->
             <div id="takuitsu-ui" class="hidden flex-1 flex-col min-h-0">
                 <div class="flex-1 overflow-y-auto mb-3 md:mb-6 pr-2 md:pr-3">
                     <h2 class="text-lg md:text-xl lg:text-2xl font-normal leading-relaxed md:leading-loose text-slate-800 tracking-wide" id="question-text-takuitsu">択一式の問題文</h2>
                 </div>
-                <div class="shrink-0 flex space-x-3 md:space-x-6 pb-2 md:pb-8 answer-btn-box-takuitsu h-20 md:h-28 lg:h-32">
-                    <button onclick="answerTakuitsu('〇')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-2xl md:rounded-3xl border-4 md:border-8 border-blue-400 active:scale-95 text-4xl md:text-6xl shadow-md flex items-center justify-center transition-transform py-1 md:py-2 leading-none">〇</button>
-                    <button onclick="answerTakuitsu('✖')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-2xl md:rounded-3xl border-4 md:border-8 border-red-400 active:scale-95 text-4xl md:text-6xl shadow-md flex items-center justify-center transition-transform py-1 md:py-2 leading-none">✖</button>
+                <!-- 🌟 〇×ボタンは mt-auto と shrink-0 で下部にピタッと固定 -->
+                <div class="shrink-0 mt-auto flex space-x-3 md:space-x-6 pb-2 md:pb-8 answer-btn-box-takuitsu h-20 md:h-28 lg:h-32">
+                    <button id="btn-takuitsu-maru" onclick="answerTakuitsu('〇')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-2xl md:rounded-3xl border-4 md:border-8 border-blue-400 active:scale-95 text-4xl md:text-6xl shadow-md flex items-center justify-center transition-all py-1 md:py-2 leading-none">〇</button>
+                    <button id="btn-takuitsu-batsu" onclick="answerTakuitsu('✖')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-2xl md:rounded-3xl border-4 md:border-8 border-red-400 active:scale-95 text-4xl md:text-6xl shadow-md flex items-center justify-center transition-all py-1 md:py-2 leading-none">✖</button>
                 </div>
             </div>
 
@@ -402,14 +404,18 @@
         <!-- 🌟 択一式 評価エリア -->
         <div id="self-eval-area-takuitsu" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-4 bg-white/95 rounded-t-2xl md:rounded-3xl border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
             <p id="eval-guide-text-takuitsu" class="text-center text-[9px] md:text-[11px] font-bold text-slate-500 mb-1 md:mb-2">自己評価を選んで次へ進んでね！</p>
-            <div class="flex gap-2 md:gap-3 justify-center" id="takuitsu-eval-buttons">
-                <button onclick="markEvalTakuitsu('完璧')" class="eval-btn-takuitsu flex-1 bg-green-50 hover:bg-green-500 hover:text-white text-green-700 border md:border-2 border-green-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm active:scale-95 transition-all text-sm md:text-base">🟢 完璧</button>
-                <button onclick="markEvalTakuitsu('迷った')" class="eval-btn-takuitsu flex-1 bg-yellow-50 hover:bg-yellow-500 hover:text-white text-yellow-700 border md:border-2 border-yellow-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm active:scale-95 transition-all text-sm md:text-base">🟡 迷った</button>
-                <button onclick="markEvalTakuitsu('わからん')" class="eval-btn-takuitsu flex-1 bg-red-50 hover:bg-red-500 hover:text-white text-red-700 border md:border-2 border-red-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm active:scale-95 transition-all text-sm md:text-base">🔴 わからん</button>
+            
+            <!-- 🌟 評価ボタン（押すと強調され、「次へ」が有効化される） -->
+            <div class="flex gap-2 md:gap-3 justify-center mb-2" id="takuitsu-eval-buttons">
+                <button id="eval-btn-kanpeki" onclick="selectEvalTakuitsu('完璧')" class="eval-btn-takuitsu flex-1 bg-green-50 hover:bg-green-500 hover:text-white text-green-700 border md:border-2 border-green-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">🟢 完璧</button>
+                <button id="eval-btn-mayotta" onclick="selectEvalTakuitsu('迷った')" class="eval-btn-takuitsu flex-1 bg-yellow-50 hover:bg-yellow-500 hover:text-white text-yellow-700 border md:border-2 border-yellow-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">🟡 迷った</button>
+                <button id="eval-btn-wakaran" onclick="selectEvalTakuitsu('わからん')" class="eval-btn-takuitsu flex-1 bg-red-50 hover:bg-red-500 hover:text-white text-red-700 border md:border-2 border-red-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">🔴 わからん</button>
             </div>
             
-            <button id="btn-next-only-takuitsu" onclick="nextQuestion()" class="hidden w-full bg-slate-800 text-white font-black py-2.5 md:py-4 rounded-xl md:rounded-2xl shadow-md text-lg active:scale-95 mt-2 transition-all">次の問題へ ➡</button>
+            <!-- 🌟 「次へ」ボタン（通常時は評価選択までdisabled。イベント時は即有効） -->
+            <button id="btn-next-takuitsu" onclick="submitEvalAndNext()" class="w-full bg-slate-800 text-white font-black py-2.5 md:py-4 rounded-xl md:rounded-2xl shadow-md text-lg transition-all opacity-50 cursor-not-allowed">評価を選択してください</button>
             
+            <!-- 🌟 無限ドリルメニュー -->
             <div id="infinite-drill-menu" class="hidden flex-col gap-2 mt-2 w-full">
                 <button onclick="startInfiniteDrill('okawari')" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 md:py-3 rounded-xl border border-indigo-200 shadow-sm active:scale-95 text-sm md:text-base">🍚 同じ項目のおかわり</button>
                 <button onclick="startInfiniteDrill('nextChapter')" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 md:py-3 rounded-xl border border-blue-200 shadow-sm active:scale-95 text-sm md:text-base">➡ 関連する次の項目へ</button>
@@ -418,6 +424,7 @@
             </div>
         </div>
 
+        <!-- 選択式の評価エリア（こちらは既存のまま「次へ」ボタンがある） -->
         <div id="self-eval-area-sentaku" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
             <p id="eval-guide-text" class="text-center text-[9px] md:text-[11px] font-bold text-slate-500 mb-1 md:mb-2">間違えやまぐれ当たりは必ず「迷った」で記録してね！</p>
             <div class="flex gap-1 md:gap-2 mb-2 md:mb-3 justify-center flex-wrap" id="eval-target-buttons"></div>
@@ -474,6 +481,10 @@
         let isBonusMode = false;
         let eventQuestionsAnswered = 0;
         let eventCorrectCount = 0;
+        
+        // 🌟 状態管理用フラグ
+        let isAnsweredTakuitsu = false;
+        let currentTakuitsuEval = null;
 
         window.onload = function() {
             try {
@@ -830,8 +841,6 @@
             isSenbonKnock = false; isTimeAttack = false; isBonusMode = false;
             eventQuestionsAnswered = 0; eventCorrectCount = 0;
             document.getElementById('btn-surrender').classList.add('hidden');
-            document.getElementById('btn-next-only-takuitsu').classList.add('hidden');
-            document.getElementById('takuitsu-eval-buttons').classList.remove('hidden');
         }
 
         function executeStrategyPlan() {
@@ -995,13 +1004,42 @@
             document.getElementById('self-eval-area-takuitsu').classList.add('hidden');
             document.getElementById('self-eval-area-sentaku').classList.add('hidden');
             
-            if (!isSenbonKnock) {
+            // 🌟 択一の各種状態・ボタンリセット
+            isAnsweredTakuitsu = false;
+            currentTakuitsuEval = null;
+            
+            const btnMaru = document.getElementById('btn-takuitsu-maru');
+            const btnBatsu = document.getElementById('btn-takuitsu-batsu');
+            if (btnMaru && btnBatsu) {
+                btnMaru.disabled = false; btnMaru.classList.remove('opacity-30', 'ring-4', 'ring-blue-500', 'cursor-not-allowed');
+                btnBatsu.disabled = false; btnBatsu.classList.remove('opacity-30', 'ring-4', 'ring-red-500', 'cursor-not-allowed');
+            }
+            
+            const evalBtns = ['eval-btn-kanpeki', 'eval-btn-mayotta', 'eval-btn-wakaran'];
+            evalBtns.forEach(id => {
+                let el = document.getElementById(id);
+                if(el) el.classList.remove('opacity-40', 'ring-2', 'ring-offset-2', 'ring-slate-400');
+            });
+            
+            const nextBtnTak = document.getElementById('btn-next-takuitsu');
+            if(nextBtnTak) {
+                if(!isSenbonKnock && !isTimeAttack && !isBonusMode) {
+                    // 通常時は評価されるまで無効化
+                    nextBtnTak.classList.add('opacity-50', 'cursor-not-allowed');
+                    nextBtnTak.textContent = "評価を選択してください";
+                } else {
+                    // イベント時は即有効化（評価不要）
+                    nextBtnTak.classList.remove('opacity-50', 'cursor-not-allowed');
+                    nextBtnTak.textContent = "次の問題へ ➡";
+                }
+            }
+
+            if (!isSenbonKnock && !isTimeAttack && !isBonusMode) {
                 document.getElementById('takuitsu-eval-buttons').classList.remove('hidden');
-                document.getElementById('btn-next-only-takuitsu').classList.add('hidden');
                 document.getElementById('eval-guide-text-takuitsu').classList.remove('hidden');
             } else {
+                // イベント時は評価ボタン群を隠す
                 document.getElementById('takuitsu-eval-buttons').classList.add('hidden');
-                document.getElementById('btn-next-only-takuitsu').classList.remove('hidden');
                 document.getElementById('eval-guide-text-takuitsu').classList.add('hidden');
             }
             
@@ -1075,12 +1113,32 @@
             verifyDataWithPro(q);
         }
 
+        // ==========================
+        // 🌟 択一式の解答ロジック（二重押し防止・視覚強化）
+        // ==========================
         function answerTakuitsu(userAnswer) {
+            if (isAnsweredTakuitsu) return;
+            isAnsweredTakuitsu = true;
+            
             stopStudyTimer(); 
             flushStudyTimes(); 
             
             const q = currentQuestions[currentIndex];
             clearInterval(timerInterval); document.getElementById('timer-bar').style.animationPlayState = 'paused';
+            
+            // 🌟 ボタンの無効化と視覚変化
+            const btnMaru = document.getElementById('btn-takuitsu-maru');
+            const btnBatsu = document.getElementById('btn-takuitsu-batsu');
+            btnMaru.disabled = true; btnBatsu.disabled = true;
+            btnMaru.classList.add('cursor-not-allowed'); btnBatsu.classList.add('cursor-not-allowed');
+            
+            if (userAnswer === '〇') {
+                btnMaru.classList.add('ring-4', 'ring-blue-500');
+                btnBatsu.classList.add('opacity-30');
+            } else {
+                btnBatsu.classList.add('ring-4', 'ring-red-500');
+                btnMaru.classList.add('opacity-30');
+            }
             
             const correctStr = (q.正誤 || "").trim();
             const isCorrect = (userAnswer === '〇' && (correctStr === '〇' || correctStr === '○')) || (userAnswer === '✖' && (correctStr === '✖' || correctStr === '×'));
@@ -1113,7 +1171,7 @@
             document.getElementById('article-text').textContent = q.根拠条文 || "条文なし";
             document.getElementById('explanation-text').innerHTML = q.解説 || "解説なし";
             
-            if (!isSenbonKnock) {
+            if (!isSenbonKnock && !isTimeAttack && !isBonusMode) {
                 if (currentIndex >= currentQuestions.length - 1) {
                     document.getElementById('eval-guide-text-takuitsu').textContent = "自己評価を選んでセットを完了してね！";
                 } else {
@@ -1139,6 +1197,9 @@
             generateAiMessage("hint_takuitsu", { questionText: q.問題文, explanation: q.解説 || "", textOnly: true });
         }
 
+        // ==========================
+        // 選択式の解答ロジック
+        // ==========================
         function toggleStrike(word, el) {
             el.classList.toggle('line-through'); el.classList.toggle('text-slate-300');
             el.classList.toggle('bg-slate-100'); el.classList.toggle('opacity-50');
@@ -1247,12 +1308,43 @@
             } catch(e) {}
         }
 
-        function markEvalTakuitsu(status) {
-            clearIdleTimers(); 
-            const q = currentQuestions[currentIndex];
-            fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_status', q_id: q._id, status: status }) });
-            if(!userHistory[q._id]) userHistory[q._id] = {};
-            userHistory[q._id].status = status;
+        // 🌟 択一式の評価選択処理（選んだ状態を視覚的に保持）
+        function selectEvalTakuitsu(status) {
+            currentTakuitsuEval = status;
+            const btns = {
+                '完璧': document.getElementById('eval-btn-kanpeki'),
+                '迷った': document.getElementById('eval-btn-mayotta'),
+                'わからん': document.getElementById('eval-btn-wakaran')
+            };
+            
+            for (let key in btns) {
+                if (key === status) {
+                    btns[key].classList.remove('opacity-40');
+                    btns[key].classList.add('ring-2', 'ring-offset-2', 'ring-slate-400');
+                } else {
+                    btns[key].classList.add('opacity-40');
+                    btns[key].classList.remove('ring-2', 'ring-offset-2', 'ring-slate-400');
+                }
+            }
+            
+            const nextBtn = document.getElementById('btn-next-takuitsu');
+            nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            nextBtn.textContent = "次の問題へ ➡";
+        }
+
+        // 🌟 択一式「次へ」ボタン押下処理
+        function submitEvalAndNext() {
+            if (!isSenbonKnock && !isTimeAttack && !isBonusMode) {
+                if (!currentTakuitsuEval) return; // 未選択時はブロック
+                clearIdleTimers(); 
+                const q = currentQuestions[currentIndex];
+                
+                // 非同期で保存送信
+                fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_status', q_id: q._id, status: currentTakuitsuEval }) });
+                
+                if(!userHistory[q._id]) userHistory[q._id] = {};
+                userHistory[q._id].status = currentTakuitsuEval;
+            }
             nextQuestion();
         }
 
@@ -1444,7 +1536,7 @@
             const guide = document.getElementById('eval-guide-text-takuitsu');
             if (guide) guide.classList.add('hidden');
             
-            const nextOnly = document.getElementById('btn-next-only-takuitsu');
+            const nextOnly = document.getElementById('btn-next-takuitsu');
             if (nextOnly) nextOnly.classList.add('hidden');
             
             document.getElementById('infinite-drill-menu').classList.remove('hidden');
@@ -1518,12 +1610,12 @@
             const evalArea = document.getElementById('self-eval-area-takuitsu');
             evalArea.innerHTML = `
                 <p id="eval-guide-text-takuitsu" class="text-center text-[9px] md:text-[11px] font-bold text-slate-500 mb-1 md:mb-2">自己評価を選んで次へ進んでね！</p>
-                <div class="flex gap-2 md:gap-3 justify-center" id="takuitsu-eval-buttons">
-                    <button onclick="markEvalTakuitsu('完璧')" class="eval-btn-takuitsu flex-1 bg-green-50 hover:bg-green-500 hover:text-white text-green-700 border md:border-2 border-green-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm active:scale-95 transition-all text-sm md:text-base">🟢 完璧</button>
-                    <button onclick="markEvalTakuitsu('迷った')" class="eval-btn-takuitsu flex-1 bg-yellow-50 hover:bg-yellow-500 hover:text-white text-yellow-700 border md:border-2 border-yellow-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm active:scale-95 transition-all text-sm md:text-base">🟡 迷った</button>
-                    <button onclick="markEvalTakuitsu('わからん')" class="eval-btn-takuitsu flex-1 bg-red-50 hover:bg-red-500 hover:text-white text-red-700 border md:border-2 border-red-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm active:scale-95 transition-all text-sm md:text-base">🔴 わからん</button>
+                <div class="flex gap-2 md:gap-3 justify-center mb-2" id="takuitsu-eval-buttons">
+                    <button id="eval-btn-kanpeki" onclick="selectEvalTakuitsu('完璧')" class="eval-btn-takuitsu flex-1 bg-green-50 hover:bg-green-500 hover:text-white text-green-700 border md:border-2 border-green-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">🟢 完璧</button>
+                    <button id="eval-btn-mayotta" onclick="selectEvalTakuitsu('迷った')" class="eval-btn-takuitsu flex-1 bg-yellow-50 hover:bg-yellow-500 hover:text-white text-yellow-700 border md:border-2 border-yellow-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">🟡 迷った</button>
+                    <button id="eval-btn-wakaran" onclick="selectEvalTakuitsu('わからん')" class="eval-btn-takuitsu flex-1 bg-red-50 hover:bg-red-500 hover:text-white text-red-700 border md:border-2 border-red-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">🔴 わからん</button>
                 </div>
-                <button id="btn-next-only-takuitsu" onclick="nextQuestion()" class="hidden w-full bg-slate-800 text-white font-black py-2.5 md:py-4 rounded-xl md:rounded-2xl shadow-md text-lg active:scale-95 mt-2 transition-all">次の問題へ ➡</button>
+                <button id="btn-next-takuitsu" onclick="submitEvalAndNext()" class="w-full bg-slate-800 text-white font-black py-2.5 md:py-4 rounded-xl md:rounded-2xl shadow-md text-lg transition-all opacity-50 cursor-not-allowed">評価を選択してください</button>
                 <div id="infinite-drill-menu" class="hidden flex-col gap-2 mt-2 w-full">
                     <button onclick="startInfiniteDrill('okawari')" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 md:py-3 rounded-xl border border-indigo-200 shadow-sm active:scale-95 text-sm md:text-base">🍚 同じ項目のおかわり</button>
                     <button onclick="startInfiniteDrill('nextChapter')" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 md:py-3 rounded-xl border border-blue-200 shadow-sm active:scale-95 text-sm md:text-base">➡ 関連する次の項目へ</button>
