@@ -285,6 +285,7 @@
                 <div class="flex items-center gap-1 md:gap-2 shrink-0 flex-wrap">
                     <button onclick="location.reload()" class="header-btn bg-white/10 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold border border-slate-500">🚪 終了</button>
                     <button onclick="openNapMenu()" class="header-btn bg-indigo-950/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-indigo-200 border border-indigo-500">💤 仮眠</button>
+                    <!-- 🌟 千本ノック用 白旗ボタン -->
                     <button id="btn-surrender" onclick="surrenderSenbonKnock()" class="hidden header-btn bg-red-600/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-red-500">🏳️ 降参</button>
                     <span id="q-type-badge-header" class="bg-indigo-700 px-1 md:px-2 py-0.5 md:py-1 rounded text-[10px] md:text-sm font-bold ml-1">読込中</span>
                 </div>
@@ -469,6 +470,9 @@
         let eliminatedWords = new Set(), currentWordBank = [], currentAnswers = {}, currentFullText = "";
         let lastAnswerWasCorrect = false;
         let strategyHistory = [], strategyPlan = null;
+        
+        // 🌟 追加：最初に構築した無限ドリル用のベース設定を記憶する変数
+        let initialPlaylistConfig = [];
 
         let activeSubjectForTime = null; 
         let studyTimerInterval = null;
@@ -489,7 +493,6 @@
         let isAnsweredTakuitsu = false;
         let currentTakuitsuEval = null;
         
-        // 🌟 追加：修正データ用
         let pendingFixData = null;
 
         window.onload = function() {
@@ -647,7 +650,6 @@
 
         function checkAllLoaded() {
             if (parsedSubjectsCount === SUBJECTS.length) {
-                // 🌟 ローカル保存された修正データを全体に反映
                 let localFixes = JSON.parse(localStorage.getItem('local_fixes') || '{}');
                 allDatabase.forEach(q => {
                     if (localFixes[q._id]) {
@@ -879,13 +881,17 @@
                     pool.forEach(q => { let c = q.項目 || "分類なし"; if(!chapterMap[c]) chapterMap[c] = []; chapterMap[c].push(q); });
                     let pickedChapter = Object.keys(chapterMap)[0];
                     let qs = (chapterMap[pickedChapter] || pool).sort(() => Math.random() - 0.5).slice(0, item.count || 10);
-                    if (qs.length > 0) { playlistQueue.push({ subjectName: item.subject, chapterName: pickedChapter, questions: qs }); totalQuestionsToPlay += qs.length; }
+                    if (qs.length > 0) { playlistQueue.push({ subjectName: item.subject, chapterName: pickedChapter, type: qs[0]._type, questions: qs }); totalQuestionsToPlay += qs.length; }
                 }
             });
             if(playlistQueue.length === 0) { alert("条件に合う問題が見つかりませんでした。"); return; }
             
             resetGameFlags();
             currentPlaylistIndex = 0; isReviewAdded = false; isExtensionAdded = false; hasRestRecommended = false;
+            
+            // 🌟 無限ドリル用にベース設定を保存
+            initialPlaylistConfig = playlistQueue.map(q => ({ subjectName: q.subjectName, chapterName: q.chapterName, type: q.type }));
+            
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('main-area').classList.remove('hidden');
             document.getElementById('main-area').classList.add('flex');
@@ -935,7 +941,7 @@
                         if(excludePerfect) p = p.filter(q => !(userHistory[q._id] && userHistory[q._id].status === '完璧'));
                         if(p.length > 0) {
                             let qs = p.sort(()=>Math.random()-0.5).slice(0, 10);
-                            playlistQueue.push({ subjectName: subj, chapterName: chap, questions: qs });
+                            playlistQueue.push({ subjectName: subj, chapterName: chap, type: qs[0]._type, questions: qs });
                             totalQuestionsToPlay += qs.length;
                         }
                     });
@@ -950,7 +956,7 @@
                 if (excludePerfect) pool = pool.filter(q => !(userHistory[q._id] && userHistory[q._id].status === '完璧'));
                 let qs = pool.sort(()=>Math.random()-0.5).slice(0, count);
                 if(qs.length === 0) { alert("条件に合う問題がありません。"); return; }
-                playlistQueue = [{ subjectName: targetSubject, chapterName: "ミックス", questions: qs }];
+                playlistQueue = [{ subjectName: targetSubject, chapterName: "ミックス", type: qs[0]._type, questions: qs }];
                 totalQuestionsToPlay = qs.length;
             }
 
@@ -958,6 +964,10 @@
             
             resetGameFlags();
             currentPlaylistIndex = 0; isReviewAdded = false; isExtensionAdded = false; hasRestRecommended = false;
+            
+            // 🌟 無限ドリル用にベース設定を保存
+            initialPlaylistConfig = playlistQueue.map(q => ({ subjectName: q.subjectName, chapterName: q.chapterName, type: q.type }));
+            
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('main-area').classList.remove('hidden');
             document.getElementById('main-area').classList.add('flex');
@@ -1021,7 +1031,6 @@
             document.getElementById('self-eval-area-takuitsu').classList.add('hidden');
             document.getElementById('self-eval-area-sentaku').classList.add('hidden');
             
-            // 🌟 修正データ（保留中）があるかチェックし、バッジを制御
             const ignoredFixes = JSON.parse(localStorage.getItem('ignored_fixes') || '{}');
             const badge = document.getElementById('ignored-fix-badge');
             if (ignoredFixes[q._id]) {
@@ -1032,7 +1041,6 @@
                 pendingFixData = null;
             }
             
-            // 🌟 択一の各種状態・ボタンリセット
             isAnsweredTakuitsu = false;
             currentTakuitsuEval = null;
             
@@ -1138,9 +1146,6 @@
             verifyDataWithPro(q);
         }
 
-        // ==========================
-        // 🌟 択一式の解答ロジック
-        // ==========================
         function answerTakuitsu(userAnswer) {
             if (isAnsweredTakuitsu) return;
             isAnsweredTakuitsu = true;
@@ -1329,7 +1334,6 @@
             } catch(e) {}
         }
 
-        // 🌟 択一式の評価選択処理
         function selectEvalTakuitsu(status) {
             currentTakuitsuEval = status;
             const btns = {
@@ -1353,7 +1357,6 @@
             nextBtn.textContent = "次の問題へ ➡";
         }
 
-        // 🌟 修正: 評価が選ばれていれば確実に次へ進む
         function submitEvalAndNext() {
             if (!isSenbonKnock && !isTimeAttack && !isBonusMode) {
                 if (!currentTakuitsuEval) return; 
@@ -1365,8 +1368,6 @@
                 if(!userHistory[q._id]) userHistory[q._id] = {};
                 userHistory[q._id].status = currentTakuitsuEval;
             }
-            
-            // ブロック処理を抜けたら確実に発火させる
             nextQuestion();
         }
 
@@ -1402,7 +1403,6 @@
             }
         }
 
-        // 🌟 修正ボタンアクション：ローカルに上書き保存
         function applyFixToGAS() {
             if(!pendingFixData) return;
             const q = currentQuestions[currentIndex];
@@ -1430,7 +1430,6 @@
             pendingFixData = null;
         }
 
-        // 🌟 無視ボタンアクション：保留リストに保存しバッジを表示
         function ignoreFix() {
             if(!pendingFixData) return;
             const q = currentQuestions[currentIndex];
@@ -1444,7 +1443,6 @@
             generateAiMessage("ignore_fix", { textOnly: true });
         }
 
-        // 🌟 保留バッジタップ時の再表示
         function showIgnoredFix() {
             if(!pendingFixData) return;
             document.getElementById('ai-fix-reason').textContent = pendingFixData.reason;
@@ -1621,57 +1619,70 @@
             }
         }
 
+        // 🌟 無限ドリルの抽出ロジック（ベース設定をループして再構築）
         function startInfiniteDrill(mode) {
             flushStudyTimes();
             
-            let lastQ = currentQuestions[0] || allDatabase[0];
-            let subjName = lastQ._subjectName;
-            let chapName = lastQ.項目 || "分類なし";
-            let qType = lastQ._type;
+            let newPlaylistQueue = [];
             
-            let pool = allDatabase.filter(q => q._subjectName === subjName && q._type === qType);
-            let qs = [];
-            
-            if (mode === 'okawari') {
-                let chapPool = pool.filter(q => q.項目 === chapName);
-                chapPool.sort((a, b) => {
-                    let aC = userHistory[a._id] ? userHistory[a._id].playCount : 0;
-                    let bC = userHistory[b._id] ? userHistory[b._id].playCount : 0;
-                    return aC - bC;
-                });
-                qs = chapPool.slice(0, 10);
-                playlistQueue = [{ subjectName: subjName, chapterName: chapName + " (おかわり)", questions: qs }];
+            initialPlaylistConfig.forEach(config => {
+                let subjName = config.subjectName;
+                let chapName = config.chapterName;
+                let qType = config.type;
                 
-            } else if (mode === 'nextChapter') {
-                let allChaps = [...new Set(pool.map(q => q.項目))];
-                let currentIdx = allChaps.indexOf(chapName);
-                let nextChap = allChaps[(currentIdx + 1) % allChaps.length];
-                let chapPool = pool.filter(q => q.項目 === nextChap);
-                qs = chapPool.sort(()=>Math.random()-0.5).slice(0, 10);
-                playlistQueue = [{ subjectName: subjName, chapterName: nextChap, questions: qs }];
+                let pool = allDatabase.filter(q => q._subjectName === subjName && q._type === qType);
+                let qs = [];
                 
-            } else if (mode === 'review') {
-                let chapPool = pool.filter(q => q.項目 === chapName);
-                let mistakes = chapPool.filter(q => {
-                    let h = userHistory[q._id];
-                    if(!h || !h.historyStr) return false;
-                    let hArr = h.historyStr.split(',');
-                    let latest = hArr[hArr.length - 1];
-                    return (q._type === '択一' && latest === '✖') || (q._type === '選択' && !latest.includes('5点'));
-                });
-                qs = mistakes.slice(0, 10);
-                if (qs.length < 10) {
-                    let remains = chapPool.filter(q => !qs.includes(q)).sort((a,b) => {
+                if (mode === 'okawari') {
+                    let chapPool = pool.filter(q => q.項目 === chapName);
+                    chapPool.sort((a, b) => {
                         let aC = userHistory[a._id] ? userHistory[a._id].playCount : 0;
                         let bC = userHistory[b._id] ? userHistory[b._id].playCount : 0;
                         return aC - bC;
                     });
-                    qs = qs.concat(remains.slice(0, 10 - qs.length));
+                    qs = chapPool.slice(0, 10);
+                    if(qs.length > 0) newPlaylistQueue.push({ subjectName: subjName, chapterName: chapName + " (おかわり)", type: qType, questions: qs });
+                    
+                } else if (mode === 'nextChapter') {
+                    if (chapName === "ミックス") {
+                        qs = pool.sort(()=>Math.random()-0.5).slice(0, 10);
+                        if(qs.length > 0) newPlaylistQueue.push({ subjectName: subjName, chapterName: "ミックス", type: qType, questions: qs });
+                    } else {
+                        let allChaps = [...new Set(pool.map(q => q.項目))];
+                        let currentIdx = allChaps.indexOf(chapName);
+                        let nextChap = allChaps[(currentIdx + 1) % allChaps.length];
+                        let chapPool = pool.filter(q => q.項目 === nextChap);
+                        qs = chapPool.sort(()=>Math.random()-0.5).slice(0, 10);
+                        if(qs.length > 0) newPlaylistQueue.push({ subjectName: subjName, chapterName: nextChap, type: qType, questions: qs });
+                        config.chapterName = nextChap;
+                    }
+                } else if (mode === 'review') {
+                    let chapPool = pool.filter(q => q.項目 === chapName);
+                    if (chapName === "ミックス") chapPool = pool;
+                    
+                    let mistakes = chapPool.filter(q => {
+                        let h = userHistory[q._id];
+                        if(!h || !h.historyStr) return false;
+                        let hArr = h.historyStr.split(',');
+                        let latest = hArr[hArr.length - 1];
+                        return (q._type === '択一' && latest === '✖') || (q._type === '選択' && !latest.includes('5点'));
+                    });
+                    qs = mistakes.slice(0, 10);
+                    if (qs.length < 10) {
+                        let remains = chapPool.filter(q => !qs.includes(q)).sort((a,b) => {
+                            let aC = userHistory[a._id] ? userHistory[a._id].playCount : 0;
+                            let bC = userHistory[b._id] ? userHistory[b._id].playCount : 0;
+                            return aC - bC;
+                        });
+                        qs = qs.concat(remains.slice(0, 10 - qs.length));
+                    }
+                    if(qs.length > 0) newPlaylistQueue.push({ subjectName: subjName, chapterName: chapName + " (復習)", type: qType, questions: qs });
                 }
-                playlistQueue = [{ subjectName: subjName, chapterName: chapName + " (復習)", questions: qs }];
-            }
+            });
 
-            if (qs.length === 0) { alert("抽出できる問題がありませんでした。"); return; }
+            if (newPlaylistQueue.length === 0) { alert("抽出できる問題がありませんでした。"); return; }
+            
+            playlistQueue = newPlaylistQueue;
             
             resetGameFlags();
             currentPlaylistIndex = 0; isReviewAdded = false; isExtensionAdded = false; hasRestRecommended = false;
@@ -1782,7 +1793,6 @@
         async function verifyDataWithPro(q) {
             if (q._verified) return; 
             
-            // ローカル修正済みかチェック
             let localFixes = JSON.parse(localStorage.getItem('local_fixes') || '{}');
             if (localFixes[q._id]) {
                 q._verified = true;
