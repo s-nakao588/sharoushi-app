@@ -311,9 +311,11 @@
             
             <!-- ▼ 択一式 UI コンテナ (絶対配置でボタンを下部固定) -->
             <div id="takuitsu-ui" class="hidden flex-1 flex-col h-full w-full relative">
+                <!-- 🌟 問題文エリア (ボタンの高さ分だけ padding-bottom を確保) -->
                 <div class="flex-1 overflow-y-auto pr-2 md:pr-3 pb-24 md:pb-32 lg:pb-36 takuitsu-q-container">
                     <h2 class="text-lg md:text-xl lg:text-2xl font-normal leading-relaxed md:leading-loose text-slate-800 tracking-wide" id="question-text-takuitsu">択一式の問題文</h2>
                 </div>
+                <!-- 🌟 〇×ボタン (絶対配置で下端に固定) -->
                 <div class="absolute bottom-0 left-0 w-full flex space-x-3 md:space-x-6 pb-2 md:pb-4 pt-2 bg-gradient-to-t from-white via-white to-transparent answer-btn-box-takuitsu h-20 md:h-24 lg:h-28 z-10">
                     <button id="btn-takuitsu-maru" onclick="answerTakuitsu('〇')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-2xl md:rounded-3xl border-4 md:border-8 border-blue-400 active:scale-95 text-4xl md:text-6xl shadow-md flex items-center justify-center transition-all py-1 md:py-2 leading-none">〇</button>
                     <button id="btn-takuitsu-batsu" onclick="answerTakuitsu('✖')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-2xl md:rounded-3xl border-4 md:border-8 border-red-400 active:scale-95 text-4xl md:text-6xl shadow-md flex items-center justify-center transition-all py-1 md:py-2 leading-none">✖</button>
@@ -369,7 +371,7 @@
             </div>
 
             <div id="action-sentaku" class="hidden flex-col gap-2">
-                <button onclick="showContextHint()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm border-2 border-yellow-300 text-sm md:text-lg active:scale-95 transition-all">
+                <button onclick="showHintSentaku()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm border-2 border-yellow-300 text-sm md:text-lg active:scale-95 transition-all">
                     💡 文脈ヒント（手がかりをハイライト）
                 </button>
                 <button onclick="submitSentakuAnswers()" class="action-btn w-full bg-indigo-500 hover:bg-indigo-600 text-white font-black py-3 md:py-4 rounded-lg md:rounded-xl shadow-[0_3px_0_#3730a3] active:translate-y-[3px] active:shadow-none text-base md:text-xl transition-all">
@@ -471,7 +473,6 @@
         let lastAnswerWasCorrect = false;
         let strategyHistory = [], strategyPlan = null;
         
-        // 🌟 追加：最初に構築した無限ドリル用のベース設定を記憶する変数
         let initialPlaylistConfig = [];
 
         let activeSubjectForTime = null; 
@@ -551,6 +552,21 @@
             osc.type = 'square'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); osc.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.1);
             gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
             osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        function stopAudio() {
+            const p = document.getElementById('tts-player');
+            if(p) { p.pause(); p.currentTime = 0; }
+            if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); }
+        }
+
+        function playCompletedArticle() {
+            const text = document.getElementById('article-text').textContent;
+            if(text && text !== "条文なし") speakText(text);
+        }
+
+        function generateAlchemyQuestion() {
+            generateAiMessage("alchemy_prep", { textOnly: true });
         }
 
         function startIdleTimers() {
@@ -889,7 +905,6 @@
             resetGameFlags();
             currentPlaylistIndex = 0; isReviewAdded = false; isExtensionAdded = false; hasRestRecommended = false;
             
-            // 🌟 無限ドリル用にベース設定を保存
             initialPlaylistConfig = playlistQueue.map(q => ({ subjectName: q.subjectName, chapterName: q.chapterName, type: q.type }));
             
             document.getElementById('start-screen').classList.add('hidden');
@@ -965,7 +980,6 @@
             resetGameFlags();
             currentPlaylistIndex = 0; isReviewAdded = false; isExtensionAdded = false; hasRestRecommended = false;
             
-            // 🌟 無限ドリル用にベース設定を保存
             initialPlaylistConfig = playlistQueue.map(q => ({ subjectName: q.subjectName, chapterName: q.chapterName, type: q.type }));
             
             document.getElementById('start-screen').classList.add('hidden');
@@ -1368,6 +1382,7 @@
                 if(!userHistory[q._id]) userHistory[q._id] = {};
                 userHistory[q._id].status = currentTakuitsuEval;
             }
+            
             nextQuestion();
         }
 
@@ -1619,7 +1634,6 @@
             }
         }
 
-        // 🌟 無限ドリルの抽出ロジック（ベース設定をループして再構築）
         function startInfiniteDrill(mode) {
             flushStudyTimes();
             
