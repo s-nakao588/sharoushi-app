@@ -93,8 +93,9 @@
             #eval-guide-text, #eval-guide-text-takuitsu { font-size: 0.85rem !important; margin-bottom: 0.5rem !important; }
             .btn-mistake-action { font-size: 0.9rem !important; padding: 0.5rem 1rem !important; }
             
-            /* スマホ用絶対配置パディング調整 */
-            .takuitsu-q-container { padding-bottom: 7.5rem !important; }
+            /* 🌟 スマホ用絶対配置パディング調整とスクロール完全保証 */
+            #takuitsu-ui { min-height: 0 !important; flex: 1 1 auto !important; }
+            .takuitsu-q-container { padding-bottom: 7.5rem !important; min-height: 0 !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
         }
     </style>
 </head>
@@ -167,14 +168,12 @@
                 </div>
             </div>
             
-            <!-- 🌟 ダッシュボード＆作戦会議エリア -->
             <div class="bg-slate-50 rounded-3xl p-4 md:p-8 mb-8 border-4 border-slate-200 shadow-inner">
                 <div class="flex justify-between items-center mb-2 flex-wrap gap-2">
                     <h2 class="text-xl md:text-3xl font-black flex items-center gap-2">
                         <span>📈 統合ダッシュボード</span>
                         <span class="text-xs md:text-base font-bold text-slate-500 bg-white px-2 py-1 rounded-full border" id="loading-status">☁️ 統合データ読み込み中...</span>
                     </h2>
-                    <!-- 🌟 メイン画面のヘッダー：離席・休憩ボタンを追加 -->
                     <div class="flex flex-wrap gap-1 md:gap-2 justify-end">
                         <button onclick="startPause()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-2 md:px-3 py-1.5 rounded-lg text-xs md:text-sm shadow-sm transition-all flex items-center gap-1">
                             <span>⏸️</span><span>離席</span>
@@ -485,7 +484,6 @@
         let globalTimerInterval = null, globalTimeLeftSeconds = null, isTimeUp = false;
         let napInterval = null, napSecondsLeft = 0;
         
-        // 🌟 追加：離席タイマー変数
         let pauseSeconds = 0;
         let pauseInterval = null;
         
@@ -758,14 +756,23 @@
             const stats = getStatsSummary();
             const container = document.getElementById('dash-master-bars');
             container.innerHTML = "";
+            
+            // 🌟 修正: ローカルにストックされている未送信時間も合算して表示する
+            let pendingTimes = JSON.parse(localStorage.getItem('pending_study_times') || '{}');
+            let pendingAll = pendingTimes['ALL'] || 0;
+            let displayTotalTime = (userTimes['ALL'] || 0) + pendingAll;
+            
             const totalStudyTimeEl = document.getElementById('total-study-time');
-            if(totalStudyTimeEl) totalStudyTimeEl.textContent = formatTime(userTimes['ALL']);
+            if(totalStudyTimeEl) totalStudyTimeEl.textContent = formatTime(displayTotalTime);
             
             let htmlContent = ""; let idx = 0;
             for (const subj of Object.keys(stats)) {
                 let s = stats[subj];
                 let mColor = s.masterRate >= 80 ? 'bg-green-500' : (s.masterRate >= 50 ? 'bg-yellow-400' : 'bg-red-400');
-                let subjTime = userTimes[subj] || 0;
+                
+                // 🌟 科目ごとの未送信時間も合算
+                let subjTime = (userTimes[subj] || 0) + (pendingTimes[subj] || 0);
+                
                 let chaptersHtml = `<div class="mt-3 hidden border-t border-slate-200 pt-3 text-left w-full" id="dash-chap-${idx}">`;
                 for (let chap in s.chapters) {
                     let c = s.chapters[chap];
@@ -1116,7 +1123,6 @@
             }, 1000);
         }
 
-        // 🌟 新設：ハードコア用のロック解除関数
         function unlockHardcore(type) {
             document.querySelectorAll('.inline-select').forEach(sel => {
                 sel.disabled = false;
@@ -1130,7 +1136,6 @@
             sendKarteLog('hardcore_unlock', { type: type, q_id: q._id, question: q.問題文.substring(0, 20) });
         }
         
-        // 🌟 新設：離席タイマー
         function startPause() {
             stopStudyTimer();
             clearIdleTimers();
@@ -1147,7 +1152,6 @@
             }, 1000);
         }
         
-        // 🌟 新設：5分休ショートカット
         function startNapQuick(minutes) {
             stopStudyTimer();
             clearIdleTimers();
@@ -1293,7 +1297,6 @@
                     wbContainer.innerHTML += `<div id="word-btn-${idx}" onclick="toggleStrike('${word}', this)" class="cursor-pointer border border-slate-300 p-1 md:p-2 rounded md:rounded-lg text-center hover:bg-slate-50 transition-all select-none bg-white"><span class="word-num">${idx+1}</span>${word}</div>`;
                 });
                 
-                // 🌟 ハードコアモード時のUI切り替え
                 if (isHardcore) {
                     document.querySelectorAll('.inline-select').forEach(sel => {
                         sel.disabled = true;
@@ -1641,7 +1644,6 @@
         function checkSpecialEvents() {
             let triggered = false;
             
-            // 1. サドンデス ＆ カウントダウン・リレー
             if (!eventTriggeredThisSession && initialGlobalTime >= 5400 && globalTimeLeftSeconds !== null && globalTimeLeftSeconds >= 600 && globalTimeLeftSeconds <= 900) {
                 eventTriggeredThisSession = true;
                 let isSudden = Math.random() < 0.5;
@@ -1660,7 +1662,6 @@
                 return true;
             }
             
-            // 2. 悪魔の罠 (ひっかけ特化モード)
             let today = new Date().toDateString();
             let trapDone = localStorage.getItem('trap_done_date');
             if (continuousStudyTimeSec >= 3600 && trapDone !== today && Math.random() < 0.25) {
@@ -1684,7 +1685,6 @@
                 }
             }
             
-            // 3. ハードコア選択式 (語群没収)
             let lastSet = playlistQueue[playlistQueue.length - 1];
             if (lastSet && lastSet.type === '選択' && !isHardcore) {
                 let sentakuPool = allDatabase.filter(q => q._type === '選択');
@@ -1704,7 +1704,6 @@
                 }
             }
             
-            // 4. 不意打ちの1問 (スナイパーモード)
             if (continuousStudyTimeSec >= 1800 && Math.random() < 0.15) {
                 let pool = allDatabase.filter(q => userHistory[q._id] && userHistory[q._id].playCount > 0);
                 pool = pool.filter(q => {
