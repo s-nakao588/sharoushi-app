@@ -100,11 +100,12 @@
 </head>
 <body class="bg-slate-100 text-slate-800 h-[100dvh] w-screen flex flex-col lg:flex-row overflow-hidden font-sans">
 
-    <!-- 離席オーバーレイ -->
-    <div id="pause-overlay" class="fixed inset-0 bg-slate-900/90 z-[100] hidden flex-col items-center justify-center text-white backdrop-blur-sm p-6 text-center">
-        <span class="text-7xl md:text-9xl mb-6 animate-bounce">⏸️</span>
-        <h2 class="text-4xl md:text-6xl font-black mb-4">ちょっと離席中...</h2>
-        <button onclick="resumeTimer()" class="w-full max-w-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-black py-6 rounded-2xl text-3xl shadow-[0_8px_0_#166534] active:translate-y-[6px]">▶ 戻ったよ！（再開）</button>
+    <!-- ⏸️ 離席オーバーレイ (暗転＆経過時間カウントアップ) -->
+    <div id="pause-overlay" class="fixed inset-0 bg-slate-900/95 z-[100] hidden flex-col items-center justify-center text-white backdrop-blur-md p-6 text-center">
+        <span class="text-7xl md:text-9xl mb-4 animate-pulse">⏸️</span>
+        <h2 class="text-4xl md:text-6xl font-black mb-2">離席中</h2>
+        <div id="pause-timer-display" class="text-6xl md:text-8xl font-mono tracking-wider text-slate-300 mb-8 font-black">00:00</div>
+        <button onclick="resumeTimer()" class="w-full max-w-xl bg-gradient-to-r from-green-500 to-green-600 text-white font-black py-6 rounded-2xl text-3xl shadow-[0_8px_0_#166534] active:translate-y-[6px]">▶ 戻ったよ！（着席）</button>
     </div>
 
     <!-- 未解答警告モーダル -->
@@ -117,7 +118,7 @@
         </div>
     </div>
 
-    <!-- 💤 仮眠オーバーレイ -->
+    <!-- 💤 仮眠・休憩オーバーレイ -->
     <div id="nap-overlay" class="fixed inset-0 bg-black/95 z-[120] hidden flex-col items-center justify-center text-indigo-200 backdrop-blur-xl p-6 text-center">
         <span class="text-7xl md:text-9xl mb-6 animate-pulse">💤</span>
         <h2 class="text-3xl md:text-5xl font-black mb-4 text-indigo-400">仮眠・休憩モード</h2>
@@ -173,9 +174,18 @@
                         <span>📈 統合ダッシュボード</span>
                         <span class="text-xs md:text-base font-bold text-slate-500 bg-white px-2 py-1 rounded-full border" id="loading-status">☁️ 統合データ読み込み中...</span>
                     </h2>
-                    <button onclick="openNapMenu()" class="bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border-2 border-indigo-500 font-bold px-3 py-1.5 rounded-xl text-xs md:text-base shadow-sm active:scale-95 transition-all flex items-center gap-1.5">
-                        <span>💤</span><span>仮眠</span>
-                    </button>
+                    <!-- 🌟 メイン画面のヘッダー：離席・休憩ボタンを追加 -->
+                    <div class="flex flex-wrap gap-1 md:gap-2 justify-end">
+                        <button onclick="startPause()" class="bg-slate-800 hover:bg-slate-700 text-white font-bold px-2 md:px-3 py-1.5 rounded-lg text-xs md:text-sm shadow-sm transition-all flex items-center gap-1">
+                            <span>⏸️</span><span>離席</span>
+                        </button>
+                        <button onclick="startNapQuick(5)" class="bg-amber-700 hover:bg-amber-600 text-white font-bold px-2 md:px-3 py-1.5 rounded-lg text-xs md:text-sm shadow-sm transition-all flex items-center gap-1">
+                            <span>☕</span><span>5分休</span>
+                        </button>
+                        <button onclick="openNapMenu()" class="bg-indigo-950 hover:bg-indigo-900 text-indigo-200 border border-indigo-500 font-bold px-2 md:px-3 py-1.5 rounded-lg text-xs md:text-sm shadow-sm transition-all flex items-center gap-1">
+                            <span>💤</span><span>仮眠</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="text-sm md:text-base font-bold text-indigo-800 bg-indigo-100 px-3 py-1.5 rounded-xl mb-4 inline-block">
@@ -284,8 +294,11 @@
             <div class="p-2 md:p-5 flex justify-between items-center gap-1 md:gap-2">
                 <div class="flex items-center gap-1 md:gap-2 shrink-0 flex-wrap">
                     <button onclick="location.reload()" class="header-btn bg-white/10 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold border border-slate-500">🚪 終了</button>
+                    <!-- 🌟 特訓画面ヘッダー：離席・休憩ボタンを追加 -->
+                    <button onclick="startPause()" class="header-btn bg-slate-700/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-slate-500">⏸️ 離席</button>
+                    <button onclick="startNapQuick(5)" class="header-btn bg-amber-700/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-amber-500">☕ 5分</button>
                     <button onclick="openNapMenu()" class="header-btn bg-indigo-950/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-indigo-200 border border-indigo-500">💤 仮眠</button>
-                    <!-- 🌟 千本ノック用 白旗ボタン -->
+                    
                     <button id="btn-surrender" onclick="surrenderSenbonKnock()" class="hidden header-btn bg-red-600/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-red-500">🏳️ 降参</button>
                     <span id="q-type-badge-header" class="bg-indigo-700 px-1 md:px-2 py-0.5 md:py-1 rounded text-[10px] md:text-sm font-bold ml-1">読込中</span>
                 </div>
@@ -303,26 +316,21 @@
                 <div class="flex items-center gap-1.5 md:gap-2">
                     <span class="bg-indigo-600 text-white text-[10px] md:text-xs font-bold px-1.5 md:px-2 py-0.5 md:py-1 rounded" id="q-subject-badge">科目</span>
                     <h2 class="text-sm md:text-xl font-black text-slate-800 truncate max-w-[150px] md:max-w-none" id="q-chapter-text">項目・条文</h2>
-                    <!-- 🌟 修正案(保留)バッジ -->
                     <button id="ignored-fix-badge" onclick="showIgnoredFix()" class="hidden bg-yellow-100 text-yellow-800 text-[10px] md:text-xs font-bold px-1.5 md:px-2 py-0.5 md:py-1 rounded border border-yellow-400 active:scale-95 shadow-sm">⚠️ 修正案(保留)</button>
                 </div>
                 <div class="text-[10px] md:text-xs font-bold text-slate-400 bg-slate-100 px-1.5 md:px-2 py-0.5 md:py-1 rounded" id="q-history-stats">挑戦:0 過去正答:0%</div>
             </div>
             
-            <!-- ▼ 択一式 UI コンテナ (絶対配置でボタンを下部固定) -->
             <div id="takuitsu-ui" class="hidden flex-1 flex-col h-full w-full relative">
-                <!-- 🌟 問題文エリア (ボタンの高さ分だけ padding-bottom を確保) -->
                 <div class="flex-1 overflow-y-auto pr-2 md:pr-3 pb-24 md:pb-32 lg:pb-36 takuitsu-q-container">
                     <h2 class="text-lg md:text-xl lg:text-2xl font-normal leading-relaxed md:leading-loose text-slate-800 tracking-wide" id="question-text-takuitsu">択一式の問題文</h2>
                 </div>
-                <!-- 🌟 〇×ボタン (絶対配置で下端に固定) -->
                 <div class="absolute bottom-0 left-0 w-full flex space-x-3 md:space-x-6 pb-2 md:pb-4 pt-2 bg-gradient-to-t from-white via-white to-transparent answer-btn-box-takuitsu h-20 md:h-24 lg:h-28 z-10">
                     <button id="btn-takuitsu-maru" onclick="answerTakuitsu('〇')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-2xl md:rounded-3xl border-4 md:border-8 border-blue-400 active:scale-95 text-4xl md:text-6xl shadow-md flex items-center justify-center transition-all py-1 md:py-2 leading-none">〇</button>
                     <button id="btn-takuitsu-batsu" onclick="answerTakuitsu('✖')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-2xl md:rounded-3xl border-4 md:border-8 border-red-400 active:scale-95 text-4xl md:text-6xl shadow-md flex items-center justify-center transition-all py-1 md:py-2 leading-none">✖</button>
                 </div>
             </div>
 
-            <!-- ▼ 選択式 UI コンテナ -->
             <div id="sentaku-ui" class="hidden flex-1 flex-col min-h-0 mb-2 md:mb-4">
                 <div id="question-text-sentaku" class="text-[14px] md:text-[16px] lg:text-[18px] leading-[2.2] md:leading-[2.8] text-slate-800 font-medium bg-slate-50 p-3 md:p-5 rounded-xl md:rounded-2xl border border-slate-200 shadow-inner overflow-y-auto flex-1">
                 </div>
@@ -348,8 +356,6 @@
                 <div class="ml-2 md:ml-4 flex-grow">
                     <div class="bg-pink-50 rounded-2xl md:rounded-3xl rounded-tl-none p-2 md:p-4 shadow-sm border-2 border-pink-100 relative">
                         <p class="text-slate-800 font-bold leading-relaxed text-sm md:text-base lg:text-lg" id="ai-message">準備ができたらスタートしてね！</p>
-                        
-                        <!-- 🌟 AI修正アクションパネル -->
                         <div id="ai-fix-action" class="mt-2 p-2 bg-white rounded-lg border-2 border-red-300 shadow-sm hidden">
                             <p class="text-xs font-black text-red-600 mb-1">🚨 AIが矛盾・法改正を発見！</p>
                             <p id="ai-fix-reason" class="text-xs text-slate-700 font-bold mb-2"></p>
@@ -371,7 +377,6 @@
             </div>
 
             <div id="action-sentaku" class="hidden flex-col gap-2">
-                <!-- 🌟 ハードコア選択式のアンロックボタンエリア -->
                 <div id="hardcore-unlock-area" class="hidden flex-col gap-2 w-full animate-pulse mb-2">
                     <button onclick="unlockHardcore('recall')" class="action-btn w-full bg-red-100 hover:bg-red-200 text-red-800 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm border-2 border-red-300 text-sm md:text-lg active:scale-95 transition-all">
                         🧠 思い出した！（語群を見る）
@@ -380,7 +385,6 @@
                         🏳️ お手上げ…（語群に頼る）
                     </button>
                 </div>
-                <!-- 🌟 通常の選択式アクションボタン -->
                 <div id="normal-sentaku-actions" class="flex flex-col gap-2 w-full">
                     <button onclick="showHintSentaku()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm border-2 border-yellow-300 text-sm md:text-lg active:scale-95 transition-all">
                         💡 文脈ヒント（手がかりをハイライト）
@@ -424,9 +428,7 @@
             </div>
         </div>
 
-        <!-- 🌟 択一式 評価エリア -->
         <div id="self-eval-area-takuitsu" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-4 bg-white/95 rounded-t-2xl md:rounded-3xl border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
-            <!-- 🌟 評価ボタン等の通常コンテナ -->
             <div id="takuitsu-eval-content" class="w-full flex flex-col">
                 <p id="eval-guide-text-takuitsu" class="text-center text-[9px] md:text-[11px] font-bold text-slate-500 mb-1 md:mb-2">自己評価を選んで次へ進んでね！</p>
                 <div class="flex gap-2 md:gap-3 justify-center mb-2" id="takuitsu-eval-buttons">
@@ -437,10 +439,8 @@
                 <button id="btn-next-takuitsu" onclick="submitEvalAndNext()" class="w-full bg-slate-800 text-white font-black py-2.5 md:py-4 rounded-xl md:rounded-2xl shadow-md text-lg transition-all opacity-50 cursor-not-allowed">評価を選択してください</button>
             </div>
             
-            <!-- 🌟 休憩提案用コンテナ -->
             <div id="rest-proposal-menu-takuitsu" class="hidden w-full flex-col gap-2"></div>
             
-            <!-- 🌟 無限ドリルメニュー -->
             <div id="infinite-drill-menu" class="hidden flex-col gap-2 mt-2 w-full">
                 <button onclick="startInfiniteDrill('okawari')" class="w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold py-2 md:py-3 rounded-xl border border-indigo-200 shadow-sm active:scale-95 text-sm md:text-base">🍚 同じ項目のおかわり</button>
                 <button onclick="startInfiniteDrill('nextChapter')" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 md:py-3 rounded-xl border border-blue-200 shadow-sm active:scale-95 text-sm md:text-base">➡ 関連する次の項目へ</button>
@@ -449,7 +449,6 @@
             </div>
         </div>
 
-        <!-- 選択式の評価エリア -->
         <div id="self-eval-area-sentaku" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
             <p id="eval-guide-text" class="text-center text-[9px] md:text-[11px] font-bold text-slate-500 mb-1 md:mb-2">間違えやまぐれ当たりは必ず「迷った」で記録してね！</p>
             <div class="flex gap-1 md:gap-2 mb-2 md:mb-3 justify-center flex-wrap" id="eval-target-buttons"></div>
@@ -486,6 +485,10 @@
         let globalTimerInterval = null, globalTimeLeftSeconds = null, isTimeUp = false;
         let napInterval = null, napSecondsLeft = 0;
         
+        // 🌟 追加：離席タイマー変数
+        let pauseSeconds = 0;
+        let pauseInterval = null;
+        
         let setCorrectCount = 0, cumulativeQuestions = 0, todayMistakes = [];
         let eliminatedWords = new Set(), currentWordBank = [], currentAnswers = {}, currentFullText = "";
         let lastAnswerWasCorrect = false;
@@ -515,7 +518,7 @@
         let relayTimerInterval = null;
         let isTrapMode = false;
         let isHardcore = false;
-        let isSurpriseAttack = false; // 🌟 新イベントフラグ
+        let isSurpriseAttack = false;
 
         let isSenbonKnock = false; 
         let isTimeAttack = false;
@@ -1126,6 +1129,36 @@
             const q = currentQuestions[currentIndex];
             sendKarteLog('hardcore_unlock', { type: type, q_id: q._id, question: q.問題文.substring(0, 20) });
         }
+        
+        // 🌟 新設：離席タイマー
+        function startPause() {
+            stopStudyTimer();
+            clearIdleTimers();
+            pauseSeconds = 0;
+            document.getElementById('pause-timer-display').textContent = "00:00";
+            document.getElementById('pause-overlay').classList.remove('hidden');
+            document.getElementById('pause-overlay').classList.add('flex');
+            
+            pauseInterval = setInterval(() => {
+                pauseSeconds++;
+                let m = Math.floor(pauseSeconds / 60).toString().padStart(2, '0');
+                let s = (pauseSeconds % 60).toString().padStart(2, '0');
+                document.getElementById('pause-timer-display').textContent = `${m}:${s}`;
+            }, 1000);
+        }
+        
+        // 🌟 新設：5分休ショートカット
+        function startNapQuick(minutes) {
+            stopStudyTimer();
+            clearIdleTimers();
+            document.getElementById('nap-overlay').classList.remove('hidden');
+            document.getElementById('nap-overlay').classList.add('flex');
+            napSecondsLeft = minutes * 60;
+            localStorage.setItem('last_nap_time', new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}));
+            sendKarteLog('nap_start', { time: new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}), durationMinutes: minutes }); 
+            runNapTimer();
+            generateAiMessage("nap_start", { textOnly: true });
+        }
 
         function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
             const q = currentQuestions[currentIndex];
@@ -1605,7 +1638,6 @@
             nextQuestion();
         }
 
-        // 🌟 新イベントの発生条件チェック
         function checkSpecialEvents() {
             let triggered = false;
             
@@ -2143,7 +2175,12 @@
         function pauseTimer() { stopStudyTimer(); clearIdleTimers(); document.getElementById('pause-overlay').classList.remove('hidden'); document.getElementById('pause-overlay').classList.add('flex'); }
         function resumeTimer() { 
             document.getElementById('pause-overlay').classList.add('hidden'); document.getElementById('pause-overlay').classList.remove('flex'); 
-            if(currentQuestions[currentIndex] && document.getElementById('explanation-area').classList.contains('hidden')) {
+            
+            if (pauseInterval) clearInterval(pauseInterval);
+            
+            if(document.getElementById('main-area').classList.contains('hidden')) {
+                // start screen
+            } else if(currentQuestions[currentIndex] && document.getElementById('explanation-area').classList.contains('hidden')) {
                 if (currentQuestions[currentIndex]._type === '択一' && !isCountdownRelay) {
                     timerInterval = setInterval(() => { 
                         timeLeft--; 
