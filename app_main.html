@@ -371,13 +371,25 @@
             </div>
 
             <div id="action-sentaku" class="hidden flex-col gap-2">
-                <button onclick="showHintSentaku()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm border-2 border-yellow-300 text-sm md:text-lg active:scale-95 transition-all">
-                    💡 文脈ヒント（手がかりをハイライト）
-                </button>
-                <button onclick="submitSentakuAnswers()" class="action-btn w-full bg-indigo-500 hover:bg-indigo-600 text-white font-black py-3 md:py-4 rounded-lg md:rounded-xl shadow-[0_3px_0_#3730a3] active:translate-y-[3px] active:shadow-none text-base md:text-xl transition-all">
-                    📝 解答して解説を見る
-                </button>
-                <button onclick="fillRandomAnswers()" class="text-[10px] md:text-xs text-center text-slate-400 mt-1">※テスト用: ランダムに埋める</button>
+                <!-- 🌟 ハードコア選択式のアンロックボタンエリア -->
+                <div id="hardcore-unlock-area" class="hidden flex-col gap-2 w-full animate-pulse mb-2">
+                    <button onclick="unlockHardcore('recall')" class="action-btn w-full bg-red-100 hover:bg-red-200 text-red-800 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm border-2 border-red-300 text-sm md:text-lg active:scale-95 transition-all">
+                        🧠 思い出した！（語群を見る）
+                    </button>
+                    <button onclick="unlockHardcore('giveup')" class="action-btn w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm border-2 border-slate-300 text-sm md:text-lg active:scale-95 transition-all">
+                        🏳️ お手上げ…（語群に頼る）
+                    </button>
+                </div>
+                <!-- 🌟 通常の選択式アクションボタン -->
+                <div id="normal-sentaku-actions" class="flex flex-col gap-2 w-full">
+                    <button onclick="showHintSentaku()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm border-2 border-yellow-300 text-sm md:text-lg active:scale-95 transition-all">
+                        💡 文脈ヒント（手がかりをハイライト）
+                    </button>
+                    <button onclick="submitSentakuAnswers()" class="action-btn w-full bg-indigo-500 hover:bg-indigo-600 text-white font-black py-3 md:py-4 rounded-lg md:rounded-xl shadow-[0_3px_0_#3730a3] active:translate-y-[3px] active:shadow-none text-base md:text-xl transition-all">
+                        📝 解答して解説を見る
+                    </button>
+                    <button onclick="fillRandomAnswers()" class="text-[10px] md:text-xs text-center text-slate-400 mt-1">※テスト用: ランダムに埋める</button>
+                </div>
             </div>
 
             <div id="explanation-area" class="hidden flex-col gap-3">
@@ -485,7 +497,6 @@
         let studyTimerInterval = null;
         let continuousStudyTimeSec = 0; 
         
-        // 🌟 追加：アプリ起動からの総経過時間タイマー
         let sessionTotalTimeSec = 0;
         let sessionTimerInterval = null;
 
@@ -495,6 +506,17 @@
         let isExtensionAdded = false;
         let hasRestRecommended = false;
         
+        let initialGlobalTime = null;
+        let eventTriggeredThisSession = false;
+        let isSuddenDeath = false;
+        let isSuddenDeathGameOver = false;
+        let isCountdownRelay = false;
+        let countdownTimeLeft = 0;
+        let relayTimerInterval = null;
+        let isTrapMode = false;
+        let isHardcore = false;
+        let isSurpriseAttack = false; // 🌟 新イベントフラグ
+
         let isSenbonKnock = false; 
         let isTimeAttack = false;
         let isBonusMode = false;
@@ -514,7 +536,6 @@
                 if(savedModel) { document.getElementById('api-model-input').value = savedModel; userModel = savedModel; }
             } catch(e) {}
             
-            // 🌟 総経過時間の計測を開始
             sessionTimerInterval = setInterval(() => {
                 sessionTotalTimeSec++;
             }, 1000);
@@ -587,7 +608,7 @@
 
         function startIdleTimers() {
             clearIdleTimers();
-            if (isSenbonKnock) return; 
+            if (isSenbonKnock || isCountdownRelay || isSuddenDeath || isSurpriseAttack) return; 
             idleTimeoutWarn = setTimeout(() => { generateAiMessage("idle_warn", { textOnly: false }); }, 15000);
             idleTimeoutPenalty = setTimeout(() => { 
                 if (continuousStudyTimeSec < 3600) {
@@ -890,8 +911,15 @@
 
         function resetGameFlags() {
             isSenbonKnock = false; isTimeAttack = false; isBonusMode = false;
+            isSuddenDeath = false; isSuddenDeathGameOver = false;
+            isCountdownRelay = false;
+            if(relayTimerInterval) clearInterval(relayTimerInterval);
+            isTrapMode = false; isHardcore = false; isSurpriseAttack = false;
             eventQuestionsAnswered = 0; eventCorrectCount = 0;
             document.getElementById('btn-surrender').classList.add('hidden');
+            
+            document.getElementById('timer-bar').style.width = '100%';
+            document.getElementById('timer-bar').style.backgroundColor = '#10b981';
         }
 
         function executeStrategyPlan() {
@@ -928,6 +956,16 @@
             document.getElementById('main-area').classList.add('flex');
             document.getElementById('aside-area').classList.remove('hidden');
             document.getElementById('aside-area').classList.add('flex');
+            
+            initialGlobalTime = null;
+            eventTriggeredThisSession = false;
+            let todayStr = new Date().toDateString();
+            if (localStorage.getItem('last_play_date') !== todayStr) {
+                localStorage.setItem('last_play_date', todayStr);
+                localStorage.setItem('trap_done_date', '');
+                localStorage.setItem('today_sentaku_count', '0');
+            }
+            
             startNextPlaylistSet(true);
         }
 
@@ -1004,6 +1042,15 @@
             document.getElementById('aside-area').classList.remove('hidden');
             document.getElementById('aside-area').classList.add('flex');
             
+            initialGlobalTime = globalTimeLeftSeconds;
+            eventTriggeredThisSession = false;
+            let todayStr = new Date().toDateString();
+            if (localStorage.getItem('last_play_date') !== todayStr) {
+                localStorage.setItem('last_play_date', todayStr);
+                localStorage.setItem('trap_done_date', '');
+                localStorage.setItem('today_sentaku_count', '0');
+            }
+            
             startNextPlaylistSet(true);
         }
 
@@ -1031,19 +1078,61 @@
             currentQuestions = currentSet.questions; currentIndex = 0;
             document.getElementById('current-playlist-title').textContent = `🎧 [${currentPlaylistIndex + 1}/${playlistQueue.length}] ${currentSet.subjectName} - ${currentSet.chapterName}`;
             
-            if (isSenbonKnock) {
+            if (isSenbonKnock || isSuddenDeath || isCountdownRelay || isSurpriseAttack) {
                 document.getElementById('btn-surrender').classList.remove('hidden');
             }
             
+            if (currentSet.type === '選択' && !isHardcore && !isSurpriseAttack) {
+                let count = parseInt(localStorage.getItem('today_sentaku_count') || '0') + currentQuestions.length;
+                localStorage.setItem('today_sentaku_count', count.toString());
+            }
+            
             loadQuestion(false, isFirstOfAll);
+        }
+
+        function startCountdownRelayTimer() {
+            countdownTimeLeft = 20; 
+            document.getElementById('timer-bar').style.animation = 'none';
+            
+            relayTimerInterval = setInterval(() => {
+                if (isAnsweredTakuitsu) return; 
+                countdownTimeLeft--;
+                let pct = Math.min(100, (countdownTimeLeft / 30) * 100);
+                document.getElementById('timer-bar').style.width = pct + '%';
+                document.getElementById('timer-bar').style.backgroundColor = countdownTimeLeft > 10 ? '#10b981' : '#ef4444';
+                
+                document.getElementById('time-display').textContent = `🔥 残 ${countdownTimeLeft}秒`;
+                document.getElementById('time-display').classList.add('bg-red-600', 'text-white');
+                document.getElementById('time-display').classList.remove('bg-slate-800', 'text-yellow-400');
+                
+                if (countdownTimeLeft <= 0) {
+                    playWhistleSound();
+                    clearInterval(relayTimerInterval);
+                    finishAllPlaylists();
+                }
+            }, 1000);
+        }
+
+        // 🌟 新設：ハードコア用のロック解除関数
+        function unlockHardcore(type) {
+            document.querySelectorAll('.inline-select').forEach(sel => {
+                sel.disabled = false;
+                sel.classList.remove('opacity-50', 'bg-slate-200', 'cursor-not-allowed');
+            });
+            document.getElementById('hardcore-unlock-area').classList.add('hidden');
+            document.getElementById('hardcore-unlock-area').classList.remove('flex');
+            document.getElementById('normal-sentaku-actions').classList.remove('hidden');
+            document.getElementById('normal-sentaku-actions').classList.add('flex');
+            const q = currentQuestions[currentIndex];
+            sendKarteLog('hardcore_unlock', { type: type, q_id: q._id, question: q.問題文.substring(0, 20) });
         }
 
         function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
             const q = currentQuestions[currentIndex];
             if (!q) return;
             
-            if (isSenbonKnock) {
-                document.getElementById('question-progress').textContent = `${currentIndex + 1} 問目 (千本ノック)`;
+            if (isSenbonKnock || isSuddenDeath || isCountdownRelay || isSurpriseAttack) {
+                document.getElementById('question-progress').textContent = `${eventQuestionsAnswered + 1} 問目`;
             } else {
                 document.getElementById('question-progress').textContent = `${currentIndex + 1} / ${currentQuestions.length} 問`;
             }
@@ -1061,7 +1150,6 @@
             document.getElementById('self-eval-area-takuitsu').classList.add('hidden');
             document.getElementById('self-eval-area-sentaku').classList.add('hidden');
             
-            // 🌟 メニュー等の状態リセット
             document.getElementById('takuitsu-eval-content').classList.remove('hidden');
             document.getElementById('rest-proposal-menu-takuitsu').classList.add('hidden');
             document.getElementById('rest-proposal-menu-takuitsu').classList.remove('flex');
@@ -1096,7 +1184,7 @@
             
             const nextBtnTak = document.getElementById('btn-next-takuitsu');
             if(nextBtnTak) {
-                if(!isSenbonKnock && !isTimeAttack && !isBonusMode) {
+                if(!isSenbonKnock && !isTimeAttack && !isBonusMode && !isSuddenDeath && !isCountdownRelay && !isTrapMode && !isSurpriseAttack) {
                     nextBtnTak.classList.add('opacity-50', 'cursor-not-allowed');
                     nextBtnTak.textContent = "評価を選択してください";
                 } else {
@@ -1105,7 +1193,7 @@
                 }
             }
 
-            if (!isSenbonKnock && !isTimeAttack && !isBonusMode) {
+            if (!isSenbonKnock && !isTimeAttack && !isBonusMode && !isSuddenDeath && !isCountdownRelay && !isTrapMode && !isSurpriseAttack) {
                 document.getElementById('takuitsu-eval-buttons').classList.remove('hidden');
                 document.getElementById('eval-guide-text-takuitsu').classList.remove('hidden');
             } else {
@@ -1126,17 +1214,18 @@
                 document.getElementById('alchemy-btn').classList.add('hidden');
                 document.getElementById('question-text-takuitsu').innerHTML = q.問題文.replace(/\n/g, '<br>');
                 
-                clearInterval(timerInterval);
-                const timerBar = document.getElementById('timer-bar');
-                timerBar.style.animation = 'none'; void timerBar.offsetWidth; 
-                
-                currentLimit = isTimeAttack ? 15 : (isSenbonKnock ? 20 : 60);
-                timerBar.style.animation = `timer-run ${currentLimit}s linear forwards`;
-                timeLeft = currentLimit;
-                timerInterval = setInterval(() => {
-                    timeLeft--; 
-                    if(timeLeft <= 0) { playWhistleSound(); clearInterval(timerInterval); }
-                }, 1000);
+                if (!isCountdownRelay) {
+                    clearInterval(timerInterval);
+                    const timerBar = document.getElementById('timer-bar');
+                    timerBar.style.animation = 'none'; void timerBar.offsetWidth; 
+                    currentLimit = isTimeAttack ? 15 : (isSenbonKnock || isSuddenDeath || isSurpriseAttack ? 20 : 60);
+                    timerBar.style.animation = `timer-run ${currentLimit}s linear forwards`;
+                    timeLeft = currentLimit;
+                    timerInterval = setInterval(() => {
+                        timeLeft--; 
+                        if(timeLeft <= 0) { playWhistleSound(); clearInterval(timerInterval); }
+                    }, 1000);
+                }
 
             } else {
                 document.getElementById('takuitsu-ui').classList.add('hidden');
@@ -1170,13 +1259,33 @@
                 currentWordBank.forEach((word, idx) => {
                     wbContainer.innerHTML += `<div id="word-btn-${idx}" onclick="toggleStrike('${word}', this)" class="cursor-pointer border border-slate-300 p-1 md:p-2 rounded md:rounded-lg text-center hover:bg-slate-50 transition-all select-none bg-white"><span class="word-num">${idx+1}</span>${word}</div>`;
                 });
+                
+                // 🌟 ハードコアモード時のUI切り替え
+                if (isHardcore) {
+                    document.querySelectorAll('.inline-select').forEach(sel => {
+                        sel.disabled = true;
+                        sel.classList.add('opacity-50', 'bg-slate-200', 'cursor-not-allowed');
+                    });
+                    document.getElementById('hardcore-unlock-area').classList.remove('hidden');
+                    document.getElementById('hardcore-unlock-area').classList.add('flex');
+                    document.getElementById('normal-sentaku-actions').classList.add('hidden');
+                    document.getElementById('normal-sentaku-actions').classList.remove('flex');
+                } else {
+                    document.getElementById('hardcore-unlock-area').classList.add('hidden');
+                    document.getElementById('hardcore-unlock-area').classList.remove('flex');
+                    document.getElementById('normal-sentaku-actions').classList.remove('hidden');
+                    document.getElementById('normal-sentaku-actions').classList.add('flex');
+                }
             }
 
             if (isFirstOfSet) {
                 if(isTimeAttack) generateAiMessage("start_timeattack", { textOnly: false });
                 else if(isBonusMode) generateAiMessage("start_bonus", { textOnly: false });
                 else if(isSenbonKnock) generateAiMessage("start_senbon", { textOnly: true });
-                else generateAiMessage(`start_${q._type === '択一' ? 'takuitsu' : 'sentaku'}`, { textOnly: false });
+                else if(isSurpriseAttack) generateAiMessage("start_surprise", { textOnly: false });
+                else if(!isSuddenDeath && !isCountdownRelay && !isTrapMode && !isHardcore) {
+                    generateAiMessage(`start_${q._type === '択一' ? 'takuitsu' : 'sentaku'}`, { textOnly: false });
+                }
             }
             verifyDataWithPro(q);
         }
@@ -1189,7 +1298,9 @@
             flushStudyTimes(); 
             
             const q = currentQuestions[currentIndex];
-            clearInterval(timerInterval); document.getElementById('timer-bar').style.animationPlayState = 'paused';
+            if (!isCountdownRelay) {
+                clearInterval(timerInterval); document.getElementById('timer-bar').style.animationPlayState = 'paused';
+            }
             
             const btnMaru = document.getElementById('btn-takuitsu-maru');
             const btnBatsu = document.getElementById('btn-takuitsu-batsu');
@@ -1211,13 +1322,17 @@
             if (isCorrect) {
                 setCorrectCount++;
                 playCorrectSound();
+                if (isCountdownRelay) countdownTimeLeft += 5; 
             } else {
                 todayMistakes.push(q);
                 playWrongSound();
+                if (isSuddenDeath) {
+                    isSuddenDeathGameOver = true;
+                }
             }
             
             cumulativeQuestions++;
-            if (isSenbonKnock || isTimeAttack || isBonusMode) {
+            if (isSenbonKnock || isTimeAttack || isBonusMode || isSuddenDeath || isCountdownRelay || isTrapMode || isSurpriseAttack) {
                 eventQuestionsAnswered++;
                 if (isCorrect) eventCorrectCount++;
             }
@@ -1235,7 +1350,7 @@
             document.getElementById('article-text').textContent = q.根拠条文 || "条文なし";
             document.getElementById('explanation-text').innerHTML = q.解説 || "解説なし";
             
-            if (!isSenbonKnock && !isTimeAttack && !isBonusMode) {
+            if (!isSenbonKnock && !isTimeAttack && !isBonusMode && !isSuddenDeath && !isCountdownRelay && !isTrapMode && !isSurpriseAttack) {
                 if (currentIndex >= currentQuestions.length - 1) {
                     document.getElementById('eval-guide-text-takuitsu').textContent = "自己評価を選んでセットを完了してね！";
                 } else {
@@ -1245,7 +1360,7 @@
 
             startIdleTimers(); 
             
-            if (isSenbonKnock) {
+            if (isSenbonKnock || isSuddenDeath || isCountdownRelay || isSurpriseAttack) {
                 const aiEl = document.getElementById('ai-message');
                 if(aiEl) {
                     aiEl.textContent = isCorrect ? "はい、次！" : "遅い！次！";
@@ -1324,7 +1439,7 @@
             else playWrongSound();
 
             cumulativeQuestions++;
-            if (isSenbonKnock || isTimeAttack || isBonusMode) {
+            if (isSenbonKnock || isTimeAttack || isBonusMode || isHardcore || isSurpriseAttack) {
                 eventQuestionsAnswered++;
                 if (score === 5) eventCorrectCount++;
             }
@@ -1393,7 +1508,7 @@
         }
 
         function submitEvalAndNext() {
-            if (!isSenbonKnock && !isTimeAttack && !isBonusMode) {
+            if (!isSenbonKnock && !isTimeAttack && !isBonusMode && !isSuddenDeath && !isCountdownRelay && !isTrapMode && !isSurpriseAttack) {
                 if (!currentTakuitsuEval) return; 
                 clearIdleTimers(); 
                 const q = currentQuestions[currentIndex];
@@ -1426,12 +1541,12 @@
                     await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'cancel_answer', q_id: q._id, was_correct: lastAnswerWasCorrect }) });
                     if(q._type === '択一') {
                         if(lastAnswerWasCorrect && setCorrectCount > 0) setCorrectCount--; else if(!lastAnswerWasCorrect) todayMistakes.pop();
-                        if (isSenbonKnock || isTimeAttack || isBonusMode) {
+                        if (isSenbonKnock || isTimeAttack || isBonusMode || isSuddenDeath || isCountdownRelay || isTrapMode || isSurpriseAttack) {
                             if(lastAnswerWasCorrect && eventCorrectCount > 0) eventCorrectCount--;
                         }
                     }
                     cumulativeQuestions--; 
-                    if (isSenbonKnock || isTimeAttack || isBonusMode) eventQuestionsAnswered--;
+                    if (isSenbonKnock || isTimeAttack || isBonusMode || isSuddenDeath || isCountdownRelay || isTrapMode || isHardcore || isSurpriseAttack) eventQuestionsAnswered--;
                     
                     document.getElementById('ai-message').textContent = "記録を取り消したよ！次から気をつけてね！";
                 } catch(e) { alert("取り消しに失敗しました"); }
@@ -1490,16 +1605,131 @@
             nextQuestion();
         }
 
+        // 🌟 新イベントの発生条件チェック
+        function checkSpecialEvents() {
+            let triggered = false;
+            
+            // 1. サドンデス ＆ カウントダウン・リレー
+            if (!eventTriggeredThisSession && initialGlobalTime >= 5400 && globalTimeLeftSeconds !== null && globalTimeLeftSeconds >= 600 && globalTimeLeftSeconds <= 900) {
+                eventTriggeredThisSession = true;
+                let isSudden = Math.random() < 0.5;
+                let subjList = ["労働基準法(択一)", "安全衛生法(択一)", "健康保険法(択一)", "厚生年金保険法(択一)"];
+                let pool = allDatabase.filter(q => q._subjectName === subjList[0] && q._type === '択一');
+                let qs = pool.sort(()=>Math.random()-0.5).slice(0, 10);
+                
+                playlistQueue = [{ subjectName: subjList[0], chapterName: isSudden ? "☠️ サドンデス" : "⏱️ カウントダウン", type: "択一", questions: qs }];
+                currentPlaylistIndex = 0; currentIndex = 0;
+                resetGameFlags();
+                if (isSudden) isSuddenDeath = true;
+                else { isCountdownRelay = true; startCountdownRelayTimer(); }
+                
+                generateAiMessage(isSudden ? "start_suddendeath" : "start_relay", { textOnly: false });
+                startNextPlaylistSet();
+                return true;
+            }
+            
+            // 2. 悪魔の罠 (ひっかけ特化モード)
+            let today = new Date().toDateString();
+            let trapDone = localStorage.getItem('trap_done_date');
+            if (continuousStudyTimeSec >= 3600 && trapDone !== today && Math.random() < 0.25) {
+                localStorage.setItem('trap_done_date', today);
+                let pool = allDatabase.filter(q => q._type === '択一' && userHistory[q._id] && userHistory[q._id].playCount > 0);
+                pool = pool.filter(q => {
+                    let hist = userHistory[q._id];
+                    let rate = hist.playCount > 0 ? (hist.correctCount / hist.playCount) : 1;
+                    let lastAns = hist.historyStr ? hist.historyStr.split(',').pop() : '';
+                    return rate < 0.5 || lastAns === '✖';
+                });
+                if (pool.length >= 10) {
+                    let qs = pool.sort(()=>Math.random()-0.5).slice(0, 10);
+                    playlistQueue = [{ subjectName: "😈 悪魔の罠", chapterName: "ひっかけ特化", type: "択一", questions: qs }];
+                    currentPlaylistIndex = 0; currentIndex = 0;
+                    resetGameFlags();
+                    isTrapMode = true;
+                    generateAiMessage("start_trap", { textOnly: false });
+                    startNextPlaylistSet();
+                    return true;
+                }
+            }
+            
+            // 3. ハードコア選択式 (語群没収)
+            let lastSet = playlistQueue[playlistQueue.length - 1];
+            if (lastSet && lastSet.type === '選択' && !isHardcore) {
+                let sentakuPool = allDatabase.filter(q => q._type === '選択');
+                let playedSum = sentakuPool.reduce((sum, q) => sum + (userHistory[q._id] ? userHistory[q._id].playCount : 0), 0);
+                let avgPlay = playedSum / (sentakuPool.length || 1);
+                let todaySentakuCount = parseInt(localStorage.getItem('today_sentaku_count') || '0');
+                
+                if (avgPlay >= 3 && todaySentakuCount >= 30 && Math.random() < 0.5) {
+                    let qs = sentakuPool.sort(()=>Math.random()-0.5).slice(0, 5);
+                    playlistQueue = [{ subjectName: "💀 ハードコア", chapterName: "語群没収", type: "選択", questions: qs }];
+                    currentPlaylistIndex = 0; currentIndex = 0;
+                    resetGameFlags();
+                    isHardcore = true;
+                    generateAiMessage("start_hardcore", { textOnly: false });
+                    startNextPlaylistSet();
+                    return true;
+                }
+            }
+            
+            // 4. 不意打ちの1問 (スナイパーモード)
+            if (continuousStudyTimeSec >= 1800 && Math.random() < 0.15) {
+                let pool = allDatabase.filter(q => userHistory[q._id] && userHistory[q._id].playCount > 0);
+                pool = pool.filter(q => {
+                    let hist = userHistory[q._id];
+                    let maxScore = q._type === '選択' ? (hist.playCount * 5) : hist.playCount;
+                    let rate = hist.playCount > 0 ? (hist.correctCount / maxScore) : 1;
+                    let lastAns = hist.historyStr ? hist.historyStr.split(',').pop() : '';
+                    return rate < 0.5 || lastAns === '✖' || (q._type === '選択' && !lastAns.includes('5点'));
+                });
+                if (pool.length >= 1) {
+                    let qs = pool.sort(()=>Math.random()-0.5).slice(0, 1);
+                    playlistQueue = [{ subjectName: "🎯 不意打ちの1問", chapterName: "油断大敵", type: qs[0]._type, questions: qs }];
+                    currentPlaylistIndex = 0; currentIndex = 0;
+                    resetGameFlags();
+                    isSurpriseAttack = true;
+                    generateAiMessage("start_surprise", { textOnly: false });
+                    startNextPlaylistSet();
+                    return true;
+                }
+            }
+            
+            return false;
+        }
+
         function nextQuestion() {
             clearIdleTimers();
             stopAudio();
+            
+            if (isSuddenDeathGameOver) {
+                finishAllPlaylists();
+                return;
+            }
+            
             currentIndex++;
             
             if (currentIndex >= currentQuestions.length) {
+                
+                if (isSuddenDeath || isCountdownRelay) {
+                    let subjList = ["労働基準法(択一)", "安全衛生法(択一)", "健康保険法(択一)", "厚生年金保険法(択一)"];
+                    let currentSubj = currentQuestions[0]._subjectName;
+                    let nextSubjIdx = (subjList.indexOf(currentSubj) + 1) % subjList.length;
+                    let nextSubj = subjList[nextSubjIdx];
+                    let pool = allDatabase.filter(q => q._subjectName === nextSubj && q._type === '択一');
+                    let qs = pool.sort(()=>Math.random()-0.5).slice(0, 10);
+                    
+                    playlistQueue.push({ subjectName: nextSubj, chapterName: isSuddenDeath ? "☠️ サドンデス" : "⏱️ カウントダウン", type: "択一", questions: qs });
+                    currentPlaylistIndex++;
+                    startNextPlaylistSet();
+                    return;
+                }
+                
                 currentPlaylistIndex++;
                 if (currentPlaylistIndex < playlistQueue.length) {
                     startNextPlaylistSet();
                 } else {
+                    if (checkSpecialEvents()) return;
+                    
                     if (isTimeUp && continuousStudyTimeSec >= 3600 && !isExtensionAdded) {
                         judgeTimeUpExtension();
                     } else if (!hasRestRecommended && !isSenbonKnock && !isTimeAttack && !isBonusMode) {
@@ -1573,7 +1803,6 @@
             judgeRestRecommendation(); 
         }
 
-        // 🌟 追加・修正：学習履歴の保存用関数
         function acceptRestProposal(minutes) {
             saveRestDecision(`連続${Math.floor(continuousStudyTimeSec/60)}分での${minutes}分休憩提案を受容`);
             startNap(minutes);
@@ -1594,14 +1823,13 @@
         }
 
         async function judgeRestRecommendation() {
-            // 🌟 システムガード：総経過時間に応じた足切り
             if (sessionTotalTimeSec < 5400) { 
-                if (continuousStudyTimeSec < 3600) { // 90分未満の場合、最低でも60分連続していなければ提案しない
+                if (continuousStudyTimeSec < 3600) { 
                     finishAllPlaylists();
                     return;
                 }
             } else { 
-                if (continuousStudyTimeSec < 2700) { // 90分以上の場合、最低でも45分連続していなければ提案しない
+                if (continuousStudyTimeSec < 2700) { 
                     finishAllPlaylists();
                     return;
                 }
@@ -1649,7 +1877,6 @@
                         document.getElementById('self-eval-area-takuitsu').classList.remove('hidden');
                         document.getElementById('self-eval-area-sentaku').classList.add('hidden');
                         
-                        // 🌟 HTML全体を消さずに、専用コンテナにメニューを挿入して表示を切り替える
                         document.getElementById('takuitsu-eval-content').classList.add('hidden');
                         document.getElementById('infinite-drill-menu').classList.add('hidden');
                         document.getElementById('rest-proposal-menu-takuitsu').innerHTML = `
@@ -1674,7 +1901,6 @@
             document.getElementById('self-eval-area-takuitsu').classList.remove('hidden');
             document.getElementById('self-eval-area-sentaku').classList.add('hidden');
             
-            // 🌟 DOMの表示非表示のみで無限ドリルメニューを再構築
             document.getElementById('takuitsu-eval-content').classList.add('hidden');
             document.getElementById('rest-proposal-menu-takuitsu').classList.add('hidden');
             document.getElementById('rest-proposal-menu-takuitsu').classList.remove('flex');
@@ -1682,8 +1908,8 @@
             document.getElementById('infinite-drill-menu').classList.remove('hidden');
             document.getElementById('infinite-drill-menu').classList.add('flex');
             
-            if (isSenbonKnock || isTimeAttack || isBonusMode) {
-                let evType = isSenbonKnock ? "senbonKnock" : (isTimeAttack ? "timeAttack" : "bonus");
+            if (isSenbonKnock || isTimeAttack || isBonusMode || isSuddenDeath || isCountdownRelay || isTrapMode || isHardcore || isSurpriseAttack) {
+                let evType = isSenbonKnock ? "senbonKnock" : (isTimeAttack ? "timeAttack" : (isSuddenDeath ? "suddenDeath" : (isCountdownRelay ? "countdownRelay" : (isTrapMode ? "trapMode" : (isHardcore ? "hardcore" : (isSurpriseAttack ? "surpriseAttack" : "bonus"))))));
                 generateAiMessage("end_event", { eventType: evType, qCount: eventQuestionsAnswered, correct: eventCorrectCount, textOnly: false });
             } else {
                 generateAiMessage("end_all", { totalPlayed: cumulativeQuestions, mistakes: todayMistakes.length, textOnly: false });
@@ -1757,7 +1983,6 @@
             resetGameFlags();
             currentPlaylistIndex = 0; isReviewAdded = false; isExtensionAdded = false; hasRestRecommended = false;
             
-            // 🌟 メニューの再構築（DOMの表示状態を初期化）
             document.getElementById('infinite-drill-menu').classList.add('hidden');
             document.getElementById('infinite-drill-menu').classList.remove('flex');
             document.getElementById('takuitsu-eval-content').classList.remove('hidden');
@@ -1817,6 +2042,11 @@
             else if (situation === "start_sentaku") prompt += `選択式の特訓スタート。文脈を意識して埋めてみてと励まして。`;
             else if (situation === "start_timeattack") prompt += `熱血タイムアタック開始！「15秒で直感で解こう！」と熱く鼓舞して。`;
             else if (situation === "start_bonus") prompt += `ご褒美モード開始！「得意な問題を集めたから、自信つけていこう！」と優しく促して。`;
+            else if (situation === "start_suddendeath") prompt += `サドンデスモード発動！「時間が余ってるから、サクッとこれやろう！1問でも間違えたら即終了だよ！」と煽って。`;
+            else if (situation === "start_relay") prompt += `カウントダウン・リレー発動！「時間が余ってるから、タイムアタックの進化版やろう！正解すると5秒回復するよ！」と楽しく挑発して。`;
+            else if (situation === "start_trap") prompt += `ひっかけ特化モード発動！「今まで間違えた問題や、正答率の低い問題を集めたよ！罠に引っかからないように注意して！」と警告して。`;
+            else if (situation === "start_hardcore") prompt += `ハードコア選択式発動！「だいぶ知識がついてきたみたいだから、語群を没収するね！まずは自力で思い出してみて！」と挑戦的に。`;
+            else if (situation === "start_surprise") prompt += `不意打ちの1問発動！「油断大敵！気が抜けたところに苦手問題を1問だけ出題するよ！」と警告して。`;
             else if (situation === "hint_takuitsu") prompt += `択一式のヒント。答えは言わず、見るべきポイントを1文で示して。問題:${extraData.questionText} 解説:${extraData.explanation}`;
             else if (situation === "hint_sentaku") prompt += `選択式のヒント。「キーワードを黄色くしたから確認してみて」とアドバイスして。`;
             else if (situation === "answer_takuitsu") prompt += `択一式解答。結果は【${extraData.isCorrect ? "正解" : "不正解"}】。解説から最重要ポイントを1文で要約して。解説:${extraData.explanation}`;
@@ -1843,6 +2073,22 @@
                 } else if (extraData.eventType === "bonus") {
                     prompt += `【ご褒美モード終了】正答率:${rate}%。\n`;
                     prompt += `得意な問題を集めたセットでした。サクサク解けたことで実力がついていることを実感させ、自己肯定感を高めて終わらせて。`;
+                } else if (extraData.eventType === "suddenDeath") {
+                    prompt += `【サドンデス終了】解答数:${extraData.qCount}問。\n`;
+                    if(extraData.qCount >= 10) prompt += `プレッシャーの中で二桁以上続いた集中力を大絶賛して！`;
+                    else prompt += `「あっという間に終わっちゃったね」と軽くイジって、悔しさを煽って。`;
+                } else if (extraData.eventType === "countdownRelay") {
+                    prompt += `【カウントダウン・リレー終了】解答数:${extraData.qCount}問。\n`;
+                    prompt += `焦りの中で素早く判断し続けたスピードと決断力を称賛して！`;
+                } else if (extraData.eventType === "trapMode") {
+                    prompt += `【ひっかけ特化終了】正答率:${rate}%。\n`;
+                    prompt += `過去の苦手問題ばかりの罠セットでした。「引っかからなかったね！」か「また罠にハマっちゃったね」と結果に応じてコメントして。`;
+                } else if (extraData.eventType === "hardcore") {
+                    prompt += `【ハードコア選択終了】\n`;
+                    prompt += `自力で思い出せた割合や正答率を踏まえて、基礎知識の定着度について具体的に褒めるか、復習を促すコメントをして！`;
+                } else if (extraData.eventType === "surpriseAttack") {
+                    prompt += `【不意打ちの1問終了】\n`;
+                    prompt += `不意打ちで苦手問題を1問だけ出しました。正解していれば「油断してなかったね！」、間違えていれば「やっぱり気が抜けてた？」とイジって。`;
                 }
             }
 
@@ -1898,7 +2144,7 @@
         function resumeTimer() { 
             document.getElementById('pause-overlay').classList.add('hidden'); document.getElementById('pause-overlay').classList.remove('flex'); 
             if(currentQuestions[currentIndex] && document.getElementById('explanation-area').classList.contains('hidden')) {
-                if (currentQuestions[currentIndex]._type === '択一') {
+                if (currentQuestions[currentIndex]._type === '択一' && !isCountdownRelay) {
                     timerInterval = setInterval(() => { 
                         timeLeft--; 
                         if (timeLeft <= 0) { playWhistleSound(); clearInterval(timerInterval); } 
