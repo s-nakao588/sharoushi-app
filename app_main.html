@@ -53,6 +53,17 @@
             #start-screen select, #start-screen input[type="text"] { font-size: 1.5rem !important; height: auto !important; padding: 1.2rem !important; }
             #start-screen button:not(.header-btn) { font-size: 1.6rem !important; padding-top: 1.2rem !important; padding-bottom: 1.2rem !important; }
 
+            /* 🌟 進捗・正解率エリアの3列化と文字サイズ拡大 */
+            #dash-master-bars { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
+            #dash-master-bars p { font-size: 1.6rem !important; line-height: 1.4 !important; }
+            #dash-master-bars span { font-size: 1.4rem !important; }
+            #dash-master-bars .text-\[9px\], #dash-master-bars .md\:text-\[10px\] { font-size: 1.2rem !important; }
+
+            /* 🌟 作戦会議コメント・入力欄の文字サイズ拡大 */
+            #strategy-chat-log div { font-size: 1.8rem !important; padding: 1.2rem 1.5rem !important; line-height: 1.5 !important; }
+            #strategy-input { font-size: 1.8rem !important; padding: 1.2rem !important; }
+            button[onclick="sendStrategyMessage()"] { font-size: 1.8rem !important; padding: 1.2rem 2.0rem !important; }
+
             /* その他既存のiPad用調整 */
             #ai-message { font-size: 2.0rem !important; line-height: 1.6 !important; }
             #explanation-text { font-size: 2.0rem !important; line-height: 1.8 !important; font-weight: 400 !important; }
@@ -313,6 +324,7 @@
             <div id="main-header-inner" class="p-2 md:p-5 flex justify-between items-center gap-1 md:gap-2">
                 <div class="flex items-center gap-1 md:gap-2 shrink-0 flex-wrap">
                     <button onclick="location.reload()" class="header-btn bg-white/10 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold border border-slate-500">🚪 終了</button>
+                    <!-- 🌟 特訓画面ヘッダー：離席・休憩・音声ボタン -->
                     <button onclick="startPause()" class="header-btn bg-slate-700/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-slate-500">⏸️ 離席</button>
                     <button onclick="startNapQuick(5)" class="header-btn bg-amber-700/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-amber-500">☕ 5分</button>
                     <button onclick="openNapMenu()" class="header-btn bg-indigo-950/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-indigo-200 border border-indigo-500">💤 仮眠</button>
