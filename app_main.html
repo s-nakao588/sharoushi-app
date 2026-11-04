@@ -51,7 +51,7 @@
             #word-bank-container { font-size: 1.8rem !important; gap: 0.8rem !important; }
             #word-bank-container div { padding: 1.0rem !important; }
             
-            #self-eval-area-sentaku, #self-eval-area-takuitsu { padding: 2rem 2rem 3rem 2rem !important; border-top-width: 4px !important; }
+            #self-eval-area-sentaku, #self-eval-area-takuitsu { padding: 2rem 2rem 3rem 2rem !important; border-top-width: 4px !important; z-index: 50 !important; }
             
             .eval-btn, .eval-btn-takuitsu, #btn-next-takuitsu, .btn-next-action { font-size: 2.2rem !important; padding-top: 1.6rem !important; padding-bottom: 1.6rem !important; border-width: 3px !important; border-radius: 1.2rem !important; }
             
@@ -138,14 +138,14 @@
         </div>
     </div>
 
-    <!-- スタート画面 -->
+    <!-- スタート画面 (iPad横など広い画面に対応するため max-w-7xl に拡張) -->
     <div id="start-screen" class="absolute inset-0 bg-indigo-900 z-50 flex flex-col items-center justify-start text-white p-4 md:p-10 overflow-y-auto">
-        <div class="flex justify-between items-center w-full max-w-5xl mb-6 mt-4">
+        <div class="flex justify-between items-center w-full max-w-7xl mb-6 mt-4">
             <h1 class="text-2xl md:text-5xl lg:text-6xl font-black tracking-wider text-yellow-300">社労士 統合特訓 (択一/選択)</h1>
             <button onclick="toggleSound()" id="sound-toggle-start-btn" class="bg-slate-700 hover:bg-slate-600 text-white text-sm md:text-lg font-bold px-4 md:px-6 py-2 md:py-3 rounded-xl border-2 border-slate-500">🔇 音声オフ</button>
         </div>
         
-        <div class="bg-white text-slate-800 p-4 md:p-12 rounded-[2rem] shadow-2xl max-w-5xl w-full mb-10">
+        <div class="bg-white text-slate-800 p-4 md:p-12 rounded-[2rem] shadow-2xl max-w-7xl w-full mb-10">
             
             <div class="flex justify-end mb-2">
                 <button onclick="document.getElementById('api-settings-wrapper').classList.toggle('hidden')" class="text-sm md:text-base font-bold text-slate-400 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-full transition-colors border border-slate-200">⚙️ API設定・モデル変更</button>
@@ -168,6 +168,7 @@
                 </div>
             </div>
             
+            <!-- 🌟 ダッシュボード＆作戦会議エリア -->
             <div class="bg-slate-50 rounded-3xl p-4 md:p-8 mb-8 border-4 border-slate-200 shadow-inner">
                 <div class="flex justify-between items-center mb-2 flex-wrap gap-2">
                     <h2 class="text-xl md:text-3xl font-black flex items-center gap-2">
@@ -286,17 +287,18 @@
         </div>
     </div>
 
-    <!-- 🌟 左側：問題エリア (55%) ※下部余白を削ってボタンをピタッと配置 -->
+    <!-- 🌟 左側：問題エリア (55%) -->
     <main id="main-area" class="hidden w-full lg:w-[55%] h-[55dvh] lg:h-full flex-col bg-white shadow-xl z-10 shrink-0 border-r border-slate-200">
         
         <div class="bg-indigo-900 text-white shrink-0 shadow-md z-20">
             <div class="p-2 md:p-5 flex justify-between items-center gap-1 md:gap-2">
                 <div class="flex items-center gap-1 md:gap-2 shrink-0 flex-wrap">
                     <button onclick="location.reload()" class="header-btn bg-white/10 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold border border-slate-500">🚪 終了</button>
-                    <!-- 🌟 特訓画面ヘッダー：離席・休憩ボタンを追加 -->
+                    <!-- 🌟 特訓画面ヘッダー：離席・休憩・音声ボタン -->
                     <button onclick="startPause()" class="header-btn bg-slate-700/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-slate-500">⏸️ 離席</button>
                     <button onclick="startNapQuick(5)" class="header-btn bg-amber-700/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-amber-500">☕ 5分</button>
                     <button onclick="openNapMenu()" class="header-btn bg-indigo-950/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-indigo-200 border border-indigo-500">💤 仮眠</button>
+                    <button onclick="toggleSound()" id="sound-toggle-main-btn" class="header-btn bg-slate-700/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-slate-500">🔇 音声</button>
                     
                     <button id="btn-surrender" onclick="surrenderSenbonKnock()" class="hidden header-btn bg-red-600/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-red-500">🏳️ 降参</button>
                     <span id="q-type-badge-header" class="bg-indigo-700 px-1 md:px-2 py-0.5 md:py-1 rounded text-[10px] md:text-sm font-bold ml-1">読込中</span>
@@ -427,7 +429,7 @@
             </div>
         </div>
 
-        <div id="self-eval-area-takuitsu" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-4 bg-white/95 rounded-t-2xl md:rounded-3xl border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
+        <div id="self-eval-area-takuitsu" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-4 bg-white/95 rounded-t-2xl md:rounded-3xl border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-50">
             <div id="takuitsu-eval-content" class="w-full flex flex-col">
                 <p id="eval-guide-text-takuitsu" class="text-center text-[9px] md:text-[11px] font-bold text-slate-500 mb-1 md:mb-2">自己評価を選んで次へ進んでね！</p>
                 <div class="flex gap-2 md:gap-3 justify-center mb-2" id="takuitsu-eval-buttons">
@@ -448,7 +450,7 @@
             </div>
         </div>
 
-        <div id="self-eval-area-sentaku" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-30">
+        <div id="self-eval-area-sentaku" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-3 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-50">
             <p id="eval-guide-text" class="text-center text-[9px] md:text-[11px] font-bold text-slate-500 mb-1 md:mb-2">間違えやまぐれ当たりは必ず「迷った」で記録してね！</p>
             <div class="flex gap-1 md:gap-2 mb-2 md:mb-3 justify-center flex-wrap" id="eval-target-buttons"></div>
             
@@ -554,7 +556,11 @@
         }
         function toggleSound() {
             isMuted = !isMuted; unlockAudio();
-            document.getElementById('sound-toggle-start-btn').innerHTML = isMuted ? "🔇 音声オフ" : "🔊 音声オン";
+            const txt = isMuted ? "🔇 音声オフ" : "🔊 音声オン";
+            const btn1 = document.getElementById('sound-toggle-start-btn');
+            const btn2 = document.getElementById('sound-toggle-main-btn');
+            if(btn1) btn1.innerHTML = txt;
+            if(btn2) btn2.innerHTML = txt;
         }
         function toggleCustomTime() {
             const selectVal = document.getElementById('time-limit-select').value;
@@ -757,10 +763,9 @@
             const container = document.getElementById('dash-master-bars');
             container.innerHTML = "";
             
-            // 🌟 修正: ローカルにストックされている未送信時間も合算して表示する
             let pendingTimes = JSON.parse(localStorage.getItem('pending_study_times') || '{}');
-            let pendingAll = pendingTimes['ALL'] || 0;
-            let displayTotalTime = (userTimes['ALL'] || 0) + pendingAll;
+            let pendingAll = Math.floor((pendingTimes['ALL'] || 0) / 60) * 60; // Approximate to sec
+            let displayTotalTime = (userTimes['ALL'] || 0) + (pendingTimes['ALL'] || 0);
             
             const totalStudyTimeEl = document.getElementById('total-study-time');
             if(totalStudyTimeEl) totalStudyTimeEl.textContent = formatTime(displayTotalTime);
@@ -770,7 +775,6 @@
                 let s = stats[subj];
                 let mColor = s.masterRate >= 80 ? 'bg-green-500' : (s.masterRate >= 50 ? 'bg-yellow-400' : 'bg-red-400');
                 
-                // 🌟 科目ごとの未送信時間も合算
                 let subjTime = (userTimes[subj] || 0) + (pendingTimes[subj] || 0);
                 
                 let chaptersHtml = `<div class="mt-3 hidden border-t border-slate-200 pt-3 text-left w-full" id="dash-chap-${idx}">`;
@@ -1184,8 +1188,12 @@
 
             document.getElementById('explanation-area').classList.add('hidden');
             document.getElementById('ai-fix-action').classList.add('hidden');
+            
+            // 🌟 確実な非表示状態へのリセット
             document.getElementById('self-eval-area-takuitsu').classList.add('hidden');
+            document.getElementById('self-eval-area-takuitsu').classList.remove('block', '!block');
             document.getElementById('self-eval-area-sentaku').classList.add('hidden');
+            document.getElementById('self-eval-area-sentaku').classList.remove('block', '!block');
             
             document.getElementById('takuitsu-eval-content').classList.remove('hidden');
             document.getElementById('rest-proposal-menu-takuitsu').classList.add('hidden');
@@ -1378,7 +1386,11 @@
             document.getElementById('action-takuitsu').classList.add('hidden');
             document.getElementById('explanation-area').classList.remove('hidden');
             document.getElementById('explanation-area').classList.add('flex');
-            document.getElementById('self-eval-area-takuitsu').classList.remove('hidden');
+            
+            // 🌟 強制表示修正
+            const evalArea = document.getElementById('self-eval-area-takuitsu');
+            evalArea.classList.remove('hidden');
+            evalArea.classList.add('block', '!block');
             
             const badge = document.getElementById('score-badge');
             badge.textContent = isCorrect ? "大正解！ 🎉" : "不正解... 💦";
@@ -1485,7 +1497,11 @@
             document.getElementById('action-sentaku').classList.add('hidden');
             document.getElementById('explanation-area').classList.remove('hidden');
             document.getElementById('explanation-area').classList.add('flex');
-            document.getElementById('self-eval-area-sentaku').classList.remove('hidden');
+            
+            // 🌟 強制表示修正
+            const evalAreaSentaku = document.getElementById('self-eval-area-sentaku');
+            evalAreaSentaku.classList.remove('hidden');
+            evalAreaSentaku.classList.add('block', '!block');
             
             document.getElementById('score-badge').textContent = `${score} / 5 点`;
             document.getElementById('score-badge').className = score === 5 ? "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-green-500 shadow-md mb-2 animate-bounce" : "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-red-500 shadow-md mb-2";
@@ -1905,8 +1921,14 @@
                         speakText(judge.message);
                         
                         document.getElementById('explanation-area').classList.remove('hidden'); document.getElementById('explanation-area').classList.add('flex');
-                        document.getElementById('self-eval-area-takuitsu').classList.remove('hidden');
+                        
+                        // 🌟 強制表示修正
+                        const evalArea = document.getElementById('self-eval-area-takuitsu');
+                        evalArea.classList.remove('hidden');
+                        evalArea.classList.add('block', '!block');
+                        
                         document.getElementById('self-eval-area-sentaku').classList.add('hidden');
+                        document.getElementById('self-eval-area-sentaku').classList.remove('block', '!block');
                         
                         document.getElementById('takuitsu-eval-content').classList.add('hidden');
                         document.getElementById('infinite-drill-menu').classList.add('hidden');
@@ -1929,8 +1951,14 @@
 
         function finishAllPlaylists() {
             document.getElementById('explanation-area').classList.remove('hidden'); document.getElementById('explanation-area').classList.add('flex');
-            document.getElementById('self-eval-area-takuitsu').classList.remove('hidden');
+            
+            // 🌟 強制表示修正
+            const evalArea = document.getElementById('self-eval-area-takuitsu');
+            evalArea.classList.remove('hidden');
+            evalArea.classList.add('block', '!block');
+            
             document.getElementById('self-eval-area-sentaku').classList.add('hidden');
+            document.getElementById('self-eval-area-sentaku').classList.remove('block', '!block');
             
             document.getElementById('takuitsu-eval-content').classList.add('hidden');
             document.getElementById('rest-proposal-menu-takuitsu').classList.add('hidden');
