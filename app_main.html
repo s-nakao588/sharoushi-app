@@ -37,8 +37,9 @@
         /* 💡 iPad・タブレット専用（タッチ端末 ＆ 画面幅768px以上） */
         @media (hover: none) and (pointer: coarse) and (min-width: 768px) {
             
-            /* 🌟 特訓画面ヘッダーボタンのサイズ微調整（見切れ防止） */
-            .header-btn { font-size: 1.2rem !important; padding: 0.6rem 1.0rem !important; border-width: 2px !important; }
+            /* 🌟 特訓画面ヘッダーの見切れ防止（余白とボタンサイズを微調整） */
+            #main-header-inner { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+            .header-btn { font-size: 1.1rem !important; padding: 0.5rem 0.8rem !important; border-width: 2px !important; }
             
             /* 🌟 スタート画面のレイアウト・文字サイズ拡大調整 */
             #start-screen .max-w-7xl { max-width: 96% !important; }
@@ -308,10 +309,10 @@
     <main id="main-area" class="hidden w-full lg:w-[55%] h-[55dvh] lg:h-full flex-col bg-white shadow-xl z-10 shrink-0 border-r border-slate-200">
         
         <div class="bg-indigo-900 text-white shrink-0 shadow-md z-20">
-            <div class="p-2 md:p-5 flex justify-between items-center gap-1 md:gap-2">
+            <!-- 🌟 id="main-header-inner" を追加してiPad専用CSSで余白調整可能に -->
+            <div id="main-header-inner" class="p-2 md:p-5 flex justify-between items-center gap-1 md:gap-2">
                 <div class="flex items-center gap-1 md:gap-2 shrink-0 flex-wrap">
                     <button onclick="location.reload()" class="header-btn bg-white/10 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold border border-slate-500">🚪 終了</button>
-                    <!-- 🌟 特訓画面ヘッダー：離席・休憩・音声ボタン -->
                     <button onclick="startPause()" class="header-btn bg-slate-700/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-slate-500">⏸️ 離席</button>
                     <button onclick="startNapQuick(5)" class="header-btn bg-amber-700/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-white border border-amber-500">☕ 5分</button>
                     <button onclick="openNapMenu()" class="header-btn bg-indigo-950/80 px-2 md:px-3 py-1.5 md:py-2 rounded-lg text-xs md:text-base font-bold text-indigo-200 border border-indigo-500">💤 仮眠</button>
