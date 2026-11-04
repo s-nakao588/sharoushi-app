@@ -36,10 +36,27 @@
 
         /* 💡 iPad・タブレット専用（タッチ端末 ＆ 画面幅768px以上） */
         @media (hover: none) and (pointer: coarse) and (min-width: 768px) {
+            
+            /* 🌟 特訓画面ヘッダーボタンのサイズ微調整（見切れ防止） */
+            .header-btn { font-size: 1.2rem !important; padding: 0.6rem 1.0rem !important; border-width: 2px !important; }
+            
+            /* 🌟 スタート画面のレイアウト・文字サイズ拡大調整 */
+            #start-screen .max-w-7xl { max-width: 96% !important; }
+            #start-screen .md\:p-12 { padding: 4rem !important; }
+            #start-screen h1 { font-size: 3.8rem !important; }
+            #start-screen .md\:text-3xl { font-size: 2.2rem !important; }
+            #start-screen .md\:text-xl { font-size: 1.8rem !important; }
+            #start-screen .md\:text-lg { font-size: 1.6rem !important; }
+            #start-screen .md\:text-base { font-size: 1.4rem !important; }
+            #start-screen .text-xs, #start-screen .md\:text-sm { font-size: 1.2rem !important; }
+            #start-screen select, #start-screen input[type="text"] { font-size: 1.5rem !important; height: auto !important; padding: 1.2rem !important; }
+            #start-screen button:not(.header-btn) { font-size: 1.6rem !important; padding-top: 1.2rem !important; padding-bottom: 1.2rem !important; }
+
+            /* その他既存のiPad用調整 */
             #ai-message { font-size: 2.0rem !important; line-height: 1.6 !important; }
             #explanation-text { font-size: 2.0rem !important; line-height: 1.8 !important; font-weight: 400 !important; }
             #article-text { font-size: 1.8rem !important; }
-            .header-btn { font-size: 1.6rem !important; padding: 1.0rem 1.8rem !important; border-width: 2px !important; }
+            
             .action-btn { font-size: 1.8rem !important; padding: 1.8rem !important; border-width: 3px !important; border-radius: 1.2rem !important; }
             
             #question-text-takuitsu { font-size: 2.5rem !important; line-height: 1.7 !important; font-weight: 400 !important; }
@@ -138,7 +155,7 @@
         </div>
     </div>
 
-    <!-- スタート画面 (iPad横など広い画面に対応するため max-w-7xl に拡張) -->
+    <!-- スタート画面 -->
     <div id="start-screen" class="absolute inset-0 bg-indigo-900 z-50 flex flex-col items-center justify-start text-white p-4 md:p-10 overflow-y-auto">
         <div class="flex justify-between items-center w-full max-w-7xl mb-6 mt-4">
             <h1 class="text-2xl md:text-5xl lg:text-6xl font-black tracking-wider text-yellow-300">社労士 統合特訓 (択一/選択)</h1>
@@ -764,7 +781,7 @@
             container.innerHTML = "";
             
             let pendingTimes = JSON.parse(localStorage.getItem('pending_study_times') || '{}');
-            let pendingAll = Math.floor((pendingTimes['ALL'] || 0) / 60) * 60; // Approximate to sec
+            let pendingAll = Math.floor((pendingTimes['ALL'] || 0) / 60) * 60;
             let displayTotalTime = (userTimes['ALL'] || 0) + (pendingTimes['ALL'] || 0);
             
             const totalStudyTimeEl = document.getElementById('total-study-time');
@@ -1189,7 +1206,6 @@
             document.getElementById('explanation-area').classList.add('hidden');
             document.getElementById('ai-fix-action').classList.add('hidden');
             
-            // 🌟 確実な非表示状態へのリセット
             document.getElementById('self-eval-area-takuitsu').classList.add('hidden');
             document.getElementById('self-eval-area-takuitsu').classList.remove('block', '!block');
             document.getElementById('self-eval-area-sentaku').classList.add('hidden');
@@ -1387,7 +1403,6 @@
             document.getElementById('explanation-area').classList.remove('hidden');
             document.getElementById('explanation-area').classList.add('flex');
             
-            // 🌟 強制表示修正
             const evalArea = document.getElementById('self-eval-area-takuitsu');
             evalArea.classList.remove('hidden');
             evalArea.classList.add('block', '!block');
@@ -1498,7 +1513,6 @@
             document.getElementById('explanation-area').classList.remove('hidden');
             document.getElementById('explanation-area').classList.add('flex');
             
-            // 🌟 強制表示修正
             const evalAreaSentaku = document.getElementById('self-eval-area-sentaku');
             evalAreaSentaku.classList.remove('hidden');
             evalAreaSentaku.classList.add('block', '!block');
@@ -1922,7 +1936,6 @@
                         
                         document.getElementById('explanation-area').classList.remove('hidden'); document.getElementById('explanation-area').classList.add('flex');
                         
-                        // 🌟 強制表示修正
                         const evalArea = document.getElementById('self-eval-area-takuitsu');
                         evalArea.classList.remove('hidden');
                         evalArea.classList.add('block', '!block');
@@ -1952,7 +1965,6 @@
         function finishAllPlaylists() {
             document.getElementById('explanation-area').classList.remove('hidden'); document.getElementById('explanation-area').classList.add('flex');
             
-            // 🌟 強制表示修正
             const evalArea = document.getElementById('self-eval-area-takuitsu');
             evalArea.classList.remove('hidden');
             evalArea.classList.add('block', '!block');
@@ -2206,7 +2218,7 @@
             if (pauseInterval) clearInterval(pauseInterval);
             
             if(document.getElementById('main-area').classList.contains('hidden')) {
-                // start screen
+                
             } else if(currentQuestions[currentIndex] && document.getElementById('explanation-area').classList.contains('hidden')) {
                 if (currentQuestions[currentIndex]._type === '択一' && !isCountdownRelay) {
                     timerInterval = setInterval(() => { 
