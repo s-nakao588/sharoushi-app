@@ -53,16 +53,23 @@
             #start-screen select, #start-screen input[type="text"] { font-size: 1.5rem !important; height: auto !important; padding: 1.2rem !important; }
             #start-screen button:not(.header-btn) { font-size: 1.6rem !important; padding-top: 1.2rem !important; padding-bottom: 1.2rem !important; }
 
-            /* 🌟 進捗・正解率エリアの3列化と文字サイズ拡大 */
-            #dash-master-bars { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; }
-            #dash-master-bars p { font-size: 1.6rem !important; line-height: 1.4 !important; }
-            #dash-master-bars span { font-size: 1.4rem !important; }
-            #dash-master-bars .text-\[9px\], #dash-master-bars .md\:text-\[10px\] { font-size: 1.2rem !important; }
+            /* 🌟 進捗・正解率エリアの3列化と文字サイズ・見切れ改善 */
+            #dash-master-bars { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 1.5rem !important; }
+            #dash-master-bars > div { padding: 1.5rem !important; }
+            #dash-master-bars > div > p:first-child { font-size: 2.0rem !important; margin-bottom: 1rem !important; }
+            #dash-master-bars > div > p:first-child span { font-size: 1.4rem !important; }
+            #dash-master-bars p { font-size: 1.6rem !important; line-height: 1.5 !important; }
+            #dash-master-bars [id^="dash-chap-"] > div { margin-bottom: 2rem !important; }
+            #dash-master-bars [id^="dash-chap-"] .flex.justify-between { flex-direction: column !important; gap: 0.5rem !important; margin-bottom: 0.8rem !important; }
+            #dash-master-bars [id^="dash-chap-"] .flex.justify-between span { width: 100% !important; text-align: left !important; font-size: 1.6rem !important; white-space: normal !important; overflow: visible !important; }
+            
+            /* 🌟 作戦会議コメント・入力欄の文字サイズを「講師からのアドバイス」レベルに拡大 */
+            #strategy-chat-log div { font-size: 2.0rem !important; padding: 1.5rem 2.0rem !important; line-height: 1.6 !important; }
+            #strategy-input { font-size: 2.0rem !important; padding: 1.5rem !important; }
+            button[onclick="sendStrategyMessage()"] { font-size: 2.0rem !important; padding: 1.5rem 2.5rem !important; }
 
-            /* 🌟 作戦会議コメント・入力欄の文字サイズ拡大 */
-            #strategy-chat-log div { font-size: 1.8rem !important; padding: 1.2rem 1.5rem !important; line-height: 1.5 !important; }
-            #strategy-input { font-size: 1.8rem !important; padding: 1.2rem !important; }
-            button[onclick="sendStrategyMessage()"] { font-size: 1.8rem !important; padding: 1.2rem 2.0rem !important; }
+            /* 🌟 カスタム特訓スタートボタンの高さ・文字サイズ拡大 */
+            button[onclick="startTraining('normal')"] { padding-top: 2.5rem !important; padding-bottom: 2.5rem !important; font-size: 2.8rem !important; border-radius: 2rem !important; }
 
             /* その他既存のiPad用調整 */
             #ai-message { font-size: 2.0rem !important; line-height: 1.6 !important; }
@@ -2129,7 +2136,7 @@
             else if (situation === "start_suddendeath") prompt += `サドンデスモード発動！「時間が余ってるから、サクッとこれやろう！1問でも間違えたら即終了だよ！」と煽って。`;
             else if (situation === "start_relay") prompt += `カウントダウン・リレー発動！「時間が余ってるから、タイムアタックの進化版やろう！正解すると5秒回復するよ！」と楽しく挑発して。`;
             else if (situation === "start_trap") prompt += `ひっかけ特化モード発動！「今まで間違えた問題や、正答率の低い問題を集めたよ！罠に引っかからないように注意して！」と警告して。`;
-            else if (situation === "start_hardcore") prompt += `ハードコア選択式発動！「だいぶ知識がついてきたみたいだから、語群を没収するね！まずは自力で思い出してみて！」と挑戦的に。`;
+            else if (situation === "start_hardcore") prompt += `ハードコア選択式発発動！「だいぶ知識がついてきたみたいだから、語群を没収するね！まずは自力で思い出してみて！」と挑戦的に。`;
             else if (situation === "start_surprise") prompt += `不意打ちの1問発動！「油断大敵！気が抜けたところに苦手問題を1問だけ出題するよ！」と警告して。`;
             else if (situation === "hint_takuitsu") prompt += `択一式のヒント。答えは言わず、見るべきポイントを1文で示して。問題:${extraData.questionText} 解説:${extraData.explanation}`;
             else if (situation === "hint_sentaku") prompt += `選択式のヒント。「キーワードを黄色くしたから確認してみて」とアドバイスして。`;
