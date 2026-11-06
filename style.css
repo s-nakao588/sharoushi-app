@@ -1,0 +1,127 @@
+@keyframes timer-run { 0% { width: 100%; background-color: #10b981; } 50% { width: 50%; background-color: #f59e0b; } 80% { width: 20%; background-color: #ef4444; } 100% { width: 0%; background-color: #ef4444; } }
+.typing { animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0.3; } }
+.accordion-content { transition: max-height 0.3s ease-in-out; overflow: hidden; max-height: 0; }
+.accordion-content.open { max-height: 1000px; }
+button { -webkit-tap-highlight-color: transparent; }
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+/* 💡 選択式特有のスタイル */
+.inline-select {
+    appearance: none; -webkit-appearance: none;
+    background-color: #eef2ff; border: 2px solid #a5b4fc; color: #3730a3;
+    font-weight: 900; padding: 0.1rem 1.5rem 0.1rem 0.5rem; border-radius: 0.3rem;
+    margin: 0 0.2rem; cursor: pointer; text-align: center; font-size: 0.95em;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%234f46e5' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat; background-position: right 0.2rem center; background-size: 1em;
+    transition: all 0.2s ease;
+}
+.inline-select:focus { outline: none; border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2); }
+.word-num { display: inline-block; width: 1.2rem; text-align: right; margin-right: 0.3rem; color: #94a3b8; font-size: 0.75rem; }
+.trap-chip { transition: all 0.2s; user-select: none; }
+.trap-chip.active { background-color: #fee2e2 !important; border-color: #ef4444 !important; color: #b91c1c !important; font-weight: bold; box-shadow: inset 0 0 0 1px #ef4444; }
+option.hidden-option { display: none !important; }
+.highlight-clue { background-color: #fef08a; padding: 0 2px; border-radius: 2px; font-weight: bold; border-bottom: 2px solid #eab308; }
+
+/* 💡 iPad・タブレット専用（タッチ端末 ＆ 画面幅768px以上） */
+@media (hover: none) and (pointer: coarse) and (min-width: 768px) {
+    
+    /* 🌟 特訓画面ヘッダーの見切れ防止（余白とボタンサイズを微調整） */
+    #main-header-inner { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
+    .header-btn { font-size: 1.1rem !important; padding: 0.5rem 0.8rem !important; border-width: 2px !important; }
+    
+    /* 🌟 スタート画面のレイアウト・文字サイズ拡大調整 */
+    #start-screen .max-w-7xl { max-width: 96% !important; }
+    #start-screen .md\:p-12 { padding: 4rem !important; }
+    #start-screen h1 { font-size: 3.8rem !important; }
+    #start-screen .md\:text-3xl { font-size: 2.2rem !important; }
+    #start-screen .md\:text-xl { font-size: 1.8rem !important; }
+    #start-screen .md\:text-lg { font-size: 1.6rem !important; }
+    #start-screen .md\:text-base { font-size: 1.4rem !important; }
+    #start-screen .text-xs, #start-screen .md\:text-sm { font-size: 1.2rem !important; }
+    #start-screen select, #start-screen input[type="text"] { font-size: 1.5rem !important; height: auto !important; padding: 1.2rem !important; }
+    #start-screen button:not(.header-btn) { font-size: 1.6rem !important; padding-top: 1.2rem !important; padding-bottom: 1.2rem !important; }
+
+    /* 🌟 進捗・正解率エリアの3列化と文字サイズ・見切れ改善 */
+    #dash-master-bars { grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 1.5rem !important; }
+    #dash-master-bars > div { padding: 1.5rem !important; }
+    #dash-master-bars > div > p:first-child { font-size: 2.0rem !important; margin-bottom: 1rem !important; }
+    #dash-master-bars > div > p:first-child span { font-size: 1.4rem !important; }
+    #dash-master-bars p { font-size: 1.6rem !important; line-height: 1.5 !important; }
+    #dash-master-bars [id^="dash-chap-"] > div { margin-bottom: 2rem !important; }
+    #dash-master-bars [id^="dash-chap-"] .flex.justify-between { flex-direction: column !important; gap: 0.5rem !important; margin-bottom: 0.8rem !important; }
+    #dash-master-bars [id^="dash-chap-"] .flex.justify-between span { width: 100% !important; text-align: left !important; font-size: 1.6rem !important; white-space: normal !important; overflow: visible !important; }
+    
+    /* 🌟 作戦会議コメント・入力欄の文字サイズ確実な拡大 ＆ 枠の縦幅拡大 */
+    #strategy-chat-log { max-height: 35rem !important; }
+    #strategy-chat-log > div { font-size: 1.8rem !important; padding: 1.5rem 2.0rem !important; line-height: 1.6 !important; }
+    #strategy-input { font-size: 1.8rem !important; padding: 1.5rem !important; }
+    button[onclick="sendStrategyMessage()"] { font-size: 1.8rem !important; padding: 1.5rem 2.5rem !important; }
+
+    /* 🌟 カスタム特訓スタートボタンの高さ・文字サイズ拡大 */
+    button[onclick="startTraining('normal')"] { padding-top: 2.5rem !important; padding-bottom: 2.5rem !important; font-size: 2.8rem !important; border-radius: 2rem !important; }
+
+    /* その他既存のiPad用調整 */
+    #ai-message { font-size: 2.0rem !important; line-height: 1.6 !important; }
+    #explanation-text { font-size: 2.0rem !important; line-height: 1.8 !important; font-weight: 400 !important; }
+    #article-text { font-size: 1.8rem !important; }
+    
+    .action-btn { font-size: 1.8rem !important; padding: 1.8rem !important; border-width: 3px !important; border-radius: 1.2rem !important; }
+    
+    #question-text-takuitsu { font-size: 2.5rem !important; line-height: 1.7 !important; font-weight: 400 !important; }
+    .answer-btn-box-takuitsu { height: 11rem !important; padding-bottom: 1rem !important; }
+    .answer-btn-takuitsu { font-size: 6.5rem !important; border-width: 6px !important; }
+    
+    #question-text-sentaku { font-size: 2.3rem !important; line-height: 2.1 !important; }
+    .inline-select { font-size: 1.1em !important; padding: 0.3rem 2.2rem 0.3rem 0.8rem !important; }
+    #word-bank-container { font-size: 1.8rem !important; gap: 0.8rem !important; }
+    #word-bank-container div { padding: 1.0rem !important; }
+    
+    #self-eval-area-sentaku, #self-eval-area-takuitsu { padding: 2rem 2rem 3rem 2rem !important; border-top-width: 4px !important; z-index: 50 !important; }
+    
+    .eval-btn, .eval-btn-takuitsu, #btn-next-takuitsu, .btn-next-action { font-size: 2.2rem !important; padding-top: 1.6rem !important; padding-bottom: 1.6rem !important; border-width: 3px !important; border-radius: 1.2rem !important; }
+    
+    .eval-target-box { font-size: 1.8rem !important; padding: 1.0rem 1.4rem !important; border-width: 2px !important; }
+    .eval-target-box input[type="checkbox"] { width: 2.4rem !important; height: 2.4rem !important; }
+    .eval-target-box span { font-size: 1.8rem !important; }
+    #eval-target-label { font-size: 1.6rem !important; }
+    #eval-guide-text, #eval-guide-text-takuitsu { font-size: 1.4rem !important; margin-bottom: 1.2rem !important; }
+    
+    .btn-mistake-action { font-size: 1.25rem !important; padding: 0.75rem 1.25rem !important; }
+    
+    /* iPad用絶対配置パディング調整 */
+    .takuitsu-q-container { padding-bottom: 12rem !important; }
+}
+
+/* 📱 iPhone・スマホ専用（画面幅767px以下） */
+@media (max-width: 767px) {
+    #question-text-takuitsu, #question-text-sentaku { font-size: 1.3rem !important; line-height: 1.6 !important; padding: 1rem !important; }
+    .answer-btn-box-takuitsu { height: 6.5rem !important; padding-bottom: 0.5rem !important; }
+    .answer-btn-takuitsu { font-size: 3.5rem !important; border-width: 3px !important; padding-top: 0.2rem !important; padding-bottom: 0.2rem !important; }
+    
+    #ai-message { font-size: 1.1rem !important; line-height: 1.5 !important; }
+    #explanation-text { font-size: 1.1rem !important; line-height: 1.6 !important; }
+    #article-text { font-size: 1.1rem !important; }
+    
+    .header-btn { font-size: 0.9rem !important; padding: 0.5rem 0.8rem !important; border-width: 1px !important; }
+    .action-btn { font-size: 1.1rem !important; padding: 1rem !important; border-width: 2px !important; border-radius: 0.8rem !important; }
+    
+    .inline-select { font-size: 1rem !important; padding: 0.2rem 1.5rem 0.2rem 0.5rem !important; }
+    #word-bank-container { font-size: 1rem !important; gap: 0.5rem !important; }
+    #word-bank-container div { padding: 0.5rem !important; }
+    
+    #self-eval-area-sentaku, #self-eval-area-takuitsu { padding: 1rem !important; border-top-width: 2px !important; }
+    .eval-btn, .eval-btn-takuitsu, #btn-next-takuitsu, .btn-next-action { font-size: 1.1rem !important; padding: 1rem !important; border-width: 2px !important; border-radius: 0.8rem !important; }
+    .eval-target-box { font-size: 1rem !important; padding: 0.5rem 0.8rem !important; border-width: 1px !important; }
+    .eval-target-box input[type="checkbox"] { width: 1.2rem !important; height: 1.2rem !important; }
+    .eval-target-box span { font-size: 1rem !important; }
+    #eval-target-label { font-size: 1rem !important; }
+    #eval-guide-text, #eval-guide-text-takuitsu { font-size: 0.85rem !important; margin-bottom: 0.5rem !important; }
+    .btn-mistake-action { font-size: 0.9rem !important; padding: 0.5rem 1rem !important; }
+    
+    /* 🌟 スマホ用絶対配置パディング調整とスクロール完全保証 */
+    #takuitsu-ui { min-height: 0 !important; flex: 1 1 auto !important; }
+    .takuitsu-q-container { padding-bottom: 7.5rem !important; min-height: 0 !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
+}
