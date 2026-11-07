@@ -27,7 +27,6 @@ option.hidden-option { display: none !important; }
 
 /* 💡 iPad・タブレット専用（タッチ端末 ＆ 画面幅768px以上） */
 @media (hover: none) and (pointer: coarse) and (min-width: 768px) {
-    
     /* 🌟 特訓画面ヘッダーの見切れ防止（余白とボタンサイズを微調整） */
     #main-header-inner { padding-top: 0.5rem !important; padding-bottom: 0.5rem !important; }
     .header-btn { font-size: 1.1rem !important; padding: 0.5rem 0.8rem !important; border-width: 2px !important; }
@@ -97,21 +96,17 @@ option.hidden-option { display: none !important; }
 
 /* 📱 iPhone・スマホ専用（画面幅767px以下） */
 @media (max-width: 767px) {
+    /* --- 既存の文字サイズ調整 --- */
     #question-text-takuitsu, #question-text-sentaku { font-size: 1.3rem !important; line-height: 1.6 !important; padding: 1rem !important; }
-    .answer-btn-box-takuitsu { height: 6.5rem !important; padding-bottom: 0.5rem !important; }
     .answer-btn-takuitsu { font-size: 3.5rem !important; border-width: 3px !important; padding-top: 0.2rem !important; padding-bottom: 0.2rem !important; }
-    
     #ai-message { font-size: 1.1rem !important; line-height: 1.5 !important; }
     #explanation-text { font-size: 1.1rem !important; line-height: 1.6 !important; }
     #article-text { font-size: 1.1rem !important; }
-    
     .header-btn { font-size: 0.9rem !important; padding: 0.5rem 0.8rem !important; border-width: 1px !important; }
     .action-btn { font-size: 1.1rem !important; padding: 1rem !important; border-width: 2px !important; border-radius: 0.8rem !important; }
-    
     .inline-select { font-size: 1rem !important; padding: 0.2rem 1.5rem 0.2rem 0.5rem !important; }
     #word-bank-container { font-size: 1rem !important; gap: 0.5rem !important; }
     #word-bank-container div { padding: 0.5rem !important; }
-    
     #self-eval-area-sentaku, #self-eval-area-takuitsu { padding: 1rem !important; border-top-width: 2px !important; }
     .eval-btn, .eval-btn-takuitsu, #btn-next-takuitsu, .btn-next-action { font-size: 1.1rem !important; padding: 1rem !important; border-width: 2px !important; border-radius: 0.8rem !important; }
     .eval-target-box { font-size: 1rem !important; padding: 0.5rem 0.8rem !important; border-width: 1px !important; }
@@ -120,8 +115,80 @@ option.hidden-option { display: none !important; }
     #eval-target-label { font-size: 1rem !important; }
     #eval-guide-text, #eval-guide-text-takuitsu { font-size: 0.85rem !important; margin-bottom: 0.5rem !important; }
     .btn-mistake-action { font-size: 0.9rem !important; padding: 0.5rem 1rem !important; }
+
+    /* 🌟 今回のメイン修正：スマホ版の下部固定フロート＆問題文スライド化 🌟 */
     
-    /* 🌟 スマホ用絶対配置パディング調整とスクロール完全保証 */
-    #takuitsu-ui { min-height: 0 !important; flex: 1 1 auto !important; }
-    .takuitsu-q-container { padding-bottom: 7.5rem !important; min-height: 0 !important; overflow-y: auto !important; -webkit-overflow-scrolling: touch !important; }
+    /* 1. 全体レイアウトの固定分割を解除し、main-areaを全画面化 */
+    body { display: block !important; overflow: hidden !important; }
+    
+    #main-area {
+        display: flex !important;
+        height: 100dvh !important;
+        width: 100% !important;
+        position: absolute !important;
+        top: 0 !important;
+        left: 0 !important;
+        z-index: 10 !important;
+        border-right: none !important;
+    }
+    
+    /* 2. aside-area (AIコメントやヒント) を画面下部に固定し、フロート＆背景透過 */
+    #aside-area {
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        max-height: 60dvh !important;
+        z-index: 40 !important;
+        background: rgba(248, 250, 252, 0.85) !important;
+        backdrop-filter: blur(8px) !important;
+        border-top: 1px solid rgba(226, 232, 240, 0.8) !important;
+        box-shadow: 0 -8px 20px rgba(0,0,0,0.1) !important;
+    }
+    
+    /* aside-area内のスクロールエリアの余白を詰める */
+    #aside-area .flex-1.overflow-y-auto { padding-bottom: 1.5rem !important; }
+    
+    /* 3. 択一式の〇✖ボタンを下部パネルの上にフロート固定 */
+    .answer-btn-box-takuitsu {
+        position: fixed !important;
+        bottom: 145px !important; /* AIコメント＋ヒントのだいたいの高さ分浮かせる */
+        left: 0 !important;
+        width: 100% !important;
+        height: auto !important;
+        z-index: 50 !important;
+        background: linear-gradient(to top, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.7) 60%, rgba(255,255,255,0) 100%) !important;
+        padding-bottom: 0.5rem !important;
+        padding-top: 2rem !important;
+    }
+    
+    /* 択一問題文コンテナを、下部パネルの裏までスクロールできるようにする */
+    .takuitsu-q-container {
+        padding-bottom: 300px !important; /* 〇✖ボタン ＋ aside-area の高さ分 */
+    }
+    
+    /* 4. 選択式の語群を下部パネルの上にフロート固定 */
+    /* #sentaku-ui の直下にある2番目のdivが語群エリア */
+    #sentaku-ui > div:nth-child(2) {
+        position: fixed !important;
+        bottom: 145px !important;
+        left: 0 !important;
+        width: 100% !important;
+        z-index: 50 !important;
+        background: rgba(255, 255, 255, 0.95) !important;
+        backdrop-filter: blur(4px) !important;
+        border-top: 1px solid #e2e8f0 !important;
+        margin: 0 !important; 
+        border-radius: 0 !important; 
+        border-left: none !important; 
+        border-right: none !important;
+        box-shadow: 0 -4px 10px rgba(0,0,0,0.05) !important;
+        padding-bottom: 1rem !important;
+    }
+    
+    /* 選択式の問題文コンテナも下部までスクロールできるようにする */
+    #sentaku-ui { 
+        padding-bottom: 350px !important; 
+    }
 }
