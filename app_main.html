@@ -59,36 +59,52 @@
             </div>
 
             <!-- ノート内容（スクロール領域） -->
-            <div class="p-4 md:p-6 overflow-y-auto flex-1 flex flex-col gap-4 text-slate-800">
-                <!-- 問題の要約情報 -->
-                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-3 md:p-4 shrink-0">
-                    <div class="flex items-center gap-2 mb-1.5">
+            <div class="p-4 md:p-6 overflow-y-auto flex-1 flex flex-col gap-5 text-slate-800">
+                
+                <!-- 🌟 問題・正解・解説の完全表示エリア -->
+                <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-5 shrink-0 flex flex-col gap-4 shadow-inner">
+                    <div class="flex items-center gap-2 mb-1">
                         <span id="nb-badge-subject" class="bg-indigo-600 text-white text-[10px] md:text-xs font-bold px-2 py-0.5 rounded">科目</span>
-                        <span id="nb-badge-chapter" class="text-xs md:text-sm font-black text-slate-700 truncate">項目</span>
+                        <span id="nb-badge-chapter" class="text-xs md:text-sm font-black text-slate-700">項目</span>
                     </div>
-                    <p id="nb-problem-text" class="text-xs md:text-base text-slate-700 font-medium line-clamp-3 bg-white p-2.5 rounded-xl border border-slate-200"></p>
+                    
+                    <div>
+                        <h4 class="text-xs font-black text-slate-400 mb-1.5 border-b-2 border-slate-200 pb-1 flex items-center gap-1"><span>📝</span> 問題文</h4>
+                        <p id="nb-problem-text" class="text-sm md:text-base text-slate-800 font-medium leading-relaxed bg-white p-3 rounded-xl border border-slate-200"></p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-xs font-black text-slate-400 mb-1.5 border-b-2 border-slate-200 pb-1 flex items-center gap-1"><span>🎯</span> 正解</h4>
+                        <p id="nb-answer-text" class="text-base md:text-lg text-pink-600 font-black bg-pink-50 p-2.5 rounded-xl border border-pink-200"></p>
+                    </div>
+                    
+                    <div>
+                        <h4 class="text-xs font-black text-slate-400 mb-1.5 border-b-2 border-slate-200 pb-1 flex items-center gap-1"><span>📖</span> 公式解説</h4>
+                        <p id="nb-article-text" class="text-xs md:text-sm text-indigo-600 font-bold mb-1"></p>
+                        <p id="nb-explanation-text" class="text-sm md:text-base text-slate-700 leading-relaxed bg-white p-3 rounded-xl border border-slate-200"></p>
+                    </div>
                 </div>
 
                 <!-- 自由メモ・注釈エリア -->
                 <div>
-                    <label class="block text-xs md:text-sm font-black text-slate-700 mb-1.5 flex items-center gap-1.5">
+                    <label class="block text-sm md:text-base font-black text-amber-900 mb-2 flex items-center gap-1.5">
                         <span>✏️ 自作解説・テキスト要点・暗記メモ</span>
                     </label>
-                    <textarea id="nb-note-input" rows="5" class="w-full border-2 border-amber-200 rounded-xl p-3 text-sm md:text-base font-medium focus:outline-none focus:border-amber-500 transition-colors placeholder:text-slate-400" placeholder="PDFの該当ページ、条文のひっかけポイント、自分なりの要約などを自由に入力してください..."></textarea>
+                    <textarea id="nb-note-input" rows="4" class="w-full border-2 border-amber-300 rounded-xl p-3 text-sm md:text-base font-medium focus:outline-none focus:border-amber-500 transition-colors placeholder:text-slate-400 shadow-sm" placeholder="PDFの該当ページ、ひっかけポイント、自分なりの要約などを自由に入力してください..."></textarea>
                 </div>
 
                 <!-- 画像（スクショ）添付エリア -->
-                <div class="border-t border-slate-200 pt-3">
-                    <label class="block text-xs md:text-sm font-black text-slate-700 mb-1.5 flex items-center justify-between">
+                <div class="border-t-2 border-dashed border-slate-200 pt-4 pb-2">
+                    <label class="block text-sm md:text-base font-black text-amber-900 mb-2 flex flex-col md:flex-row md:items-center justify-between gap-1">
                         <span class="flex items-center gap-1">📸 テキストのスクショ画像</span>
-                        <span class="text-[11px] text-slate-400 font-normal">PDFの切り取り画像を貼り付け</span>
+                        <span class="text-[11px] md:text-xs text-slate-500 font-normal bg-slate-100 px-2 py-1 rounded">※ブラウザ容量の都合上、1問題につき1枚まで</span>
                     </label>
                     <input type="file" id="nb-image-input" accept="image/*" class="block w-full text-xs md:text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs md:file:text-sm file:font-black file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200 cursor-pointer" onchange="handleNotebookImageUpload(event)">
                     
                     <!-- 画像プレビュー -->
-                    <div id="nb-image-preview-box" class="mt-3 hidden relative border-2 border-dashed border-amber-300 rounded-2xl p-2 bg-amber-50/50 flex justify-center items-center">
-                        <img id="nb-image-preview" src="" alt="添付画像" class="max-h-72 rounded-xl object-contain shadow-sm">
-                        <button onclick="removeNotebookImage()" class="absolute top-3 right-3 bg-red-600 hover:bg-red-700 text-white font-bold p-1.5 rounded-full text-xs shadow-md">✕ 削除</button>
+                    <div id="nb-image-preview-box" class="mt-4 hidden relative border-2 border-amber-300 rounded-2xl p-2 bg-amber-50 flex justify-center items-center shadow-inner">
+                        <img id="nb-image-preview" src="" alt="添付画像" class="max-h-80 rounded-xl object-contain shadow-sm">
+                        <button onclick="removeNotebookImage()" class="absolute top-3 right-3 bg-red-600 hover:bg-red-700 text-white font-bold p-1.5 px-3 rounded-full text-xs shadow-md active:scale-95 transition-transform">✕ 削除</button>
                     </div>
                 </div>
             </div>
@@ -105,17 +121,18 @@
     </div>
 
     <!-- 📚 マイノート一覧・集約ビューモーダル -->
-    <div id="notebook-list-modal" class="fixed inset-0 bg-slate-900/80 z-[140] hidden items-center justify-center p-3 md:p-6 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[92dvh] flex flex-col overflow-hidden border-2 md:border-4 border-amber-400 animate-in fade-in">
-            <div class="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-5 py-3 md:py-4 flex justify-between items-center shrink-0">
-                <h3 class="text-lg md:text-2xl font-black flex items-center gap-2">
+    <div id="notebook-list-modal" class="fixed inset-0 bg-slate-900/90 z-[140] hidden items-center justify-center p-3 md:p-6 backdrop-blur-sm">
+        <div class="bg-slate-50 rounded-3xl shadow-2xl max-w-4xl w-full h-[92dvh] flex flex-col overflow-hidden border-2 md:border-4 border-amber-400 animate-in fade-in">
+            <div class="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-5 py-3 md:py-5 flex justify-between items-center shrink-0 shadow-md z-10">
+                <h3 class="text-xl md:text-3xl font-black flex items-center gap-2">
                     <span>📚 自作マイノート集</span>
-                    <span id="nb-list-count" class="text-xs md:text-sm font-bold bg-amber-700 px-2.5 py-0.5 rounded-full">0件</span>
+                    <span id="nb-list-count" class="text-sm md:text-base font-bold bg-amber-700 px-3 py-0.5 rounded-full shadow-inner">0件</span>
                 </h3>
-                <button onclick="closeNotebookListModal()" class="text-white hover:bg-white/20 rounded-full w-9 h-9 flex items-center justify-center font-black text-xl transition-colors">✕</button>
+                <button onclick="closeNotebookListModal()" class="text-white hover:bg-white/20 rounded-full w-10 h-10 flex items-center justify-center font-black text-2xl transition-colors">✕</button>
             </div>
-            <div class="p-4 md:p-6 overflow-y-auto flex-1 flex flex-col gap-3" id="nb-list-container">
-                <!-- JSで蓄積されたノート一覧を動的生成 -->
+            
+            <div class="p-4 md:p-6 overflow-y-auto flex-1 flex flex-col gap-4 relative" id="nb-list-container">
+                <!-- JSで科目・項目ごとにグループ化されたノート一覧を動的生成 -->
             </div>
         </div>
     </div>
@@ -131,9 +148,9 @@
             
             <div class="flex justify-end mb-2 gap-2">
                 <!-- 🌟 スタート画面：マイノート集ボタン -->
-                <button onclick="openNotebookListModal()" class="text-sm md:text-base font-black text-amber-900 bg-amber-100 hover:bg-amber-200 px-4 py-2 rounded-full transition-colors border-2 border-amber-300 shadow-sm flex items-center gap-1.5">
+                <button onclick="openNotebookListModal()" class="text-sm md:text-base font-black text-amber-900 bg-amber-100 hover:bg-amber-200 px-4 py-2 rounded-full transition-colors border-2 border-amber-400 shadow-sm flex items-center gap-1.5 active:scale-95">
                     <span>📚</span><span>マイノート集</span>
-                    <span id="start-nb-count-badge" class="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">0</span>
+                    <span id="start-nb-count-badge" class="bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full shadow-inner">0</span>
                 </button>
                 <button onclick="document.getElementById('api-settings-wrapper').classList.toggle('hidden')" class="text-sm md:text-base font-bold text-slate-400 bg-slate-100 hover:bg-slate-200 px-4 py-2 rounded-full transition-colors border border-slate-200">⚙️ API設定・モデル変更</button>
             </div>
