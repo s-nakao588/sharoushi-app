@@ -5,18 +5,54 @@
 async function speakText(text) {
     if (isMuted || !text) return; 
     let cleanText = text.replace(/<[^>]+>/g, '').trim(); if (!cleanText) return;
+    
+    if (typeof stopAudio === "function") stopAudio();
+
     try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${userApiKey}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: cleanText }] }] })
         });
         if (!res.ok) throw new Error("TTS API Error");
         const data = await res.json();
+        
+        if (isMuted) return;
+
         const p = document.getElementById('tts-player');
         p.src = `data:audio/mp3;base64,${data.candidates[0].content.parts[0].inlineData.data}`; p.play();
     } catch (err) {
-        if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(cleanText); utterance.lang = 'ja-JP';
-            window.speechSynthesis.speak(utterance);
+        console.warn("Gemini API Error (Fallback to Web Speech):", err);
+        if ('speechSynthesis' in window && !isMuted) {
+            
+            const playFallbackVoice = () => {
+                const utterance = new SpeechSynthesisUtterance(cleanText); 
+                utterance.lang = 'ja-JP';
+                utterance.rate = 1.1; 
+                utterance.pitch = 1.2;
+
+                const voices = window.speechSynthesis.getVoices();
+                const preferredVoices = voices.filter(voice => 
+                    voice.lang === 'ja-JP' && (
+                        voice.name.includes('Kyoko') || 
+                        voice.name.includes('Google') || 
+                        voice.name.includes('Otoya') ||
+                        voice.name.includes('Siri')
+                    )
+                );
+                
+                if (preferredVoices.length > 0) {
+                    const kyoko = preferredVoices.find(v => v.name.includes('Kyoko'));
+                    const google = preferredVoices.find(v => v.name.includes('Google'));
+                    utterance.voice = kyoko || google || preferredVoices[0];
+                }
+                window.speechSynthesis.speak(utterance);
+            };
+
+            // iOSはVoicesの読み込みにラグがあるため、確実に取得してから再生する
+            if (window.speechSynthesis.getVoices().length === 0) {
+                window.speechSynthesis.onvoiceschanged = playFallbackVoice;
+            } else {
+                playFallbackVoice();
+            }
         }
     }
 }
