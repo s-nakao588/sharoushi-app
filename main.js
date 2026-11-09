@@ -65,6 +65,10 @@ let currentTakuitsuEval = null;
 
 let pendingFixData = null;
 
+// 📓 マイノート用の一時データ保持
+let activeNotebookQId = null;
+let activeNotebookImageBase64 = null;
+
 window.onload = function() {
     try {
         const savedKey = localStorage.getItem('gemini_api_key');
@@ -80,6 +84,7 @@ window.onload = function() {
     flushStudyTimes(); 
     loadAllSubjects();
     fetchHistory(); 
+    updateStartScreenNotebookBadge();
 };
 
 function unlockAudio() {
@@ -298,7 +303,6 @@ function updateDashboard() {
     container.innerHTML = "";
     
     let pendingTimes = JSON.parse(localStorage.getItem('pending_study_times') || '{}');
-    let pendingAll = Math.floor((pendingTimes['ALL'] || 0) / 60) * 60;
     let displayTotalTime = (userTimes['ALL'] || 0) + (pendingTimes['ALL'] || 0);
     
     const totalStudyTimeEl = document.getElementById('total-study-time');
@@ -308,7 +312,6 @@ function updateDashboard() {
     for (const subj of Object.keys(stats)) {
         let s = stats[subj];
         let mColor = s.masterRate >= 80 ? 'bg-green-500' : (s.masterRate >= 50 ? 'bg-yellow-400' : 'bg-red-400');
-        
         let subjTime = (userTimes[subj] || 0) + (pendingTimes[subj] || 0);
         
         let chaptersHtml = `<div class="mt-3 hidden border-t border-slate-200 pt-3 text-left w-full" id="dash-chap-${idx}">`;
@@ -431,9 +434,9 @@ async function sendStrategyMessage() {
 受講生とプランが合意、または受講生から具体的な指定があった場合、返答の最後に必ず以下のJSON（複数科目対応）を出力してください。
 \`\`\`json
 {
-"plan": [
-{ "subject": "労働基準法(択一)", "count": 10 }
-]
+  "plan": [
+    { "subject": "労働基準法(択一)", "count": 10 }
+  ]
 }
 \`\`\``;
     let apiMessages = [{ role: "user", parts: [{ text: systemPrompt + " 受講生の要望: " + input }] }];
@@ -507,13 +510,6 @@ function executeStrategyPlan() {
     
     initialGlobalTime = null;
     eventTriggeredThisSession = false;
-    let todayStr = new Date().toDateString();
-    if (localStorage.getItem('last_play_date') !== todayStr) {
-        localStorage.setItem('last_play_date', todayStr);
-        localStorage.setItem('trap_done_date', '');
-        localStorage.setItem('today_sentaku_count', '0');
-    }
-    
     startNextPlaylistSet(true);
 }
 
@@ -581,7 +577,6 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
     
     resetGameFlags();
     currentPlaylistIndex = 0; isReviewAdded = false; isExtensionAdded = false; hasRestRecommended = false;
-    
     initialPlaylistConfig = playlistQueue.map(q => ({ subjectName: q.subjectName, chapterName: q.chapterName, type: q.type }));
     
     document.getElementById('start-screen').classList.add('hidden');
@@ -592,13 +587,6 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
     
     initialGlobalTime = globalTimeLeftSeconds;
     eventTriggeredThisSession = false;
-    let todayStr = new Date().toDateString();
-    if (localStorage.getItem('last_play_date') !== todayStr) {
-        localStorage.setItem('last_play_date', todayStr);
-        localStorage.setItem('trap_done_date', '');
-        localStorage.setItem('today_sentaku_count', '0');
-    }
-    
     startNextPlaylistSet(true);
 }
 
@@ -629,30 +617,21 @@ function startNextPlaylistSet(isFirstOfAll = false) {
     if (isSenbonKnock || isSuddenDeath || isCountdownRelay || isSurpriseAttack) {
         document.getElementById('btn-surrender').classList.remove('hidden');
     }
-    
-    if (currentSet.type === '選択' && !isHardcore && !isSurpriseAttack) {
-        let count = parseInt(localStorage.getItem('today_sentaku_count') || '0') + currentQuestions.length;
-        localStorage.setItem('today_sentaku_count', count.toString());
-    }
-    
     loadQuestion(false, isFirstOfAll);
 }
 
 function startCountdownRelayTimer() {
     countdownTimeLeft = 20; 
     document.getElementById('timer-bar').style.animation = 'none';
-    
     relayTimerInterval = setInterval(() => {
         if (isAnsweredTakuitsu) return; 
         countdownTimeLeft--;
         let pct = Math.min(100, (countdownTimeLeft / 30) * 100);
         document.getElementById('timer-bar').style.width = pct + '%';
         document.getElementById('timer-bar').style.backgroundColor = countdownTimeLeft > 10 ? '#10b981' : '#ef4444';
-        
         document.getElementById('time-display').textContent = `🔥 残 ${countdownTimeLeft}秒`;
         document.getElementById('time-display').classList.add('bg-red-600', 'text-white');
         document.getElementById('time-display').classList.remove('bg-slate-800', 'text-yellow-400');
-        
         if (countdownTimeLeft <= 0) {
             playWhistleSound();
             clearInterval(relayTimerInterval);
@@ -681,7 +660,6 @@ function startPause() {
     document.getElementById('pause-timer-display').textContent = "00:00";
     document.getElementById('pause-overlay').classList.remove('hidden');
     document.getElementById('pause-overlay').classList.add('flex');
-    
     pauseInterval = setInterval(() => {
         pauseSeconds++;
         let m = Math.floor(pauseSeconds / 60).toString().padStart(2, '0');
@@ -780,7 +758,6 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
     }
     
     document.getElementById('q-type-badge-header').textContent = q._type + "式モード";
-
     startStudyTimer(q._subjectName);
 
     if (q._type === '択一') {
@@ -930,6 +907,9 @@ function answerTakuitsu(userAnswer) {
     document.getElementById('article-text').textContent = q.根拠条文 || "条文なし";
     document.getElementById('explanation-text').innerHTML = q.解説 || "解説なし";
     
+    // 📓 マイノートボタンの表示状態更新
+    updateNotebookButtonDisplay(q._id);
+
     if (!isSenbonKnock && !isTimeAttack && !isBonusMode && !isSuddenDeath && !isCountdownRelay && !isTrapMode && !isSurpriseAttack) {
         if (currentIndex >= currentQuestions.length - 1) {
             document.getElementById('eval-guide-text-takuitsu').textContent = "自己評価を選んでセットを完了してね！";
@@ -1038,6 +1018,9 @@ function submitSentakuAnswers() {
     document.getElementById('score-badge').className = score === 5 ? "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-green-500 shadow-md mb-2 animate-bounce" : "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-red-500 shadow-md mb-2";
     document.getElementById('article-text').textContent = currentQuestions[currentIndex].根拠条文 || "条文なし";
     document.getElementById('explanation-text').innerHTML = currentQuestions[currentIndex].解説 || "解説なし";
+
+    // 📓 マイノートボタンの表示状態更新
+    updateNotebookButtonDisplay(currentQuestions[currentIndex]._id);
 
     const evalTargetContainer = document.getElementById('eval-target-buttons');
     evalTargetContainer.innerHTML = '<span id="eval-target-label" class="text-[10px] md:text-xs font-bold text-slate-500 self-center mr-1 md:mr-2">対象:</span>';
@@ -1189,8 +1172,6 @@ function surrenderSenbonKnock() {
 }
 
 function checkSpecialEvents() {
-    let triggered = false;
-    
     if (!eventTriggeredThisSession && initialGlobalTime >= 5400 && globalTimeLeftSeconds !== null && globalTimeLeftSeconds >= 600 && globalTimeLeftSeconds <= 900) {
         eventTriggeredThisSession = true;
         let isSudden = Math.random() < 0.5;
@@ -1208,70 +1189,6 @@ function checkSpecialEvents() {
         startNextPlaylistSet();
         return true;
     }
-    
-    let today = new Date().toDateString();
-    let trapDone = localStorage.getItem('trap_done_date');
-    if (continuousStudyTimeSec >= 3600 && trapDone !== today && Math.random() < 0.25) {
-        localStorage.setItem('trap_done_date', today);
-        let pool = allDatabase.filter(q => q._type === '択一' && userHistory[q._id] && userHistory[q._id].playCount > 0);
-        pool = pool.filter(q => {
-            let hist = userHistory[q._id];
-            let rate = hist.playCount > 0 ? (hist.correctCount / hist.playCount) : 1;
-            let lastAns = hist.historyStr ? hist.historyStr.split(',').pop() : '';
-            return rate < 0.5 || lastAns === '✖';
-        });
-        if (pool.length >= 10) {
-            let qs = pool.sort(()=>Math.random()-0.5).slice(0, 10);
-            playlistQueue = [{ subjectName: "😈 悪魔の罠", chapterName: "ひっかけ特化", type: "択一", questions: qs }];
-            currentPlaylistIndex = 0; currentIndex = 0;
-            resetGameFlags();
-            isTrapMode = true;
-            generateAiMessage("start_trap", { textOnly: false });
-            startNextPlaylistSet();
-            return true;
-        }
-    }
-    
-    let lastSet = playlistQueue[playlistQueue.length - 1];
-    if (lastSet && lastSet.type === '選択' && !isHardcore) {
-        let sentakuPool = allDatabase.filter(q => q._type === '選択');
-        let playedSum = sentakuPool.reduce((sum, q) => sum + (userHistory[q._id] ? userHistory[q._id].playCount : 0), 0);
-        let avgPlay = playedSum / (sentakuPool.length || 1);
-        let todaySentakuCount = parseInt(localStorage.getItem('today_sentaku_count') || '0');
-        
-        if (avgPlay >= 3 && todaySentakuCount >= 30 && Math.random() < 0.5) {
-            let qs = sentakuPool.sort(()=>Math.random()-0.5).slice(0, 5);
-            playlistQueue = [{ subjectName: "💀 ハードコア", chapterName: "語群没収", type: "選択", questions: qs }];
-            currentPlaylistIndex = 0; currentIndex = 0;
-            resetGameFlags();
-            isHardcore = true;
-            generateAiMessage("start_hardcore", { textOnly: false });
-            startNextPlaylistSet();
-            return true;
-        }
-    }
-    
-    if (continuousStudyTimeSec >= 1800 && Math.random() < 0.15) {
-        let pool = allDatabase.filter(q => userHistory[q._id] && userHistory[q._id].playCount > 0);
-        pool = pool.filter(q => {
-            let hist = userHistory[q._id];
-            let maxScore = q._type === '選択' ? (hist.playCount * 5) : hist.playCount;
-            let rate = hist.playCount > 0 ? (hist.correctCount / maxScore) : 1;
-            let lastAns = hist.historyStr ? hist.historyStr.split(',').pop() : '';
-            return rate < 0.5 || lastAns === '✖' || (q._type === '選択' && !lastAns.includes('5点'));
-        });
-        if (pool.length >= 1) {
-            let qs = pool.sort(()=>Math.random()-0.5).slice(0, 1);
-            playlistQueue = [{ subjectName: "🎯 不意打ちの1問", chapterName: "油断大敵", type: qs[0]._type, questions: qs }];
-            currentPlaylistIndex = 0; currentIndex = 0;
-            resetGameFlags();
-            isSurpriseAttack = true;
-            generateAiMessage("start_surprise", { textOnly: false });
-            startNextPlaylistSet();
-            return true;
-        }
-    }
-    
     return false;
 }
 
@@ -1287,196 +1204,16 @@ function nextQuestion() {
     currentIndex++;
     
     if (currentIndex >= currentQuestions.length) {
-        
-        if (isSuddenDeath || isCountdownRelay) {
-            let subjList = ["労働基準法(択一)", "安全衛生法(択一)", "健康保険法(択一)", "厚生年金保険法(択一)"];
-            let currentSubj = currentQuestions[0]._subjectName;
-            let nextSubjIdx = (subjList.indexOf(currentSubj) + 1) % subjList.length;
-            let nextSubj = subjList[nextSubjIdx];
-            let pool = allDatabase.filter(q => q._subjectName === nextSubj && q._type === '択一');
-            let qs = pool.sort(()=>Math.random()-0.5).slice(0, 10);
-            
-            playlistQueue.push({ subjectName: nextSubj, chapterName: isSuddenDeath ? "☠️ サドンデス" : "⏱️ カウントダウン", type: "択一", questions: qs });
-            currentPlaylistIndex++;
-            startNextPlaylistSet();
-            return;
-        }
-        
         currentPlaylistIndex++;
         if (currentPlaylistIndex < playlistQueue.length) {
             startNextPlaylistSet();
         } else {
             if (checkSpecialEvents()) return;
-            
-            if (isTimeUp && continuousStudyTimeSec >= 3600 && !isExtensionAdded) {
-                judgeTimeUpExtension();
-            } else if (!hasRestRecommended && !isSenbonKnock && !isTimeAttack && !isBonusMode) {
-                judgeRestRecommendation();
-            } else {
-                finishAllPlaylists();
-            }
+            finishAllPlaylists();
         }
     } else { 
         loadQuestion(currentQuestions[currentIndex].解説 && currentQuestions[currentIndex].解説.includes('錬金術'), false); 
     }
-}
-
-async function judgeTimeUpExtension() {
-    isExtensionAdded = true; 
-    const aiMessageEl = document.getElementById('ai-message');
-    if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 延長戦するか考えてるよ...</span>';
-    
-    const cond = document.getElementById('condition-select').value;
-    let prompt = `あなたは社労士試験の専属講師（若い女性）です。受講生の目標時間が今終わりました。モードは「${cond}」です。
-受講生を少し休ませて「終了」させるか、限界を超えるため「延長戦（1〜3問、または千本ノック）」を追加するか性格に基づいて判定してください。
-以下のJSONで返してください。メッセージは定型文を使わず、現代の自然な口語（1〜2文、アニメ口調絶対禁止）で。
-\`\`\`json
-{ "action": "end" または "extend", "eventType": "normal", "senbonKnock", "timeAttack", "bonus", "count": 1〜10の数字, "message": "セリフ" }
-\`\`\``;
-
-    try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        const data = await res.json();
-        const text = data.candidates[0].content.parts[0].text;
-        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
-        if (jsonMatch) {
-            let judge = JSON.parse(jsonMatch[1]);
-            if(aiMessageEl) { aiMessageEl.textContent = judge.message; }
-            speakText(judge.message);
-            
-            if (judge.action === 'extend') {
-                hasRestRecommended = true; 
-                eventQuestionsAnswered = 0; eventCorrectCount = 0; 
-                
-                let qs = [];
-                let pool = allDatabase.filter(q => q._type === '択一');
-                
-                if (cond === '厳しめ' || judge.eventType === 'senbonKnock') {
-                    isSenbonKnock = true;
-                    qs = pool.filter(q => !userHistory[q._id] || userHistory[q._id].playCount === 0).slice(0, 50);
-                    if(qs.length < 50) qs = qs.concat(pool.sort(()=>Math.random()-0.5)).slice(0,50);
-                    playlistQueue.push({ subjectName: "👹 千本ノック", chapterName: "降参するまで終わらない", questions: qs });
-                } else if (cond === '熱血' || judge.eventType === 'timeAttack') {
-                    isTimeAttack = true;
-                    qs = pool.sort(()=>Math.random()-0.5).slice(0, 10);
-                    playlistQueue.push({ subjectName: "🔥 タイムアタック", chapterName: "15秒決戦", questions: qs });
-                } else if (cond === '普通' || judge.eventType === 'bonus') {
-                    isBonusMode = true;
-                    qs = pool.filter(q => userHistory[q._id] && userHistory[q._id].status === '完璧').slice(0,10);
-                    if(qs.length < 10) qs = pool.sort(()=>Math.random()-0.5).slice(0,10);
-                    playlistQueue.push({ subjectName: "🌱 ご褒美モード", chapterName: "自信回復！", questions: qs });
-                } else {
-                    qs = pool.sort(()=>Math.random()-0.5).slice(0, judge.count || 3);
-                    playlistQueue.push({ subjectName: "🔥 延長戦", chapterName: "AIからの挑戦状", questions: qs });
-                }
-                
-                startNextPlaylistSet();
-                return;
-            }
-        }
-    } catch(e) {}
-    
-    judgeRestRecommendation(); 
-}
-
-function acceptRestProposal(minutes) {
-    saveRestDecision(`連続${Math.floor(continuousStudyTimeSec/60)}分での${minutes}分休憩提案を受容`);
-    startNap(minutes);
-}
-
-function rejectRestProposal() {
-    saveRestDecision(`連続${Math.floor(continuousStudyTimeSec/60)}分での休憩提案を拒否`);
-    document.getElementById('rest-proposal-menu-takuitsu').classList.add('hidden');
-    document.getElementById('rest-proposal-menu-takuitsu').classList.remove('flex');
-    finishAllPlaylists();
-}
-
-function saveRestDecision(log) {
-    let decisions = JSON.parse(localStorage.getItem('rest_decisions') || '[]');
-    decisions.push(log);
-    if(decisions.length > 5) decisions.shift(); 
-    localStorage.setItem('rest_decisions', JSON.stringify(decisions));
-}
-
-async function judgeRestRecommendation() {
-    if (sessionTotalTimeSec < 5400) { 
-        if (continuousStudyTimeSec < 3600) { 
-            finishAllPlaylists();
-            return;
-        }
-    } else { 
-        if (continuousStudyTimeSec < 2700) { 
-            finishAllPlaylists();
-            return;
-        }
-    }
-    
-    hasRestRecommended = true;
-    const aiMessageEl = document.getElementById('ai-message');
-    if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 休憩について考えてるよ...</span>';
-    
-    const health = document.getElementById('health-select').value;
-    const accuracy = cumulativeQuestions > 0 ? Math.round((setCorrectCount / cumulativeQuestions) * 100) : 100;
-    const lastNap = localStorage.getItem('last_nap_time') || '記録なし';
-    const recentDecisions = localStorage.getItem('rest_decisions') || '[]';
-    
-    let prompt = `あなたは社労士試験の専属講師（若い女性）です。受講生が今のプレイリストを完走しました。
-【状態データ】
-・現在時刻: ${new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'})}
-・アプリ起動からの総経過時間: ${Math.floor(sessionTotalTimeSec / 60)}分
-・今回の連続勉強時間: ${Math.floor(continuousStudyTimeSec / 60)}分
-・申告された体調: ${health}
-・ここまでの正答率: ${accuracy}% (集中力の目安)
-・前回の休憩時刻: ${lastNap}
-・過去の休憩提案への反応履歴: ${recentDecisions}
-
-このデータから、今すぐ休憩（または仮眠）を促すべきか判定し、休憩が必要ならその分数（5〜30分）を提案してください。履歴を見て「拒否が多い」なら長めに集中できるタイプとして提案を控えめにするなど学習結果を反映して。
-以下のJSONで返してください。メッセージは定型文を使わず自然な口語で。
-\`\`\`json
-{ "recommendRest": true または false, "restMinutes": 5〜30の数字, "message": "セリフ" }
-\`\`\``;
-
-    try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        const data = await res.json();
-        const text = data.candidates[0].content.parts[0].text;
-        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
-        if (jsonMatch) {
-            let judge = JSON.parse(jsonMatch[1]);
-            if (judge.recommendRest) {
-                if(aiMessageEl) { aiMessageEl.textContent = judge.message; }
-                speakText(judge.message);
-                
-                document.getElementById('explanation-area').classList.remove('hidden'); document.getElementById('explanation-area').classList.add('flex');
-                
-                const evalArea = document.getElementById('self-eval-area-takuitsu');
-                evalArea.classList.remove('hidden');
-                evalArea.classList.add('block', '!block');
-                
-                document.getElementById('self-eval-area-sentaku').classList.add('hidden');
-                document.getElementById('self-eval-area-sentaku').classList.remove('block', '!block');
-                
-                document.getElementById('takuitsu-eval-content').classList.add('hidden');
-                document.getElementById('infinite-drill-menu').classList.add('hidden');
-                document.getElementById('rest-proposal-menu-takuitsu').innerHTML = `
-                    <p class="text-center text-sm md:text-base font-bold text-slate-600 mb-3">${judge.message}</p>
-                    <div class="flex gap-2">
-                        <button onclick="acceptRestProposal(${judge.restMinutes})" class="flex-1 bg-indigo-500 text-white font-black py-3 rounded-xl shadow-md active:scale-95 transition-all text-base md:text-lg">💤 ${judge.restMinutes}分 休む</button>
-                        <button onclick="rejectRestProposal()" class="flex-1 bg-slate-300 text-slate-700 font-black py-3 rounded-xl shadow-md active:scale-95 transition-all text-base md:text-lg">今は休まず次へ</button>
-                    </div>
-                `;
-                document.getElementById('rest-proposal-menu-takuitsu').classList.remove('hidden');
-                document.getElementById('rest-proposal-menu-takuitsu').classList.add('flex');
-                return;
-            }
-        }
-    } catch(e) {}
-    
-    finishAllPlaylists();
 }
 
 function finishAllPlaylists() {
@@ -1496,24 +1233,17 @@ function finishAllPlaylists() {
     document.getElementById('infinite-drill-menu').classList.remove('hidden');
     document.getElementById('infinite-drill-menu').classList.add('flex');
     
-    if (isSenbonKnock || isTimeAttack || isBonusMode || isSuddenDeath || isCountdownRelay || isTrapMode || isHardcore || isSurpriseAttack) {
-        let evType = isSenbonKnock ? "senbonKnock" : (isTimeAttack ? "timeAttack" : (isSuddenDeath ? "suddenDeath" : (isCountdownRelay ? "countdownRelay" : (isTrapMode ? "trapMode" : (isHardcore ? "hardcore" : (isSurpriseAttack ? "surpriseAttack" : "bonus"))))));
-        generateAiMessage("end_event", { eventType: evType, qCount: eventQuestionsAnswered, correct: eventCorrectCount, textOnly: false });
-    } else {
-        generateAiMessage("end_all", { totalPlayed: cumulativeQuestions, mistakes: todayMistakes.length, textOnly: false });
-    }
+    generateAiMessage("end_all", { totalPlayed: cumulativeQuestions, mistakes: todayMistakes.length, textOnly: false });
 }
 
 function startInfiniteDrill(mode) {
     flushStudyTimes();
-    
     let newPlaylistQueue = [];
     
     initialPlaylistConfig.forEach(config => {
         let subjName = config.subjectName;
         let chapName = config.chapterName;
         let qType = config.type;
-        
         let pool = allDatabase.filter(q => q._subjectName === subjName && q._type === qType);
         let qs = [];
         
@@ -1526,24 +1256,16 @@ function startInfiniteDrill(mode) {
             });
             qs = chapPool.slice(0, 10);
             if(qs.length > 0) newPlaylistQueue.push({ subjectName: subjName, chapterName: chapName + " (おかわり)", type: qType, questions: qs });
-            
         } else if (mode === 'nextChapter') {
-            if (chapName === "ミックス") {
-                qs = pool.sort(()=>Math.random()-0.5).slice(0, 10);
-                if(qs.length > 0) newPlaylistQueue.push({ subjectName: subjName, chapterName: "ミックス", type: qType, questions: qs });
-            } else {
-                let allChaps = [...new Set(pool.map(q => q.項目))];
-                let currentIdx = allChaps.indexOf(chapName);
-                let nextChap = allChaps[(currentIdx + 1) % allChaps.length];
-                let chapPool = pool.filter(q => q.項目 === nextChap);
-                qs = chapPool.sort(()=>Math.random()-0.5).slice(0, 10);
-                if(qs.length > 0) newPlaylistQueue.push({ subjectName: subjName, chapterName: nextChap, type: qType, questions: qs });
-                config.chapterName = nextChap;
-            }
+            let allChaps = [...new Set(pool.map(q => q.項目))];
+            let currentIdx = allChaps.indexOf(chapName);
+            let nextChap = allChaps[(currentIdx + 1) % allChaps.length];
+            let chapPool = pool.filter(q => q.項目 === nextChap);
+            qs = chapPool.sort(()=>Math.random()-0.5).slice(0, 10);
+            if(qs.length > 0) newPlaylistQueue.push({ subjectName: subjName, chapterName: nextChap, type: qType, questions: qs });
+            config.chapterName = nextChap;
         } else if (mode === 'review') {
             let chapPool = pool.filter(q => q.項目 === chapName);
-            if (chapName === "ミックス") chapPool = pool;
-            
             let mistakes = chapPool.filter(q => {
                 let h = userHistory[q._id];
                 if(!h || !h.historyStr) return false;
@@ -1553,11 +1275,7 @@ function startInfiniteDrill(mode) {
             });
             qs = mistakes.slice(0, 10);
             if (qs.length < 10) {
-                let remains = chapPool.filter(q => !qs.includes(q)).sort((a,b) => {
-                    let aC = userHistory[a._id] ? userHistory[a._id].playCount : 0;
-                    let bC = userHistory[b._id] ? userHistory[b._id].playCount : 0;
-                    return aC - bC;
-                });
+                let remains = chapPool.filter(q => !qs.includes(q)).sort((a,b) => (userHistory[a._id]?.playCount || 0) - (userHistory[b._id]?.playCount || 0));
                 qs = qs.concat(remains.slice(0, 10 - qs.length));
             }
             if(qs.length > 0) newPlaylistQueue.push({ subjectName: subjName, chapterName: chapName + " (復習)", type: qType, questions: qs });
@@ -1565,30 +1283,13 @@ function startInfiniteDrill(mode) {
     });
 
     if (newPlaylistQueue.length === 0) { alert("抽出できる問題がありませんでした。"); return; }
-    
     playlistQueue = newPlaylistQueue;
-    
     resetGameFlags();
-    currentPlaylistIndex = 0; isReviewAdded = false; isExtensionAdded = false; hasRestRecommended = false;
+    currentPlaylistIndex = 0;
     
     document.getElementById('infinite-drill-menu').classList.add('hidden');
     document.getElementById('infinite-drill-menu').classList.remove('flex');
     document.getElementById('takuitsu-eval-content').classList.remove('hidden');
-    
-    const btns = ['eval-btn-kanpeki', 'eval-btn-mayotta', 'eval-btn-wakaran'];
-    btns.forEach(id => {
-        let el = document.getElementById(id);
-        if(el) {
-            el.classList.add('opacity-40');
-            el.classList.remove('ring-2', 'ring-offset-2', 'ring-slate-400');
-        }
-    });
-    const nextBtn = document.getElementById('btn-next-takuitsu');
-    if(nextBtn) {
-        nextBtn.classList.add('opacity-50', 'cursor-not-allowed');
-        nextBtn.textContent = "評価を選択してください";
-    }
-    
     startNextPlaylistSet(true);
 }
 
@@ -1606,9 +1307,6 @@ async function speakText(text) {
     } catch (err) {
         if ('speechSynthesis' in window) {
             const utterance = new SpeechSynthesisUtterance(cleanText); utterance.lang = 'ja-JP';
-            const voices = window.speechSynthesis.getVoices();
-            const femaleVoice = voices.find(v => v.lang === 'ja-JP' && (v.name.includes('Kyoko') || v.name.includes('Otoya') || v.name.includes('Siri') || v.name.includes('Google 日本語')));
-            if(femaleVoice) utterance.voice = femaleVoice;
             window.speechSynthesis.speak(utterance);
         }
     }
@@ -1623,62 +1321,15 @@ async function generateAiMessage(situation, extraData = {}) {
 【絶対ルール】
 1. セリフ本文のみを1〜2文で出力すること。
 2. 定型文は一切使わず、毎回必ず状況に合わせて自分の言葉で考えて生成すること。
-3. 決して暴言や高圧的な説教はせず、親しみやすい現代の一般的な若い女性の自然な口語体で話すこと。
-4. モード（熱血や厳しめ等）による性格の違いは、不自然な言葉遣い（「～だ」「～しろ」「～だわ」「～よ」「～ぞ」などのアニメ口調）で表現するのではなく、あくまで「話す内容やアプローチの仕方」で表現すること。\n`;
-    
+3. 決して暴言や高圧的な説教はせず、親しみやすい現代の一般的な若い女性の自然な口語体で話すこと。\n`;
+
     if (situation === "start_takuitsu") prompt += `択一式の特訓スタート。短く前向きに気合を入れて。`;
     else if (situation === "start_sentaku") prompt += `選択式の特訓スタート。文脈を意識して埋めてみてと励まして。`;
-    else if (situation === "start_timeattack") prompt += `熱血タイムアタック開始！「15秒で直感で解こう！」と熱く鼓舞して。`;
-    else if (situation === "start_bonus") prompt += `ご褒美モード開始！「得意な問題を集めたから、自信つけていこう！」と優しく促して。`;
-    else if (situation === "start_suddendeath") prompt += `サドンデスモード発動！「時間が余ってるから、サクッとこれやろう！1問でも間違えたら即終了だよ！」と煽って。`;
-    else if (situation === "start_relay") prompt += `カウントダウン・リレー発動！「時間が余ってるから、タイムアタックの進化版やろう！正解すると5秒回復するよ！」と楽しく挑発して。`;
-    else if (situation === "start_trap") prompt += `ひっかけ特化モード発動！「今まで間違えた問題や、正答率の低い問題を集めたよ！罠に引っかからないように注意して！」と警告して。`;
-    else if (situation === "start_hardcore") prompt += `ハードコア選択式発発動！「だいぶ知識がついてきたみたいだから、語群を没収するね！まずは自力で思い出してみて！」と挑戦的に。`;
-    else if (situation === "start_surprise") prompt += `不意打ちの1問発動！「油断大敵！気が抜けたところに苦手問題を1問だけ出題するよ！」と警告して。`;
     else if (situation === "hint_takuitsu") prompt += `択一式のヒント。答えは言わず、見るべきポイントを1文で示して。問題:${extraData.questionText} 解説:${extraData.explanation}`;
     else if (situation === "hint_sentaku") prompt += `選択式のヒント。「キーワードを黄色くしたから確認してみて」とアドバイスして。`;
     else if (situation === "answer_takuitsu") prompt += `択一式解答。結果は【${extraData.isCorrect ? "正解" : "不正解"}】。解説から最重要ポイントを1文で要約して。解説:${extraData.explanation}`;
-    else if (situation === "result_sentaku") prompt += `選択式解答完了。5点中${extraData.score}点。点数に応じたコメントと、迷ったところは下のボタンで記録しておいてと促して。`;
+    else if (situation === "result_sentaku") prompt += `選択式解答完了。5点中${extraData.score}点。点数に応じたコメントと、迷ったところは記録してねと促して。`;
     else if (situation === "end_all") prompt += `全問題終了。頑張りを心から労い、次への励ましを。`;
-    else if (situation === "nap_start") prompt += `受講生が仮眠・休憩。しっかり休んでね。時間になったら起こすからねと優しく伝えて。`;
-    else if (situation === "nap_end") prompt += `休憩終了。すっきりした？さあ、もうひと頑張りいこうと明るく声かけして。`;
-    else if (situation === "idle_warn") prompt += `解説画面で受講生が止まっています。「大丈夫？次進めそう？」と優しく催促して。`;
-    else if (situation === "idle_penalty") prompt += `さらに放置されたので、目標時間を1分追加します。少しピシッと注意しつつも前向きに励まして。`;
-    else if (situation === "idle_care") prompt += `放置されていますが、1時間以上勉強しているので疲れているのかもしれません。「そろそろ集中力切れてきた？無理せず休憩しようか」と優しく注意・提案して。`;
-    else if (situation === "ignore_fix") prompt += `AIの修正提案を保留にしました。「印をつけておいたから、後で自分で調べてみてね」と伝えて。`;
-    else if (situation === "apply_fix") prompt += `AIの修正提案を採用して問題を修正しました。「修正しておいたよ！次から新しい内容で出題するね」と伝えて。`;
-    else if (situation === "end_event") {
-        let rate = extraData.qCount > 0 ? Math.round((extraData.correct / extraData.qCount) * 100) : 0;
-        if (extraData.eventType === "senbonKnock") {
-            prompt += `【千本ノック終了】解答数:${extraData.qCount}問、正答率:${rate}%。\n`;
-            if (extraData.qCount >= 50) prompt += `50問以上解き切った執念を凄く褒めてください。正答率が高ければ精度も称賛し、低ければ「最後はバテてたね」と労って。`;
-            else prompt += `白旗が早かったこと（10問未満なら特に）を軽くイジりつつ、1時間以上勉強した疲れを優しく労って。`;
-        } else if (extraData.eventType === "timeAttack") {
-            prompt += `【15秒タイムアタック終了】正答率:${rate}%。\n`;
-            if (rate >= 80) prompt += `プレッシャーの中で高正答率を出した直感力を絶賛して。`;
-            else if (rate >= 50) prompt += `スピードの中で駆け抜けたことを褒め、本番の練習になると励まして。`;
-            else prompt += `タイムプレッシャーで焦ったことを優しく指摘し、良い訓練になったと労って。`;
-        } else if (extraData.eventType === "bonus") {
-            prompt += `【ご褒美モード終了】正答率:${rate}%。\n`;
-            prompt += `得意な問題を集めたセットでした。サクサク解けたことで実力がついていることを実感させ、自己肯定感を高めて終わらせて。`;
-        } else if (extraData.eventType === "suddenDeath") {
-            prompt += `【サドンデス終了】解答数:${extraData.qCount}問。\n`;
-            if(extraData.qCount >= 10) prompt += `プレッシャーの中で二桁以上続いた集中力を大絶賛して！`;
-            else prompt += `「あっという間に終わっちゃったね」と軽くイジって、悔しさを煽って。`;
-        } else if (extraData.eventType === "countdownRelay") {
-            prompt += `【カウントダウン・リレー終了】解答数:${extraData.qCount}問。\n`;
-            prompt += `焦りの中で素早く判断し続けたスピードと決断力を称賛して！`;
-        } else if (extraData.eventType === "trapMode") {
-            prompt += `【ひっかけ特化終了】正答率:${rate}%。\n`;
-            prompt += `過去の苦手問題ばかりの罠セットでした。「引っかからなかったね！」か「また罠にハマっちゃったね」と結果に応じてコメントして。`;
-        } else if (extraData.eventType === "hardcore") {
-            prompt += `【ハードコア選択終了】\n`;
-            prompt += `自力で思い出せた割合や正答率を踏まえて、基礎知識の定着度について具体的に褒めるか、復習を促すコメントをして！`;
-        } else if (extraData.eventType === "surpriseAttack") {
-            prompt += `【不意打ちの1問終了】\n`;
-            prompt += `不意打ちで苦手問題を1問だけ出しました。正解していれば「油断してなかったね！」、間違えていれば「やっぱり気が抜けてた？」とイジって。`;
-        }
-    }
 
     try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
@@ -1687,22 +1338,20 @@ async function generateAiMessage(situation, extraData = {}) {
         if (!res.ok) throw new Error("API Error");
         const data = await res.json();
         const text = data.candidates[0].content.parts[0].text;
-        if(aiMessageEl) { aiMessageEl.textContent = text; aiMessageEl.classList.remove('text-red-500'); }
+        if(aiMessageEl) { aiMessageEl.textContent = text; }
         if (!extraData.textOnly) speakText(text); 
     } catch(e) {
-        if(aiMessageEl) { aiMessageEl.textContent = `今日も一緒に一問ずつ進めていこうね！`; aiMessageEl.classList.remove('text-red-500'); }
+        if(aiMessageEl) { aiMessageEl.textContent = `今日も一緒に一問ずつ進めていこうね！`; }
     }
 }
 
 async function verifyDataWithPro(q) {
     if (q._verified) return; 
-    
     let localFixes = JSON.parse(localStorage.getItem('local_fixes') || '{}');
     if (localFixes[q._id]) {
         q._verified = true;
         return;
     }
-    
     const today = new Date(); const todayStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
     const prompt = `あなたはデータ検証プロです。【本日の日付】: ${todayStr}。令和9年4月以前に施行される法令を基準に正誤を判断し、間違っていれば「NG | 〇か✖ | 新しい解説 | 理由」で出力。問題なければ「OK」のみ。問題文: ${q.問題文}\n正誤: ${q.正誤}\n解説: ${q.解説}`;
     try {
@@ -1711,19 +1360,11 @@ async function verifyDataWithPro(q) {
         });
         const data = await res.json(); const text = data.candidates[0].content.parts[0].text;
         q._verified = true; 
-        
         if (text.startsWith("NG")) {
             const parts = text.split("|");
             pendingFixData = { question: q, correctChoice: (parts[1]||"").trim(), newExplanation: (parts[2]||"").trim(), reason: (parts[3]||"").trim() };
-            
-            let ignored = JSON.parse(localStorage.getItem('ignored_fixes') || '{}');
-            if(ignored[q._id]) {
-                pendingFixData = ignored[q._id];
-                document.getElementById('ignored-fix-badge').classList.remove('hidden');
-            } else {
-                document.getElementById('ai-fix-reason').textContent = pendingFixData.reason;
-                document.getElementById('ai-fix-action').classList.remove('hidden');
-            }
+            document.getElementById('ai-fix-reason').textContent = pendingFixData.reason;
+            document.getElementById('ai-fix-action').classList.remove('hidden');
         }
     } catch(e) {}
 }
@@ -1731,71 +1372,264 @@ async function verifyDataWithPro(q) {
 function pauseTimer() { stopStudyTimer(); clearIdleTimers(); document.getElementById('pause-overlay').classList.remove('hidden'); document.getElementById('pause-overlay').classList.add('flex'); }
 function resumeTimer() { 
     document.getElementById('pause-overlay').classList.add('hidden'); document.getElementById('pause-overlay').classList.remove('flex'); 
-    
     if (pauseInterval) clearInterval(pauseInterval);
-    
-    if(document.getElementById('main-area').classList.contains('hidden')) {
-        
-    } else if(currentQuestions[currentIndex] && document.getElementById('explanation-area').classList.contains('hidden')) {
-        if (currentQuestions[currentIndex]._type === '択一' && !isCountdownRelay) {
-            timerInterval = setInterval(() => { 
-                timeLeft--; 
-                if (timeLeft <= 0) { playWhistleSound(); clearInterval(timerInterval); } 
-            }, 1000);
-        }
-        startStudyTimer(); 
-    } else if (currentQuestions[currentIndex] && !document.getElementById('explanation-area').classList.contains('hidden')) {
-        startIdleTimers(); 
-    }
+    startStudyTimer();
 }
-function openNapMenu() { stopStudyTimer(); clearIdleTimers(); document.getElementById('nap-overlay').classList.remove('hidden'); document.getElementById('nap-overlay').classList.add('flex'); generateAiMessage("nap_start", { textOnly: true });}
+function openNapMenu() { stopStudyTimer(); clearIdleTimers(); document.getElementById('nap-overlay').classList.remove('hidden'); document.getElementById('nap-overlay').classList.add('flex'); }
 function cancelNapMenu() { document.getElementById('nap-overlay').classList.add('hidden'); document.getElementById('nap-overlay').classList.remove('flex'); resumeTimer(); }
-function startNap(minutes) { 
-    napSecondsLeft = minutes * 60; 
-    localStorage.setItem('last_nap_time', new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}));
-    sendKarteLog('nap_start', { time: new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}), durationMinutes: minutes }); 
-    runNapTimer(); 
-}
+function startNap(minutes) { napSecondsLeft = minutes * 60; runNapTimer(); }
 function startNapCustom() {
     const timeStr = document.getElementById('nap-time-input').value; if(!timeStr) { alert("時刻を入力してね"); return; }
     const [h, m] = timeStr.split(':'); const target = new Date(); target.setHours(parseInt(h), parseInt(m), 0);
     if(target <= new Date()) target.setDate(target.getDate() + 1); 
     napSecondsLeft = Math.floor((target - new Date()) / 1000); 
-    let durationMinutes = Math.round(napSecondsLeft / 60);
-    localStorage.setItem('last_nap_time', new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}));
-    sendKarteLog('nap_start', { time: new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}), durationMinutes: durationMinutes }); 
     runNapTimer();
 }
 function runNapTimer() {
     unlockAudio(); document.getElementById('nap-setup').classList.add('hidden'); document.getElementById('nap-running').classList.remove('hidden'); document.getElementById('nap-running').classList.add('flex');
-    document.getElementById('explanation-area').classList.add('hidden'); document.getElementById('explanation-area').classList.remove('flex');
-    document.getElementById('self-eval-area-takuitsu').classList.add('hidden');
     updateNapDisplay();
     napInterval = setInterval(() => {
         napSecondsLeft--; updateNapDisplay();
-        if(napSecondsLeft <= 0) { clearInterval(napInterval); playAlarmSound(); document.getElementById('nap-countdown').classList.add('animate-ping', 'text-red-500'); }
+        if(napSecondsLeft <= 0) { clearInterval(napInterval); playAlarmSound(); }
     }, 1000);
 }
 function updateNapDisplay() {
     let m = Math.floor(Math.max(0, napSecondsLeft) / 60).toString().padStart(2, '0'); let s = (Math.max(0, napSecondsLeft) % 60).toString().padStart(2, '0');
     document.getElementById('nap-countdown').textContent = `${m}:${s}`;
 }
-let beepInterval = null;
 function playAlarmSound() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    const playBeep = () => {
-        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-        osc.type = 'square'; osc.frequency.setValueAtTime(880, audioCtx.currentTime); gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
-        osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.1);
-    };
-    beepInterval = setInterval(() => { playBeep(); setTimeout(playBeep, 150); setTimeout(playBeep, 300); }, 1000);
+    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+    osc.type = 'square'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
 }
 function stopNap() {
-    clearInterval(napInterval); if(beepInterval) clearInterval(beepInterval);
-    document.getElementById('nap-countdown').classList.remove('animate-ping', 'text-red-500');
+    clearInterval(napInterval);
     document.getElementById('nap-overlay').classList.add('hidden'); document.getElementById('nap-overlay').classList.remove('flex');
+    resumeTimer();
+}
+
+/* =========================================================
+   📓 マイノート機能 (LocalStorage駆動 / 問題ID紐付け / 画像添付)
+   ========================================================= */
+
+function getNotebookData() {
+    return JSON.parse(localStorage.getItem('sharoushi_notebooks') || '{}');
+}
+
+function saveNotebookData(data) {
+    localStorage.setItem('sharoushi_notebooks', JSON.stringify(data));
+    updateStartScreenNotebookBadge();
+}
+
+function updateStartScreenNotebookBadge() {
+    const data = getNotebookData();
+    const count = Object.keys(data).length;
+    const badge = document.getElementById('start-nb-count-badge');
+    if (badge) badge.textContent = count;
+}
+
+function updateNotebookButtonDisplay(q_id) {
+    const data = getNotebookData();
+    const btn = document.getElementById('btn-open-notebook');
+    const btnText = document.getElementById('btn-nb-text');
+    if (!btn || !btnText) return;
+
+    if (data[q_id]) {
+        btnText.textContent = "📓 マイノートを確認・編集（登録済）";
+        btn.classList.add('ring-2', 'ring-amber-500', 'bg-amber-300');
+    } else {
+        btnText.textContent = "📓 マイノートにメモ・スクショを追加";
+        btn.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-300');
+    }
+}
+
+function openNotebookForCurrentQuestion() {
+    const q = currentQuestions[currentIndex];
+    if (!q) return;
+    openNotebookModal(q);
+}
+
+function openNotebookModal(q) {
+    activeNotebookQId = q._id;
+    const data = getNotebookData();
+    const existing = data[q._id] || null;
+
+    document.getElementById('nb-badge-subject').textContent = q._subjectName || "社労士";
+    document.getElementById('nb-badge-chapter').textContent = q.項目 || "項目";
+    document.getElementById('nb-problem-text').textContent = q.問題文 || "";
     
-    continuousStudyTimeSec = 0;
-    finishAllPlaylists();
-    generateAiMessage("nap_end", { textOnly: true }); 
+    const noteInput = document.getElementById('nb-note-input');
+    const deleteBtn = document.getElementById('btn-delete-nb');
+    const previewBox = document.getElementById('nb-image-preview-box');
+    const previewImg = document.getElementById('nb-image-preview');
+    const fileInput = document.getElementById('nb-image-input');
+    if (fileInput) fileInput.value = "";
+
+    if (existing) {
+        document.getElementById('nb-modal-subtitle').textContent = "登録済みノート";
+        noteInput.value = existing.note || "";
+        activeNotebookImageBase64 = existing.image || null;
+        if (existing.image) {
+            previewImg.src = existing.image;
+            previewBox.classList.remove('hidden');
+        } else {
+            previewBox.classList.add('hidden');
+        }
+        deleteBtn.classList.remove('hidden');
+    } else {
+        document.getElementById('nb-modal-subtitle').textContent = "新規作成";
+        noteInput.value = "";
+        activeNotebookImageBase64 = null;
+        previewBox.classList.add('hidden');
+        deleteBtn.classList.add('hidden');
+    }
+
+    const modal = document.getElementById('notebook-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeNotebookModal() {
+    const modal = document.getElementById('notebook-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+    activeNotebookQId = null;
+    activeNotebookImageBase64 = null;
+    if (currentQuestions[currentIndex]) {
+        updateNotebookButtonDisplay(currentQuestions[currentIndex]._id);
+    }
+}
+
+function handleNotebookImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.size > 3 * 1024 * 1024) {
+        alert("画像サイズが大きすぎます。3MB以下の画像を選択してください。");
+        event.target.value = "";
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        activeNotebookImageBase64 = e.target.result;
+        const previewBox = document.getElementById('nb-image-preview-box');
+        const previewImg = document.getElementById('nb-image-preview');
+        previewImg.src = activeNotebookImageBase64;
+        previewBox.classList.remove('hidden');
+    };
+    reader.readAsDataURL(file);
+}
+
+function removeNotebookImage() {
+    activeNotebookImageBase64 = null;
+    const previewBox = document.getElementById('nb-image-preview-box');
+    const fileInput = document.getElementById('nb-image-input');
+    if (previewBox) previewBox.classList.add('hidden');
+    if (fileInput) fileInput.value = "";
+}
+
+function saveNotebookEntry() {
+    if (!activeNotebookQId) return;
+    const note = document.getElementById('nb-note-input').value.trim();
+
+    if (!note && !activeNotebookImageBase64) {
+        alert("メモを入力するか、画像を添付してください。");
+        return;
+    }
+
+    const q = allDatabase.find(item => item._id === activeNotebookQId) || currentQuestions[currentIndex];
+    const data = getNotebookData();
+    data[activeNotebookQId] = {
+        q_id: activeNotebookQId,
+        subject: q?._subjectName || "社労士",
+        chapter: q?.項目 || "一般",
+        questionText: q?.問題文 || "",
+        officialExplanation: q?.解説 || "",
+        article: q?.根拠条文 || "",
+        note: note,
+        image: activeNotebookImageBase64,
+        updatedAt: new Date().toLocaleDateString('ja-JP')
+    };
+
+    saveNotebookData(data);
+    closeNotebookModal();
+}
+
+function deleteCurrentNotebookEntry() {
+    if (!activeNotebookQId) return;
+    if (confirm("この問題のマイノートを削除しますか？")) {
+        const data = getNotebookData();
+        delete data[activeNotebookQId];
+        saveNotebookData(data);
+        closeNotebookModal();
+        if (!document.getElementById('notebook-list-modal').classList.contains('hidden')) {
+            openNotebookListModal();
+        }
+    }
+}
+
+function openNotebookListModal() {
+    const data = getNotebookData();
+    const listContainer = document.getElementById('nb-list-container');
+    const countBadge = document.getElementById('nb-list-count');
+    const keys = Object.keys(data);
+    countBadge.textContent = `${keys.length}件`;
+    listContainer.innerHTML = "";
+
+    if (keys.length === 0) {
+        listContainer.innerHTML = `
+            <div class="p-8 text-center text-slate-400 font-bold">
+                <span class="text-5xl block mb-2">📓</span>
+                まだマイノートが登録されていません。<br>
+                特訓で問題を解いた後の解説画面から、気になる問題をノートに保存してみましょう！
+            </div>`;
+    } else {
+        keys.forEach(key => {
+            const item = data[key];
+            const hasImgBadge = item.image ? '<span class="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded font-bold">📸 画像あり</span>' : '';
+            const card = document.createElement('div');
+            card.className = "bg-white border-2 border-slate-200 hover:border-amber-400 p-4 rounded-2xl shadow-sm transition-all flex flex-col gap-2 cursor-pointer";
+            card.onclick = () => {
+                const targetQ = allDatabase.find(q => q._id === item.q_id) || {
+                    _id: item.q_id,
+                    _subjectName: item.subject,
+                    項目: item.chapter,
+                    問題文: item.questionText,
+                    解説: item.officialExplanation,
+                    根拠条文: item.article
+                };
+                closeNotebookListModal();
+                openNotebookModal(targetQ);
+            };
+
+            card.innerHTML = `
+                <div class="flex justify-between items-center">
+                    <div class="flex items-center gap-1.5">
+                        <span class="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">${item.subject}</span>
+                        <span class="text-xs font-black text-slate-700">${item.chapter}</span>
+                        ${hasImgBadge}
+                    </div>
+                    <span class="text-[10px] text-slate-400 font-bold">${item.updatedAt}</span>
+                </div>
+                <p class="text-xs md:text-sm text-slate-600 font-medium line-clamp-2">${item.questionText}</p>
+                <div class="bg-amber-50/80 border border-amber-200 p-2 rounded-xl text-xs md:text-sm text-amber-950 font-bold line-clamp-2">
+                    📝 ${item.note || "(画像のみ)"}
+                </div>`;
+            listContainer.appendChild(card);
+        });
+    }
+
+    const modal = document.getElementById('notebook-list-modal');
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeNotebookListModal() {
+    const modal = document.getElementById('notebook-list-modal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
 }
