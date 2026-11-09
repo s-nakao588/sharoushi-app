@@ -1412,7 +1412,7 @@ function stopNap() {
 }
 
 /* =========================================================
-   📓 マイノート機能 (LocalStorage駆動 / 問題ID紐付け / 画像添付)
+   📓 マイノート機能 (LocalStorage駆動 / 問題・正解・解説の表示 / グループ化表示)
    ========================================================= */
 
 function getNotebookData() {
@@ -1420,8 +1420,14 @@ function getNotebookData() {
 }
 
 function saveNotebookData(data) {
-    localStorage.setItem('sharoushi_notebooks', JSON.stringify(data));
-    updateStartScreenNotebookBadge();
+    try {
+        localStorage.setItem('sharoushi_notebooks', JSON.stringify(data));
+        updateStartScreenNotebookBadge();
+    } catch (e) {
+        if (e.name === 'QuotaExceededError') {
+            alert("⚠️ 保存容量の限界（約5MB）に達しました！不要なノート（特に画像付きのもの）を削除してから再度お試しください。");
+        }
+    }
 }
 
 function updateStartScreenNotebookBadge() {
@@ -1459,7 +1465,20 @@ function openNotebookModal(q) {
 
     document.getElementById('nb-badge-subject').textContent = q._subjectName || "社労士";
     document.getElementById('nb-badge-chapter').textContent = q.項目 || "項目";
-    document.getElementById('nb-problem-text').textContent = q.問題文 || "";
+    document.getElementById('nb-problem-text').innerHTML = (q.問題文 || "").replace(/\n/g, '<br>');
+    document.getElementById('nb-article-text').textContent = q.根拠条文 || "条文なし";
+    document.getElementById('nb-explanation-text').innerHTML = q.解説 || "解説なし";
+    
+    // 正解テキストの生成
+    let ansText = "";
+    if (q._type === '択一') {
+        ansText = (q.正誤 || "").trim();
+    } else if (q._type === '選択') {
+        ansText = `【A】${q.正解A || "-"} 【B】${q.正解B || "-"} 【C】${q.正解C || "-"} 【D】${q.正解D || "-"} 【E】${q.正解E || "-"}`;
+    } else {
+        ansText = existing ? existing.correctAnswer : "";
+    }
+    document.getElementById('nb-answer-text').textContent = ansText;
     
     const noteInput = document.getElementById('nb-note-input');
     const deleteBtn = document.getElementById('btn-delete-nb');
@@ -1507,8 +1526,8 @@ function handleNotebookImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    if (file.size > 3 * 1024 * 1024) {
-        alert("画像サイズが大きすぎます。3MB以下の画像を選択してください。");
+    if (file.size > 2 * 1024 * 1024) {
+        alert("画像サイズが大きすぎます。容量制限（5MB）を節約するため、2MB以下の画像を選択するか、少し画質を落としてください。");
         event.target.value = "";
         return;
     }
@@ -1542,12 +1561,22 @@ function saveNotebookEntry() {
     }
 
     const q = allDatabase.find(item => item._id === activeNotebookQId) || currentQuestions[currentIndex];
+    
+    let ansText = "";
+    if (q._type === '択一') {
+        ansText = (q.正誤 || "").trim();
+    } else if (q._type === '選択') {
+        ansText = `A:${q.正解A} B:${q.正解B} C:${q.正解C} D:${q.正解D} E:${q.正解E}`;
+    }
+
     const data = getNotebookData();
     data[activeNotebookQId] = {
         q_id: activeNotebookQId,
+        type: q?._type || "不明",
         subject: q?._subjectName || "社労士",
         chapter: q?.項目 || "一般",
         questionText: q?.問題文 || "",
+        correctAnswer: ansText,
         officialExplanation: q?.解説 || "",
         article: q?.根拠条文 || "",
         note: note,
@@ -1557,11 +1586,16 @@ function saveNotebookEntry() {
 
     saveNotebookData(data);
     closeNotebookModal();
+    
+    // リスト画面が開いていれば更新
+    if (!document.getElementById('notebook-list-modal').classList.contains('hidden')) {
+        openNotebookListModal();
+    }
 }
 
 function deleteCurrentNotebookEntry() {
     if (!activeNotebookQId) return;
-    if (confirm("この問題のマイノートを削除しますか？")) {
+    if (confirm("この問題のマイノートを完全に削除しますか？")) {
         const data = getNotebookData();
         delete data[activeNotebookQId];
         saveNotebookData(data);
@@ -1582,20 +1616,53 @@ function openNotebookListModal() {
 
     if (keys.length === 0) {
         listContainer.innerHTML = `
-            <div class="p-8 text-center text-slate-400 font-bold">
-                <span class="text-5xl block mb-2">📓</span>
-                まだマイノートが登録されていません。<br>
-                特訓で問題を解いた後の解説画面から、気になる問題をノートに保存してみましょう！
+            <div class="p-8 text-center text-slate-400 font-bold mt-10">
+                <span class="text-6xl block mb-4">📓</span>
+                まだマイノートが登録されていません。<br><br>
+                特訓で問題を解いた後の解説画面から、気になる問題やテキストのスクショを保存してみましょう！
             </div>`;
     } else {
-        keys.forEach(key => {
-            const item = data[key];
-            const hasImgBadge = item.image ? '<span class="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded font-bold">📸 画像あり</span>' : '';
+        // 🌟 科目ごと ➡ 項目順 にソートする処理
+        const entries = keys.map(k => data[k]);
+        entries.sort((a, b) => {
+            if (a.subject !== b.subject) return a.subject.localeCompare(b.subject, 'ja');
+            if (a.chapter !== b.chapter) return a.chapter.localeCompare(b.chapter, 'ja');
+            return 0;
+        });
+
+        let currentSubject = "";
+        let currentChapter = "";
+
+        entries.forEach(item => {
+            // 科目ヘッダーの生成
+            if (item.subject !== currentSubject) {
+                currentSubject = item.subject;
+                currentChapter = ""; // 科目が変わったら項目もリセット
+                const subjHeader = document.createElement('h4');
+                subjHeader.className = "text-xl md:text-2xl font-black text-indigo-800 mt-6 mb-2 border-b-4 border-indigo-200 pb-1 flex items-center gap-2";
+                subjHeader.innerHTML = `<span>📘</span> ${currentSubject}`;
+                listContainer.appendChild(subjHeader);
+            }
+            
+            // 項目ヘッダーの生成
+            if (item.chapter !== currentChapter) {
+                currentChapter = item.chapter;
+                const chapHeader = document.createElement('h5');
+                chapHeader.className = "text-sm md:text-lg font-bold text-slate-700 mt-3 mb-2 ml-1 md:ml-3 border-l-4 border-amber-400 pl-2";
+                chapHeader.textContent = currentChapter;
+                listContainer.appendChild(chapHeader);
+            }
+
+            // カードの生成
+            const hasImgBadge = item.image ? '<span class="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm">📸 画像あり</span>' : '';
             const card = document.createElement('div');
-            card.className = "bg-white border-2 border-slate-200 hover:border-amber-400 p-4 rounded-2xl shadow-sm transition-all flex flex-col gap-2 cursor-pointer";
+            card.className = "bg-white border-2 border-slate-200 hover:border-amber-400 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col gap-2.5 cursor-pointer ml-2 md:ml-6";
+            
+            // クリックで詳細を開く（擬似的な問題データを作って渡す）
             card.onclick = () => {
                 const targetQ = allDatabase.find(q => q._id === item.q_id) || {
                     _id: item.q_id,
+                    _type: item.type,
                     _subjectName: item.subject,
                     項目: item.chapter,
                     問題文: item.questionText,
@@ -1607,17 +1674,16 @@ function openNotebookListModal() {
             };
 
             card.innerHTML = `
-                <div class="flex justify-between items-center">
-                    <div class="flex items-center gap-1.5">
-                        <span class="bg-indigo-600 text-white text-[10px] font-bold px-2 py-0.5 rounded">${item.subject}</span>
-                        <span class="text-xs font-black text-slate-700">${item.chapter}</span>
+                <div class="flex justify-between items-center mb-1">
+                    <div class="flex items-center gap-2">
+                        <span class="bg-slate-200 text-slate-600 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded">${item.type}</span>
                         ${hasImgBadge}
                     </div>
-                    <span class="text-[10px] text-slate-400 font-bold">${item.updatedAt}</span>
+                    <span class="text-[10px] md:text-xs text-slate-400 font-bold">${item.updatedAt} 更新</span>
                 </div>
-                <p class="text-xs md:text-sm text-slate-600 font-medium line-clamp-2">${item.questionText}</p>
-                <div class="bg-amber-50/80 border border-amber-200 p-2 rounded-xl text-xs md:text-sm text-amber-950 font-bold line-clamp-2">
-                    📝 ${item.note || "(画像のみ)"}
+                <p class="text-sm md:text-base text-slate-800 font-medium line-clamp-2">${item.questionText}</p>
+                <div class="bg-amber-50/80 border border-amber-200 p-2.5 rounded-xl text-xs md:text-sm text-amber-950 font-bold line-clamp-2 shadow-sm mt-1">
+                    📝 ${item.note || "(画像のみ登録されています)"}
                 </div>`;
             listContainer.appendChild(card);
         });
