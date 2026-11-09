@@ -19,55 +19,28 @@ let audioCtx = null, isMuted = false;
 let timerInterval = null, timeLeft = 60, currentLimit = 60;
 let globalTimerInterval = null, globalTimeLeftSeconds = null, isTimeUp = false;
 let napInterval = null, napSecondsLeft = 0;
-
-let pauseSeconds = 0;
-let pauseInterval = null;
+let pauseSeconds = 0, pauseInterval = null;
 
 let setCorrectCount = 0, cumulativeQuestions = 0, todayMistakes = [];
 let eliminatedWords = new Set(), currentWordBank = [], currentAnswers = {}, currentFullText = "";
 let lastAnswerWasCorrect = false;
 let strategyHistory = [], strategyPlan = null;
-
 let initialPlaylistConfig = [];
 
-let activeSubjectForTime = null; 
-let studyTimerInterval = null;
-let continuousStudyTimeSec = 0; 
+let activeSubjectForTime = null, studyTimerInterval = null, continuousStudyTimeSec = 0;
+let sessionTotalTimeSec = 0, sessionTimerInterval = null;
 
-let sessionTotalTimeSec = 0;
-let sessionTimerInterval = null;
+let idleTimeoutWarn = null, idleTimeoutPenalty = null;
+let isReviewAdded = false, isExtensionAdded = false, hasRestRecommended = false;
 
-let idleTimeoutWarn = null;
-let idleTimeoutPenalty = null;
-let isReviewAdded = false;
-let isExtensionAdded = false;
-let hasRestRecommended = false;
+let initialGlobalTime = null, eventTriggeredThisSession = false;
+let isSuddenDeath = false, isSuddenDeathGameOver = false, isCountdownRelay = false;
+let countdownTimeLeft = 0, relayTimerInterval = null;
+let isTrapMode = false, isHardcore = false, isSurpriseAttack = false;
+let isSenbonKnock = false, isTimeAttack = false, isBonusMode = false;
+let eventQuestionsAnswered = 0, eventCorrectCount = 0;
 
-let initialGlobalTime = null;
-let eventTriggeredThisSession = false;
-let isSuddenDeath = false;
-let isSuddenDeathGameOver = false;
-let isCountdownRelay = false;
-let countdownTimeLeft = 0;
-let relayTimerInterval = null;
-let isTrapMode = false;
-let isHardcore = false;
-let isSurpriseAttack = false;
-
-let isSenbonKnock = false; 
-let isTimeAttack = false;
-let isBonusMode = false;
-let eventQuestionsAnswered = 0;
-let eventCorrectCount = 0;
-
-let isAnsweredTakuitsu = false;
-let currentTakuitsuEval = null;
-
-let pendingFixData = null;
-
-// 📓 マイノート用の一時データ保持
-let activeNotebookQId = null;
-let activeNotebookImageBase64 = null;
+let isAnsweredTakuitsu = false, currentTakuitsuEval = null, pendingFixData = null;
 
 window.onload = function() {
     try {
@@ -77,14 +50,11 @@ window.onload = function() {
         if(savedModel) { document.getElementById('api-model-input').value = savedModel; userModel = savedModel; }
     } catch(e) {}
     
-    sessionTimerInterval = setInterval(() => {
-        sessionTotalTimeSec++;
-    }, 1000);
-    
+    sessionTimerInterval = setInterval(() => { sessionTotalTimeSec++; }, 1000);
     flushStudyTimes(); 
     loadAllSubjects();
     fetchHistory(); 
-    updateStartScreenNotebookBadge();
+    if (typeof updateStartScreenNotebookBadge === "function") updateStartScreenNotebookBadge();
 };
 
 function unlockAudio() {
@@ -145,23 +115,23 @@ function stopAudio() {
 
 function playCompletedArticle() {
     const text = document.getElementById('article-text').textContent;
-    if(text && text !== "条文なし") speakText(text);
+    if(text && text !== "条文なし" && typeof speakText === "function") speakText(text);
 }
 
 function generateAlchemyQuestion() {
-    generateAiMessage("alchemy_prep", { textOnly: true });
+    if(typeof generateAiMessage === "function") generateAiMessage("alchemy_prep", { textOnly: true });
 }
 
 function startIdleTimers() {
     clearIdleTimers();
     if (isSenbonKnock || isCountdownRelay || isSuddenDeath || isSurpriseAttack) return; 
-    idleTimeoutWarn = setTimeout(() => { generateAiMessage("idle_warn", { textOnly: false }); }, 15000);
+    idleTimeoutWarn = setTimeout(() => { if(typeof generateAiMessage === "function") generateAiMessage("idle_warn", { textOnly: false }); }, 15000);
     idleTimeoutPenalty = setTimeout(() => { 
         if (continuousStudyTimeSec < 3600) {
             if (globalTimeLeftSeconds !== null) globalTimeLeftSeconds += 60; 
-            generateAiMessage("idle_penalty", { textOnly: false }); 
+            if(typeof generateAiMessage === "function") generateAiMessage("idle_penalty", { textOnly: false }); 
         } else {
-            generateAiMessage("idle_care", { textOnly: false }); 
+            if(typeof generateAiMessage === "function") generateAiMessage("idle_care", { textOnly: false }); 
         }
     }, 30000);
 }
@@ -258,7 +228,6 @@ function checkAllLoaded() {
                 q._verified = true;
             }
         });
-        
         document.getElementById('loading-status').textContent = `✅ 完了 (${allDatabase.length}問)`;
         buildSubjectAccordionUI(); updateDashboard();
     }
@@ -304,7 +273,6 @@ function updateDashboard() {
     
     let pendingTimes = JSON.parse(localStorage.getItem('pending_study_times') || '{}');
     let displayTotalTime = (userTimes['ALL'] || 0) + (pendingTimes['ALL'] || 0);
-    
     const totalStudyTimeEl = document.getElementById('total-study-time');
     if(totalStudyTimeEl) totalStudyTimeEl.textContent = formatTime(displayTotalTime);
     
@@ -352,13 +320,13 @@ function updateDashboard() {
     }
     container.innerHTML = htmlContent;
 
-    if(userApiKey) {
-        let prompt = `あなたは社労士試験の専属コーチ（18歳前後の若い女性）です。現在時刻は${new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'})}。受講生の努力を肯定し、成績データをもとに今日のおすすめ科目を1〜2文で明るく提案して。不自然な役割語（〜わ、〜よ等）は絶対禁止。データ: ${JSON.stringify(stats)}`;
+    if(userApiKey && typeof generateAiMessage === "function") {
+        let prompt = `あなたは社労士試験の専属コーチです。成績データをもとに今日のおすすめ科目を1〜2文で提案して。データ: ${JSON.stringify(stats)}`;
         fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         }).then(res => res.json()).then(data => {
             if (data.candidates && data.candidates[0]) { document.getElementById('dash-ai-comment').textContent = data.candidates[0].content.parts[0].text; }
-        }).catch(e => { document.getElementById('dash-ai-comment').textContent = "今日も自分のペースで一問ずつ進めていこう！"; });
+        }).catch(e => {});
     }
 }
 
@@ -391,73 +359,12 @@ function checkAllChapters(check) { document.querySelectorAll('input[name="chapte
 
 function triggerAnalysisStrategy() {
     document.getElementById('strategy-input').value = '弱点を分析して特訓プランを作って！';
-    sendStrategyMessage();
+    if(typeof sendStrategyMessage === "function") sendStrategyMessage();
 }
 
 function triggerEbbinghausStrategy() {
     document.getElementById('strategy-input').value = '忘却曲線をベースに復習プランを作って！';
-    sendStrategyMessage();
-}
-
-async function sendStrategyMessage() {
-    userApiKey = document.getElementById('api-key-input').value.trim();
-    if(!userApiKey) { alert("APIキーが必要です"); document.getElementById('api-settings-wrapper').classList.remove('hidden'); return; }
-    const inputEl = document.getElementById('strategy-input'); const input = inputEl.value.trim();
-    if(!input) return;
-    sendKarteLog('strategy_chat', { message: input });
-    saveRequestHabit(input);
-    const logEl = document.getElementById('strategy-chat-log');
-    logEl.innerHTML += `<div class="self-end bg-indigo-100 text-indigo-900 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tr-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl">${input}</div>`;
-    logEl.scrollTop = logEl.scrollHeight; inputEl.value = "";
-    const typingId = "typing-" + Date.now();
-    logEl.innerHTML += `<div id="${typingId}" class="self-start bg-white border-2 border-pink-200 text-slate-700 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl"><span class="typing">💬 考えてるよ...</span></div>`;
-    logEl.scrollTop = logEl.scrollHeight;
-    const cond = document.getElementById('condition-select').value; const health = document.getElementById('health-select').value;
-    const habits = localStorage.getItem('strategy_habits') || '[]';
-    
-    let systemPrompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。受講生の要望を最優先で聞き入れ、的確に特訓プランをまとめてください。
-【現在のコンディション】
-・現在時刻: ${new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'})}
-・過去の依頼傾向: ${habits}
-・講師モード: ${cond}
-・受講生の体調: ${health}
-
-【最重要ルール: 要望の遵守】
-受講生が科目数や問題数を具体的に指定した場合は、【絶対に勝手にすり替えたり減らしたりせず】、「了解！その通りに準備するね！」と受講生の指定をそのまま全肯定してプランを確定させてください。
-時間帯や過去の傾向（例えば14時にスキマ勉強をよくしている等）から、先回りした提案をしてもよいです。
-
-【話し方・口調】
-・現代の普通の若い女性。普通の自然な口語体（1〜2文）で話す。
-・「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」「〜かしら」等の不自然な役割語は【絶対禁止】。
-
-【プラン確定時のJSON出力ルール】
-受講生とプランが合意、または受講生から具体的な指定があった場合、返答の最後に必ず以下のJSON（複数科目対応）を出力してください。
-\`\`\`json
-{
-  "plan": [
-    { "subject": "労働基準法(択一)", "count": 10 }
-  ]
-}
-\`\`\``;
-    let apiMessages = [{ role: "user", parts: [{ text: systemPrompt + " 受講生の要望: " + input }] }];
-    try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: apiMessages })
-        });
-        if (!res.ok) throw new Error("通信エラー");
-        const data = await res.json(); const text = data.candidates[0].content.parts[0].text;
-        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
-        let replyText = text.replace(/```json\n[\s\S]*?\n```/, '').trim();
-        document.getElementById(typingId).outerHTML = `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl">${replyText}</div>`;
-        logEl.scrollTop = logEl.scrollHeight;
-        if (jsonMatch) {
-            strategyPlan = JSON.parse(jsonMatch[1]);
-            document.getElementById('btn-strategy-start').classList.remove('hidden');
-        }
-    } catch(e) {
-        document.getElementById(typingId).outerHTML = `<div class="self-start bg-red-50 text-red-600 p-2 md:p-3 rounded-xl md:rounded-2xl max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl border border-red-200">⚠️ 通信エラーが発生したみたい。もう一度話しかけてみて！</div>`;
-        logEl.scrollTop = logEl.scrollHeight;
-    }
+    if(typeof sendStrategyMessage === "function") sendStrategyMessage();
 }
 
 function resetGameFlags() {
@@ -468,7 +375,6 @@ function resetGameFlags() {
     isTrapMode = false; isHardcore = false; isSurpriseAttack = false;
     eventQuestionsAnswered = 0; eventCorrectCount = 0;
     document.getElementById('btn-surrender').classList.add('hidden');
-    
     document.getElementById('timer-bar').style.width = '100%';
     document.getElementById('timer-bar').style.backgroundColor = '#10b981';
 }
@@ -499,7 +405,6 @@ function executeStrategyPlan() {
     
     resetGameFlags();
     currentPlaylistIndex = 0; isReviewAdded = false; isExtensionAdded = false; hasRestRecommended = false;
-    
     initialPlaylistConfig = playlistQueue.map(q => ({ subjectName: q.subjectName, chapterName: q.chapterName, type: q.type }));
     
     document.getElementById('start-screen').classList.add('hidden');
@@ -677,7 +582,7 @@ function startNapQuick(minutes) {
     localStorage.setItem('last_nap_time', new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}));
     sendKarteLog('nap_start', { time: new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}), durationMinutes: minutes }); 
     runNapTimer();
-    generateAiMessage("nap_start", { textOnly: true });
+    if(typeof generateAiMessage === "function") generateAiMessage("nap_start", { textOnly: true });
 }
 
 function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
@@ -767,7 +672,7 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
         document.getElementById('action-sentaku').classList.add('hidden');
         document.getElementById('tts-area').classList.add('hidden');
         document.getElementById('alchemy-btn').classList.add('hidden');
-        document.getElementById('question-text-takuitsu').innerHTML = q.問題文.replace(/\n/g, '<br>');
+        document.getElementById('question-text-takuitsu').innerHTML = (q.問題文 || "").replace(/\n/g, '<br>');
         
         if (!isCountdownRelay) {
             clearInterval(timerInterval);
@@ -800,7 +705,7 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
         currentWordBank = [q.正解A, q.正解B, q.正解C, q.正解D, q.正解E, ...dummies].filter(w=>w).slice(0,20);
         currentWordBank.sort(() => Math.random() - 0.5);
 
-        let htmlText = q.問題文.replace(/\n/g, '<br>');
+        let htmlText = (q.問題文 || "").replace(/\n/g, '<br>');
         ['A','B','C','D','E'].forEach(letter => {
             let options = `<option value="" selected disabled>【 ${letter} 】</option>`;
             currentWordBank.forEach((word, idx) => { options += `<option value="${word}" class="opt-word">${idx+1}. ${word}</option>`; });
@@ -833,15 +738,17 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
     }
 
     if (isFirstOfSet) {
-        if(isTimeAttack) generateAiMessage("start_timeattack", { textOnly: false });
-        else if(isBonusMode) generateAiMessage("start_bonus", { textOnly: false });
-        else if(isSenbonKnock) generateAiMessage("start_senbon", { textOnly: true });
-        else if(isSurpriseAttack) generateAiMessage("start_surprise", { textOnly: false });
-        else if(!isSuddenDeath && !isCountdownRelay && !isTrapMode && !isHardcore) {
-            generateAiMessage(`start_${q._type === '択一' ? 'takuitsu' : 'sentaku'}`, { textOnly: false });
+        if (typeof generateAiMessage === "function") {
+            if(isTimeAttack) generateAiMessage("start_timeattack", { textOnly: false });
+            else if(isBonusMode) generateAiMessage("start_bonus", { textOnly: false });
+            else if(isSenbonKnock) generateAiMessage("start_senbon", { textOnly: true });
+            else if(isSurpriseAttack) generateAiMessage("start_surprise", { textOnly: false });
+            else if(!isSuddenDeath && !isCountdownRelay && !isTrapMode && !isHardcore) {
+                generateAiMessage(`start_${q._type === '択一' ? 'takuitsu' : 'sentaku'}`, { textOnly: false });
+            }
         }
     }
-    verifyDataWithPro(q);
+    if (typeof verifyDataWithPro === "function") verifyDataWithPro(q);
 }
 
 function answerTakuitsu(userAnswer) {
@@ -904,11 +811,11 @@ function answerTakuitsu(userAnswer) {
     const badge = document.getElementById('score-badge');
     badge.textContent = isCorrect ? "大正解！ 🎉" : "不正解... 💦";
     badge.className = isCorrect ? "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-green-500 shadow-md mb-2 animate-bounce" : "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-red-500 shadow-md mb-2";
-    document.getElementById('article-text').textContent = q.根拠条文 || "条文なし";
-    document.getElementById('explanation-text').innerHTML = q.解説 || "解説なし";
     
-    // 📓 マイノートボタンの表示状態更新
-    updateNotebookButtonDisplay(q._id);
+    document.getElementById('article-text').textContent = (q.根拠条文 || "").trim() || "（条文データなし）";
+    document.getElementById('explanation-text').innerHTML = (q.解説 || "").trim() || "（解説データなし）";
+    
+    if (typeof updateNotebookButtonDisplay === "function") updateNotebookButtonDisplay(q._id);
 
     if (!isSenbonKnock && !isTimeAttack && !isBonusMode && !isSuddenDeath && !isCountdownRelay && !isTrapMode && !isSurpriseAttack) {
         if (currentIndex >= currentQuestions.length - 1) {
@@ -927,13 +834,13 @@ function answerTakuitsu(userAnswer) {
             aiEl.classList.remove('text-red-500');
         }
     } else {
-        generateAiMessage("answer_takuitsu", { isCorrect: isCorrect, explanation: q.解説, textOnly: true });
+        if (typeof generateAiMessage === "function") generateAiMessage("answer_takuitsu", { isCorrect: isCorrect, explanation: q.解説, textOnly: true });
     }
 }
 
 function showHintTakuitsu() {
     const q = currentQuestions[currentIndex];
-    generateAiMessage("hint_takuitsu", { questionText: q.問題文, explanation: q.解説 || "", textOnly: true });
+    if (typeof generateAiMessage === "function") generateAiMessage("hint_takuitsu", { questionText: q.問題文, explanation: q.解説 || "", textOnly: true });
 }
 
 function toggleStrike(word, el) {
@@ -954,7 +861,7 @@ function showHintSentaku() {
     let text = qArea.innerHTML;
     text = text.replace(/(なければならない|努め|こと|また|ただし|において|ため)/g, '<span class="highlight-clue">$1</span>');
     qArea.innerHTML = text;
-    generateAiMessage("hint_sentaku", { textOnly: true });
+    if (typeof generateAiMessage === "function") generateAiMessage("hint_sentaku", { textOnly: true });
 }
 function fillRandomAnswers() {
     ['A','B','C','D','E'].forEach(letter => {
@@ -1016,11 +923,12 @@ function submitSentakuAnswers() {
     
     document.getElementById('score-badge').textContent = `${score} / 5 点`;
     document.getElementById('score-badge').className = score === 5 ? "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-green-500 shadow-md mb-2 animate-bounce" : "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-red-500 shadow-md mb-2";
-    document.getElementById('article-text').textContent = currentQuestions[currentIndex].根拠条文 || "条文なし";
-    document.getElementById('explanation-text').innerHTML = currentQuestions[currentIndex].解説 || "解説なし";
+    
+    const q = currentQuestions[currentIndex];
+    document.getElementById('article-text').textContent = (q.根拠条文 || "").trim() || "（条文データなし）";
+    document.getElementById('explanation-text').innerHTML = (q.解説 || "").trim() || "（解説データなし）";
 
-    // 📓 マイノートボタンの表示状態更新
-    updateNotebookButtonDisplay(currentQuestions[currentIndex]._id);
+    if (typeof updateNotebookButtonDisplay === "function") updateNotebookButtonDisplay(q._id);
 
     const evalTargetContainer = document.getElementById('eval-target-buttons');
     evalTargetContainer.innerHTML = '<span id="eval-target-label" class="text-[10px] md:text-xs font-bold text-slate-500 self-center mr-1 md:mr-2">対象:</span>';
@@ -1032,8 +940,9 @@ function submitSentakuAnswers() {
     }
     
     startIdleTimers(); 
-    generateAiMessage("result_sentaku", { score: score, textOnly: false });
+    if (typeof generateAiMessage === "function") generateAiMessage("result_sentaku", { score: score, textOnly: false });
 }
+
 function closeWarningModal() { document.getElementById('warning-modal').classList.add('hidden'); document.getElementById('warning-modal').classList.remove('flex'); }
 
 async function saveToGAS(q_id, actionStr, isCorrect, score, traps) {
@@ -1052,22 +961,13 @@ async function saveToGAS(q_id, actionStr, isCorrect, score, traps) {
 
 function selectEvalTakuitsu(status) {
     currentTakuitsuEval = status;
-    const btns = {
-        '完璧': document.getElementById('eval-btn-kanpeki'),
-        '迷った': document.getElementById('eval-btn-mayotta'),
-        'わからん': document.getElementById('eval-btn-wakaran')
-    };
-    
+    const btns = { '完璧': 'eval-btn-kanpeki', '迷った': 'eval-btn-mayotta', 'わからん': 'eval-btn-wakaran' };
     for (let key in btns) {
-        if (key === status) {
-            btns[key].classList.remove('opacity-40');
-            btns[key].classList.add('ring-2', 'ring-offset-2', 'ring-slate-400');
-        } else {
-            btns[key].classList.add('opacity-40');
-            btns[key].classList.remove('ring-2', 'ring-offset-2', 'ring-slate-400');
-        }
+        let el = document.getElementById(btns[key]);
+        if (!el) continue;
+        if (key === status) { el.classList.remove('opacity-40'); el.classList.add('ring-2', 'ring-offset-2', 'ring-slate-400'); }
+        else { el.classList.add('opacity-40'); el.classList.remove('ring-2', 'ring-offset-2', 'ring-slate-400'); }
     }
-    
     const nextBtn = document.getElementById('btn-next-takuitsu');
     nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     nextBtn.textContent = "次の問題へ ➡";
@@ -1078,9 +978,7 @@ function submitEvalAndNext() {
         if (!currentTakuitsuEval) return; 
         clearIdleTimers(); 
         const q = currentQuestions[currentIndex];
-        
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_status', q_id: q._id, status: currentTakuitsuEval }) });
-        
         if(!userHistory[q._id]) userHistory[q._id] = {};
         userHistory[q._id].status = currentTakuitsuEval;
     }
@@ -1094,9 +992,7 @@ function markEvalSentaku(status) {
     const statusStr = `${status}(${checked.join(',')})`;
     const q = currentQuestions[currentIndex];
     fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_status', q_id: q._id, status: statusStr }) });
-    document.querySelectorAll('input[name="eval-target"]:checked').forEach(cb => {
-        cb.parentElement.classList.add('opacity-30', 'bg-yellow-200'); cb.checked = false;
-    });
+    document.querySelectorAll('input[name="eval-target"]:checked').forEach(cb => { cb.parentElement.classList.add('opacity-30', 'bg-yellow-200'); cb.checked = false; });
     nextQuestion();
 }
 
@@ -1113,7 +1009,6 @@ async function cancelMistake() {
             }
             cumulativeQuestions--; 
             if (isSenbonKnock || isTimeAttack || isBonusMode || isSuddenDeath || isCountdownRelay || isTrapMode || isHardcore || isSurpriseAttack) eventQuestionsAnswered--;
-            
             document.getElementById('ai-message').textContent = "記録を取り消したよ！次から気をつけてね！";
         } catch(e) { alert("取り消しに失敗しました"); }
     }
@@ -1122,27 +1017,20 @@ async function cancelMistake() {
 function applyFixToGAS() {
     if(!pendingFixData) return;
     const q = currentQuestions[currentIndex];
-    
     let localFixes = JSON.parse(localStorage.getItem('local_fixes') || '{}');
     localFixes[q._id] = pendingFixData;
     localStorage.setItem('local_fixes', JSON.stringify(localFixes));
     
-    if(q._type === '択一' && pendingFixData.correctChoice) {
-        q.正誤 = pendingFixData.correctChoice;
-    }
+    if(q._type === '択一' && pendingFixData.correctChoice) q.正誤 = pendingFixData.correctChoice;
     q.解説 = pendingFixData.newExplanation || q.解説;
     q._verified = true;
     
     let ignored = JSON.parse(localStorage.getItem('ignored_fixes') || '{}');
-    if(ignored[q._id]) {
-        delete ignored[q._id];
-        localStorage.setItem('ignored_fixes', JSON.stringify(ignored));
-    }
+    if(ignored[q._id]) { delete ignored[q._id]; localStorage.setItem('ignored_fixes', JSON.stringify(ignored)); }
     
     document.getElementById('ai-fix-action').classList.add('hidden');
     document.getElementById('ignored-fix-badge').classList.add('hidden');
-    
-    generateAiMessage("apply_fix", { textOnly: true });
+    if(typeof generateAiMessage === "function") generateAiMessage("apply_fix", { textOnly: true });
     pendingFixData = null;
 }
 
@@ -1155,8 +1043,7 @@ function ignoreFix() {
     
     document.getElementById('ai-fix-action').classList.add('hidden');
     document.getElementById('ignored-fix-badge').classList.remove('hidden');
-    
-    generateAiMessage("ignore_fix", { textOnly: true });
+    if(typeof generateAiMessage === "function") generateAiMessage("ignore_fix", { textOnly: true });
 }
 
 function showIgnoredFix() {
@@ -1182,10 +1069,9 @@ function checkSpecialEvents() {
         playlistQueue = [{ subjectName: subjList[0], chapterName: isSudden ? "☠️ サドンデス" : "⏱️ カウントダウン", type: "択一", questions: qs }];
         currentPlaylistIndex = 0; currentIndex = 0;
         resetGameFlags();
-        if (isSudden) isSuddenDeath = true;
-        else { isCountdownRelay = true; startCountdownRelayTimer(); }
+        if (isSudden) isSuddenDeath = true; else { isCountdownRelay = true; startCountdownRelayTimer(); }
         
-        generateAiMessage(isSudden ? "start_suddendeath" : "start_relay", { textOnly: false });
+        if (typeof generateAiMessage === "function") generateAiMessage(isSudden ? "start_suddendeath" : "start_relay", { textOnly: false });
         startNextPlaylistSet();
         return true;
     }
@@ -1193,21 +1079,14 @@ function checkSpecialEvents() {
 }
 
 function nextQuestion() {
-    clearIdleTimers();
-    stopAudio();
-    
-    if (isSuddenDeathGameOver) {
-        finishAllPlaylists();
-        return;
-    }
+    clearIdleTimers(); stopAudio();
+    if (isSuddenDeathGameOver) { finishAllPlaylists(); return; }
     
     currentIndex++;
-    
     if (currentIndex >= currentQuestions.length) {
         currentPlaylistIndex++;
-        if (currentPlaylistIndex < playlistQueue.length) {
-            startNextPlaylistSet();
-        } else {
+        if (currentPlaylistIndex < playlistQueue.length) startNextPlaylistSet();
+        else {
             if (checkSpecialEvents()) return;
             finishAllPlaylists();
         }
@@ -1218,42 +1097,27 @@ function nextQuestion() {
 
 function finishAllPlaylists() {
     document.getElementById('explanation-area').classList.remove('hidden'); document.getElementById('explanation-area').classList.add('flex');
-    
     const evalArea = document.getElementById('self-eval-area-takuitsu');
-    evalArea.classList.remove('hidden');
-    evalArea.classList.add('block', '!block');
-    
-    document.getElementById('self-eval-area-sentaku').classList.add('hidden');
-    document.getElementById('self-eval-area-sentaku').classList.remove('block', '!block');
-    
+    evalArea.classList.remove('hidden'); evalArea.classList.add('block', '!block');
+    document.getElementById('self-eval-area-sentaku').classList.add('hidden'); document.getElementById('self-eval-area-sentaku').classList.remove('block', '!block');
     document.getElementById('takuitsu-eval-content').classList.add('hidden');
-    document.getElementById('rest-proposal-menu-takuitsu').classList.add('hidden');
-    document.getElementById('rest-proposal-menu-takuitsu').classList.remove('flex');
+    document.getElementById('rest-proposal-menu-takuitsu').classList.add('hidden'); document.getElementById('rest-proposal-menu-takuitsu').classList.remove('flex');
+    document.getElementById('infinite-drill-menu').classList.remove('hidden'); document.getElementById('infinite-drill-menu').classList.add('flex');
     
-    document.getElementById('infinite-drill-menu').classList.remove('hidden');
-    document.getElementById('infinite-drill-menu').classList.add('flex');
-    
-    generateAiMessage("end_all", { totalPlayed: cumulativeQuestions, mistakes: todayMistakes.length, textOnly: false });
+    if (typeof generateAiMessage === "function") generateAiMessage("end_all", { totalPlayed: cumulativeQuestions, mistakes: todayMistakes.length, textOnly: false });
 }
 
 function startInfiniteDrill(mode) {
     flushStudyTimes();
     let newPlaylistQueue = [];
-    
     initialPlaylistConfig.forEach(config => {
-        let subjName = config.subjectName;
-        let chapName = config.chapterName;
-        let qType = config.type;
+        let subjName = config.subjectName, chapName = config.chapterName, qType = config.type;
         let pool = allDatabase.filter(q => q._subjectName === subjName && q._type === qType);
         let qs = [];
         
         if (mode === 'okawari') {
             let chapPool = pool.filter(q => q.項目 === chapName);
-            chapPool.sort((a, b) => {
-                let aC = userHistory[a._id] ? userHistory[a._id].playCount : 0;
-                let bC = userHistory[b._id] ? userHistory[b._id].playCount : 0;
-                return aC - bC;
-            });
+            chapPool.sort((a, b) => (userHistory[a._id]?.playCount || 0) - (userHistory[b._id]?.playCount || 0));
             qs = chapPool.slice(0, 10);
             if(qs.length > 0) newPlaylistQueue.push({ subjectName: subjName, chapterName: chapName + " (おかわり)", type: qType, questions: qs });
         } else if (mode === 'nextChapter') {
@@ -1291,82 +1155,6 @@ function startInfiniteDrill(mode) {
     document.getElementById('infinite-drill-menu').classList.remove('flex');
     document.getElementById('takuitsu-eval-content').classList.remove('hidden');
     startNextPlaylistSet(true);
-}
-
-async function speakText(text) {
-    if (isMuted || !text) return; 
-    let cleanText = text.replace(/<[^>]+>/g, '').trim(); if (!cleanText) return;
-    try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${userApiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: cleanText }] }] })
-        });
-        if (!res.ok) throw new Error("TTS API Error");
-        const data = await res.json();
-        const p = document.getElementById('tts-player');
-        p.src = `data:audio/mp3;base64,${data.candidates[0].content.parts[0].inlineData.data}`; p.play();
-    } catch (err) {
-        if ('speechSynthesis' in window) {
-            const utterance = new SpeechSynthesisUtterance(cleanText); utterance.lang = 'ja-JP';
-            window.speechSynthesis.speak(utterance);
-        }
-    }
-}
-
-async function generateAiMessage(situation, extraData = {}) {
-    const aiMessageEl = document.getElementById('ai-message');
-    if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
-    
-    const cond = document.getElementById('condition-select').value;
-    let prompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。受講生のモードは「${cond}」です。
-【絶対ルール】
-1. セリフ本文のみを1〜2文で出力すること。
-2. 定型文は一切使わず、毎回必ず状況に合わせて自分の言葉で考えて生成すること。
-3. 決して暴言や高圧的な説教はせず、親しみやすい現代の一般的な若い女性の自然な口語体で話すこと。\n`;
-
-    if (situation === "start_takuitsu") prompt += `択一式の特訓スタート。短く前向きに気合を入れて。`;
-    else if (situation === "start_sentaku") prompt += `選択式の特訓スタート。文脈を意識して埋めてみてと励まして。`;
-    else if (situation === "hint_takuitsu") prompt += `択一式のヒント。答えは言わず、見るべきポイントを1文で示して。問題:${extraData.questionText} 解説:${extraData.explanation}`;
-    else if (situation === "hint_sentaku") prompt += `選択式のヒント。「キーワードを黄色くしたから確認してみて」とアドバイスして。`;
-    else if (situation === "answer_takuitsu") prompt += `択一式解答。結果は【${extraData.isCorrect ? "正解" : "不正解"}】。解説から最重要ポイントを1文で要約して。解説:${extraData.explanation}`;
-    else if (situation === "result_sentaku") prompt += `選択式解答完了。5点中${extraData.score}点。点数に応じたコメントと、迷ったところは記録してねと促して。`;
-    else if (situation === "end_all") prompt += `全問題終了。頑張りを心から労い、次への励ましを。`;
-
-    try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        if (!res.ok) throw new Error("API Error");
-        const data = await res.json();
-        const text = data.candidates[0].content.parts[0].text;
-        if(aiMessageEl) { aiMessageEl.textContent = text; }
-        if (!extraData.textOnly) speakText(text); 
-    } catch(e) {
-        if(aiMessageEl) { aiMessageEl.textContent = `今日も一緒に一問ずつ進めていこうね！`; }
-    }
-}
-
-async function verifyDataWithPro(q) {
-    if (q._verified) return; 
-    let localFixes = JSON.parse(localStorage.getItem('local_fixes') || '{}');
-    if (localFixes[q._id]) {
-        q._verified = true;
-        return;
-    }
-    const today = new Date(); const todayStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
-    const prompt = `あなたはデータ検証プロです。【本日の日付】: ${todayStr}。令和9年4月以前に施行される法令を基準に正誤を判断し、間違っていれば「NG | 〇か✖ | 新しい解説 | 理由」で出力。問題なければ「OK」のみ。問題文: ${q.問題文}\n正誤: ${q.正誤}\n解説: ${q.解説}`;
-    try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${userApiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        const data = await res.json(); const text = data.candidates[0].content.parts[0].text;
-        q._verified = true; 
-        if (text.startsWith("NG")) {
-            const parts = text.split("|");
-            pendingFixData = { question: q, correctChoice: (parts[1]||"").trim(), newExplanation: (parts[2]||"").trim(), reason: (parts[3]||"").trim() };
-            document.getElementById('ai-fix-reason').textContent = pendingFixData.reason;
-            document.getElementById('ai-fix-action').classList.remove('hidden');
-        }
-    } catch(e) {}
 }
 
 function pauseTimer() { stopStudyTimer(); clearIdleTimers(); document.getElementById('pause-overlay').classList.remove('hidden'); document.getElementById('pause-overlay').classList.add('flex'); }
@@ -1409,293 +1197,4 @@ function stopNap() {
     clearInterval(napInterval);
     document.getElementById('nap-overlay').classList.add('hidden'); document.getElementById('nap-overlay').classList.remove('flex');
     resumeTimer();
-}
-
-/* =========================================================
-   📓 マイノート機能 (LocalStorage駆動 / 問題・正解・解説の表示 / グループ化表示)
-   ========================================================= */
-
-function getNotebookData() {
-    return JSON.parse(localStorage.getItem('sharoushi_notebooks') || '{}');
-}
-
-function saveNotebookData(data) {
-    try {
-        localStorage.setItem('sharoushi_notebooks', JSON.stringify(data));
-        updateStartScreenNotebookBadge();
-    } catch (e) {
-        if (e.name === 'QuotaExceededError') {
-            alert("⚠️ 保存容量の限界（約5MB）に達しました！不要なノート（特に画像付きのもの）を削除してから再度お試しください。");
-        }
-    }
-}
-
-function updateStartScreenNotebookBadge() {
-    const data = getNotebookData();
-    const count = Object.keys(data).length;
-    const badge = document.getElementById('start-nb-count-badge');
-    if (badge) badge.textContent = count;
-}
-
-function updateNotebookButtonDisplay(q_id) {
-    const data = getNotebookData();
-    const btn = document.getElementById('btn-open-notebook');
-    const btnText = document.getElementById('btn-nb-text');
-    if (!btn || !btnText) return;
-
-    if (data[q_id]) {
-        btnText.textContent = "📓 マイノートを確認・編集（登録済）";
-        btn.classList.add('ring-2', 'ring-amber-500', 'bg-amber-300');
-    } else {
-        btnText.textContent = "📓 マイノートにメモ・スクショを追加";
-        btn.classList.remove('ring-2', 'ring-amber-500', 'bg-amber-300');
-    }
-}
-
-function openNotebookForCurrentQuestion() {
-    const q = currentQuestions[currentIndex];
-    if (!q) return;
-    openNotebookModal(q);
-}
-
-function openNotebookModal(q) {
-    activeNotebookQId = q._id;
-    const data = getNotebookData();
-    const existing = data[q._id] || null;
-
-    document.getElementById('nb-badge-subject').textContent = q._subjectName || "社労士";
-    document.getElementById('nb-badge-chapter').textContent = q.項目 || "項目";
-    document.getElementById('nb-problem-text').innerHTML = (q.問題文 || "").replace(/\n/g, '<br>');
-    document.getElementById('nb-article-text').textContent = q.根拠条文 || "条文なし";
-    document.getElementById('nb-explanation-text').innerHTML = q.解説 || "解説なし";
-    
-    // 正解テキストの生成
-    let ansText = "";
-    if (q._type === '択一') {
-        ansText = (q.正誤 || "").trim();
-    } else if (q._type === '選択') {
-        ansText = `【A】${q.正解A || "-"} 【B】${q.正解B || "-"} 【C】${q.正解C || "-"} 【D】${q.正解D || "-"} 【E】${q.正解E || "-"}`;
-    } else {
-        ansText = existing ? existing.correctAnswer : "";
-    }
-    document.getElementById('nb-answer-text').textContent = ansText;
-    
-    const noteInput = document.getElementById('nb-note-input');
-    const deleteBtn = document.getElementById('btn-delete-nb');
-    const previewBox = document.getElementById('nb-image-preview-box');
-    const previewImg = document.getElementById('nb-image-preview');
-    const fileInput = document.getElementById('nb-image-input');
-    if (fileInput) fileInput.value = "";
-
-    if (existing) {
-        document.getElementById('nb-modal-subtitle').textContent = "登録済みノート";
-        noteInput.value = existing.note || "";
-        activeNotebookImageBase64 = existing.image || null;
-        if (existing.image) {
-            previewImg.src = existing.image;
-            previewBox.classList.remove('hidden');
-        } else {
-            previewBox.classList.add('hidden');
-        }
-        deleteBtn.classList.remove('hidden');
-    } else {
-        document.getElementById('nb-modal-subtitle').textContent = "新規作成";
-        noteInput.value = "";
-        activeNotebookImageBase64 = null;
-        previewBox.classList.add('hidden');
-        deleteBtn.classList.add('hidden');
-    }
-
-    const modal = document.getElementById('notebook-modal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-}
-
-function closeNotebookModal() {
-    const modal = document.getElementById('notebook-modal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    activeNotebookQId = null;
-    activeNotebookImageBase64 = null;
-    if (currentQuestions[currentIndex]) {
-        updateNotebookButtonDisplay(currentQuestions[currentIndex]._id);
-    }
-}
-
-function handleNotebookImageUpload(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    if (file.size > 2 * 1024 * 1024) {
-        alert("画像サイズが大きすぎます。容量制限（5MB）を節約するため、2MB以下の画像を選択するか、少し画質を落としてください。");
-        event.target.value = "";
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        activeNotebookImageBase64 = e.target.result;
-        const previewBox = document.getElementById('nb-image-preview-box');
-        const previewImg = document.getElementById('nb-image-preview');
-        previewImg.src = activeNotebookImageBase64;
-        previewBox.classList.remove('hidden');
-    };
-    reader.readAsDataURL(file);
-}
-
-function removeNotebookImage() {
-    activeNotebookImageBase64 = null;
-    const previewBox = document.getElementById('nb-image-preview-box');
-    const fileInput = document.getElementById('nb-image-input');
-    if (previewBox) previewBox.classList.add('hidden');
-    if (fileInput) fileInput.value = "";
-}
-
-function saveNotebookEntry() {
-    if (!activeNotebookQId) return;
-    const note = document.getElementById('nb-note-input').value.trim();
-
-    if (!note && !activeNotebookImageBase64) {
-        alert("メモを入力するか、画像を添付してください。");
-        return;
-    }
-
-    const q = allDatabase.find(item => item._id === activeNotebookQId) || currentQuestions[currentIndex];
-    
-    let ansText = "";
-    if (q._type === '択一') {
-        ansText = (q.正誤 || "").trim();
-    } else if (q._type === '選択') {
-        ansText = `A:${q.正解A} B:${q.正解B} C:${q.正解C} D:${q.正解D} E:${q.正解E}`;
-    }
-
-    const data = getNotebookData();
-    data[activeNotebookQId] = {
-        q_id: activeNotebookQId,
-        type: q?._type || "不明",
-        subject: q?._subjectName || "社労士",
-        chapter: q?.項目 || "一般",
-        questionText: q?.問題文 || "",
-        correctAnswer: ansText,
-        officialExplanation: q?.解説 || "",
-        article: q?.根拠条文 || "",
-        note: note,
-        image: activeNotebookImageBase64,
-        updatedAt: new Date().toLocaleDateString('ja-JP')
-    };
-
-    saveNotebookData(data);
-    closeNotebookModal();
-    
-    // リスト画面が開いていれば更新
-    if (!document.getElementById('notebook-list-modal').classList.contains('hidden')) {
-        openNotebookListModal();
-    }
-}
-
-function deleteCurrentNotebookEntry() {
-    if (!activeNotebookQId) return;
-    if (confirm("この問題のマイノートを完全に削除しますか？")) {
-        const data = getNotebookData();
-        delete data[activeNotebookQId];
-        saveNotebookData(data);
-        closeNotebookModal();
-        if (!document.getElementById('notebook-list-modal').classList.contains('hidden')) {
-            openNotebookListModal();
-        }
-    }
-}
-
-function openNotebookListModal() {
-    const data = getNotebookData();
-    const listContainer = document.getElementById('nb-list-container');
-    const countBadge = document.getElementById('nb-list-count');
-    const keys = Object.keys(data);
-    countBadge.textContent = `${keys.length}件`;
-    listContainer.innerHTML = "";
-
-    if (keys.length === 0) {
-        listContainer.innerHTML = `
-            <div class="p-8 text-center text-slate-400 font-bold mt-10">
-                <span class="text-6xl block mb-4">📓</span>
-                まだマイノートが登録されていません。<br><br>
-                特訓で問題を解いた後の解説画面から、気になる問題やテキストのスクショを保存してみましょう！
-            </div>`;
-    } else {
-        // 🌟 科目ごと ➡ 項目順 にソートする処理
-        const entries = keys.map(k => data[k]);
-        entries.sort((a, b) => {
-            if (a.subject !== b.subject) return a.subject.localeCompare(b.subject, 'ja');
-            if (a.chapter !== b.chapter) return a.chapter.localeCompare(b.chapter, 'ja');
-            return 0;
-        });
-
-        let currentSubject = "";
-        let currentChapter = "";
-
-        entries.forEach(item => {
-            // 科目ヘッダーの生成
-            if (item.subject !== currentSubject) {
-                currentSubject = item.subject;
-                currentChapter = ""; // 科目が変わったら項目もリセット
-                const subjHeader = document.createElement('h4');
-                subjHeader.className = "text-xl md:text-2xl font-black text-indigo-800 mt-6 mb-2 border-b-4 border-indigo-200 pb-1 flex items-center gap-2";
-                subjHeader.innerHTML = `<span>📘</span> ${currentSubject}`;
-                listContainer.appendChild(subjHeader);
-            }
-            
-            // 項目ヘッダーの生成
-            if (item.chapter !== currentChapter) {
-                currentChapter = item.chapter;
-                const chapHeader = document.createElement('h5');
-                chapHeader.className = "text-sm md:text-lg font-bold text-slate-700 mt-3 mb-2 ml-1 md:ml-3 border-l-4 border-amber-400 pl-2";
-                chapHeader.textContent = currentChapter;
-                listContainer.appendChild(chapHeader);
-            }
-
-            // カードの生成
-            const hasImgBadge = item.image ? '<span class="bg-amber-100 text-amber-800 text-[10px] px-1.5 py-0.5 rounded font-bold shadow-sm">📸 画像あり</span>' : '';
-            const card = document.createElement('div');
-            card.className = "bg-white border-2 border-slate-200 hover:border-amber-400 p-4 rounded-2xl shadow-sm hover:shadow-md transition-all flex flex-col gap-2.5 cursor-pointer ml-2 md:ml-6";
-            
-            // クリックで詳細を開く（擬似的な問題データを作って渡す）
-            card.onclick = () => {
-                const targetQ = allDatabase.find(q => q._id === item.q_id) || {
-                    _id: item.q_id,
-                    _type: item.type,
-                    _subjectName: item.subject,
-                    項目: item.chapter,
-                    問題文: item.questionText,
-                    解説: item.officialExplanation,
-                    根拠条文: item.article
-                };
-                closeNotebookListModal();
-                openNotebookModal(targetQ);
-            };
-
-            card.innerHTML = `
-                <div class="flex justify-between items-center mb-1">
-                    <div class="flex items-center gap-2">
-                        <span class="bg-slate-200 text-slate-600 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded">${item.type}</span>
-                        ${hasImgBadge}
-                    </div>
-                    <span class="text-[10px] md:text-xs text-slate-400 font-bold">${item.updatedAt} 更新</span>
-                </div>
-                <p class="text-sm md:text-base text-slate-800 font-medium line-clamp-2">${item.questionText}</p>
-                <div class="bg-amber-50/80 border border-amber-200 p-2.5 rounded-xl text-xs md:text-sm text-amber-950 font-bold line-clamp-2 shadow-sm mt-1">
-                    📝 ${item.note || "(画像のみ登録されています)"}
-                </div>`;
-            listContainer.appendChild(card);
-        });
-    }
-
-    const modal = document.getElementById('notebook-list-modal');
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-}
-
-function closeNotebookListModal() {
-    const modal = document.getElementById('notebook-list-modal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
 }
