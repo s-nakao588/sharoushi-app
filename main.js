@@ -59,18 +59,47 @@ window.onload = function() {
 
 function unlockAudio() {
     try {
-        if(!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        audioCtx.resume();
+        if(!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if(audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        
+        // 🌟 スマホでのAPI遅延による自動再生ブロックを先回りして解除
+        const player = document.getElementById('tts-player');
+        if (player) {
+            const isPlaying = player.currentTime > 0 && !player.paused && !player.ended && player.readyState > 2;
+            if (!isPlaying) {
+                player.play().catch(e => {}); 
+            }
+        }
+        
+        if ('speechSynthesis' in window) {
+            let u = new SpeechSynthesisUtterance("");
+            u.volume = 0;
+            window.speechSynthesis.speak(u);
+        }
     } catch (e) {}
 }
+
+function stopAudio() {
+    const p = document.getElementById('tts-player');
+    if(p) { p.pause(); p.currentTime = 0; }
+    if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); }
+}
+
 function toggleSound() {
-    isMuted = !isMuted; unlockAudio();
+    isMuted = !isMuted; 
+    if (isMuted) stopAudio();
+    else unlockAudio();
     const txt = isMuted ? "🔇 音声オフ" : "🔊 音声オン";
     const btn1 = document.getElementById('sound-toggle-start-btn');
     const btn2 = document.getElementById('sound-toggle-main-btn');
     if(btn1) btn1.innerHTML = txt;
     if(btn2) btn2.innerHTML = txt;
 }
+
 function toggleCustomTime() {
     const selectVal = document.getElementById('time-limit-select').value;
     const customInput = document.getElementById('custom-time-input');
@@ -105,12 +134,6 @@ function playWhistleSound() {
     osc.type = 'square'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); osc.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.1);
     gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
     osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.3);
-}
-
-function stopAudio() {
-    const p = document.getElementById('tts-player');
-    if(p) { p.pause(); p.currentTime = 0; }
-    if ('speechSynthesis' in window) { window.speechSynthesis.cancel(); }
 }
 
 function playCompletedArticle() {
@@ -585,6 +608,33 @@ function startNapQuick(minutes) {
     if(typeof generateAiMessage === "function") generateAiMessage("nap_start", { textOnly: true });
 }
 
+// 🌟 パネル折りたたみ・展開処理
+function toggleEvalPanel(type) {
+    const target = document.getElementById(`${type}-eval-collapse-target`);
+    const toggleBtn = document.getElementById(`${type}-eval-toggle`);
+    
+    if (type === 'sentaku') {
+        const markBtn = document.getElementById('btn-mark-sentaku');
+        if (target.classList.contains('hidden')) {
+            target.classList.remove('hidden');
+            if(markBtn) markBtn.classList.remove('hidden');
+            toggleBtn.innerHTML = '▼ 評価をたたむ';
+        } else {
+            target.classList.add('hidden');
+            if(markBtn) markBtn.classList.add('hidden');
+            toggleBtn.innerHTML = '▲ 評価を開く';
+        }
+    } else {
+        if (target.classList.contains('hidden')) {
+            target.classList.remove('hidden');
+            toggleBtn.innerHTML = '▼ 評価をたたむ';
+        } else {
+            target.classList.add('hidden');
+            toggleBtn.innerHTML = '▲ 評価を開く';
+        }
+    }
+}
+
 function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
     const q = currentQuestions[currentIndex];
     if (!q) return;
@@ -606,10 +656,18 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
     document.getElementById('explanation-area').classList.add('hidden');
     document.getElementById('ai-fix-action').classList.add('hidden');
     
+    // 🌟 ロード時に評価パネルを初期状態（展開）にリセット
     document.getElementById('self-eval-area-takuitsu').classList.add('hidden');
     document.getElementById('self-eval-area-takuitsu').classList.remove('block', '!block');
+    document.getElementById('takuitsu-eval-toggle').classList.add('hidden');
+    document.getElementById('takuitsu-eval-collapse-target').classList.remove('hidden');
+    
     document.getElementById('self-eval-area-sentaku').classList.add('hidden');
     document.getElementById('self-eval-area-sentaku').classList.remove('block', '!block');
+    document.getElementById('sentaku-eval-toggle').classList.add('hidden');
+    document.getElementById('sentaku-eval-collapse-target').classList.remove('hidden');
+    const markBtn = document.getElementById('btn-mark-sentaku');
+    if (markBtn) markBtn.classList.remove('hidden');
     
     document.getElementById('takuitsu-eval-content').classList.remove('hidden');
     document.getElementById('rest-proposal-menu-takuitsu').classList.add('hidden');
@@ -654,14 +712,6 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
         }
     }
 
-    if (!isSenbonKnock && !isTimeAttack && !isBonusMode && !isSuddenDeath && !isCountdownRelay && !isTrapMode && !isSurpriseAttack) {
-        document.getElementById('takuitsu-eval-buttons').classList.remove('hidden');
-        document.getElementById('eval-guide-text-takuitsu').classList.remove('hidden');
-    } else {
-        document.getElementById('takuitsu-eval-buttons').classList.add('hidden');
-        document.getElementById('eval-guide-text-takuitsu').classList.add('hidden');
-    }
-    
     document.getElementById('q-type-badge-header').textContent = q._type + "式モード";
     startStudyTimer(q._subjectName);
 
@@ -752,6 +802,9 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
 }
 
 function answerTakuitsu(userAnswer) {
+    // 🌟 回答タップの瞬間に音声をアンロック
+    unlockAudio();
+
     if (isAnsweredTakuitsu) return;
     isAnsweredTakuitsu = true;
     
@@ -807,6 +860,13 @@ function answerTakuitsu(userAnswer) {
     const evalArea = document.getElementById('self-eval-area-takuitsu');
     evalArea.classList.remove('hidden');
     evalArea.classList.add('block', '!block');
+    
+    // 🌟 パネル表示時にトグルボタンを出現
+    const toggleBtn = document.getElementById('takuitsu-eval-toggle');
+    if(toggleBtn) {
+        toggleBtn.classList.remove('hidden');
+        toggleBtn.innerHTML = '▼ 評価をたたむ';
+    }
     
     const badge = document.getElementById('score-badge');
     badge.textContent = isCorrect ? "大正解！ 🎉" : "不正解... 💦";
@@ -871,6 +931,9 @@ function fillRandomAnswers() {
 }
 
 function submitSentakuAnswers() {
+    // 🌟 回答タップの瞬間に音声をアンロック
+    unlockAudio();
+    
     let hasUnanswered = false; let userAns = {};
     ['A','B','C','D','E'].forEach(letter => {
         const s = document.querySelector(`.inline-select[data-letter="${letter}"]`);
@@ -920,6 +983,13 @@ function submitSentakuAnswers() {
     const evalAreaSentaku = document.getElementById('self-eval-area-sentaku');
     evalAreaSentaku.classList.remove('hidden');
     evalAreaSentaku.classList.add('block', '!block');
+    
+    // 🌟 パネル表示時にトグルボタンを出現
+    const toggleBtnSentaku = document.getElementById('sentaku-eval-toggle');
+    if(toggleBtnSentaku) {
+        toggleBtnSentaku.classList.remove('hidden');
+        toggleBtnSentaku.innerHTML = '▼ 評価をたたむ';
+    }
     
     document.getElementById('score-badge').textContent = `${score} / 5 点`;
     document.getElementById('score-badge').className = score === 5 ? "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-green-500 shadow-md mb-2 animate-bounce" : "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-red-500 shadow-md mb-2";
@@ -971,6 +1041,12 @@ function selectEvalTakuitsu(status) {
     const nextBtn = document.getElementById('btn-next-takuitsu');
     nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     nextBtn.textContent = "次の問題へ ➡";
+    
+    // 🌟 評価選択後に自動でパネルを折りたたみ見やすくする
+    const target = document.getElementById('takuitsu-eval-collapse-target');
+    if (target && !target.classList.contains('hidden')) {
+        toggleEvalPanel('takuitsu');
+    }
 }
 
 function submitEvalAndNext() {
@@ -1103,6 +1179,9 @@ function finishAllPlaylists() {
     document.getElementById('takuitsu-eval-content').classList.add('hidden');
     document.getElementById('rest-proposal-menu-takuitsu').classList.add('hidden'); document.getElementById('rest-proposal-menu-takuitsu').classList.remove('flex');
     document.getElementById('infinite-drill-menu').classList.remove('hidden'); document.getElementById('infinite-drill-menu').classList.add('flex');
+    
+    // パネル展開状態のリセット
+    document.getElementById('takuitsu-eval-toggle').classList.add('hidden');
     
     if (typeof generateAiMessage === "function") generateAiMessage("end_all", { totalPlayed: cumulativeQuestions, mistakes: todayMistakes.length, textOnly: false });
 }
