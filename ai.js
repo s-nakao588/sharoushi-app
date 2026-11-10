@@ -2,7 +2,7 @@
    🤖 AI・Gemini連携モジュール
    ========================================================= */
 
-async function speakText(text) {
+async function speakText(text, isStartScreen = false) {
     if (isMuted || !text) return; 
     let cleanText = text.replace(/<[^>]+>/g, '').trim(); if (!cleanText) return;
     
@@ -19,18 +19,30 @@ async function speakText(text) {
 
         const p = document.getElementById('tts-player');
         p.src = `data:audio/mp3;base64,${data.candidates[0].content.parts[0].inlineData.data}`; 
+        p.onplay = () => {
+            if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
+        };
+        // 🌟 フォールバック用: もしiOSでonplayがうまく発火しなかった場合でも安全に進める
+        setTimeout(() => {
+            if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
+        }, 1000); 
         p.play();
     } catch (err) {
-        // 🌟 バックアップに準拠したシンプルなフォールバック
         if ('speechSynthesis' in window && !isMuted) {
             const utterance = new SpeechSynthesisUtterance(cleanText); 
             utterance.lang = 'ja-JP';
+            utterance.onstart = () => {
+                if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
+            };
+            setTimeout(() => {
+                if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
+            }, 1000);
             window.speechSynthesis.speak(utterance);
         }
     }
 }
 
-async function generateAiMessage(situation, extraData = {}) {
+async function generateAiMessage(situation, extraData = {}, isStartScreen = false) {
     const aiMessageEl = document.getElementById('ai-message');
     if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
     
@@ -41,7 +53,8 @@ async function generateAiMessage(situation, extraData = {}) {
 2. 定型文は一切使わず、毎回必ず状況に合わせて自分の言葉で考えて生成すること。
 3. 決して暴言や高圧的な説教はせず、親しみやすい現代の一般的な若い女性の自然な口語体で話すこと。\n`;
 
-    if (situation === "start_takuitsu") prompt += `択一式の特訓スタート。短く前向きに気合を入れて。`;
+    if (situation === "start_all") prompt += `特訓スタート。全${extraData.total}問だよと伝えて短く前向きに気合を入れて。`;
+    else if (situation === "start_takuitsu") prompt += `択一式の特訓スタート。短く前向きに気合を入れて。`;
     else if (situation === "start_sentaku") prompt += `選択式の特訓スタート。文脈を意識して埋めてみてと励まして。`;
     else if (situation === "hint_takuitsu") prompt += `択一式のヒント。答えは言わず、見るべきポイントを1文で示して。問題:${extraData.questionText} 解説:${extraData.explanation}`;
     else if (situation === "hint_sentaku") prompt += `選択式のヒント。「キーワードを黄色くしたから確認してみて」とアドバイスして。`;
@@ -57,9 +70,11 @@ async function generateAiMessage(situation, extraData = {}) {
         const data = await res.json();
         const text = data.candidates[0].content.parts[0].text;
         if(aiMessageEl) { aiMessageEl.textContent = text; }
-        if (!extraData.textOnly) speakText(text); 
+        if (!extraData.textOnly) speakText(text, isStartScreen); 
+        else if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
     } catch(e) {
         if(aiMessageEl) { aiMessageEl.textContent = `今日も一緒に一問ずつ進めていこうね！`; }
+        if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
     }
 }
 
@@ -130,8 +145,10 @@ async function sendStrategyMessage() {
         });
         if (!res.ok) throw new Error("通信エラー");
         const data = await res.json(); const text = data.candidates[0].content.parts[0].text;
-        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
-        let replyText = text.replace(/```json\n[\s\S]*?\n```/, '').trim();
+        const jsonMatch = text.match(/
+```json\n([\s\S]*?)\n```/);
+        let replyText = text.replace(/
+```json\n[\s\S]*?\n```/, '').trim();
         document.getElementById(typingId).outerHTML = `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl">${replyText}</div>`;
         logEl.scrollTop = logEl.scrollHeight;
         if (jsonMatch) {
