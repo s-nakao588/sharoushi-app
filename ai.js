@@ -145,10 +145,8 @@ async function sendStrategyMessage() {
         });
         if (!res.ok) throw new Error("通信エラー");
         const data = await res.json(); const text = data.candidates[0].content.parts[0].text;
-        const jsonMatch = text.match(/
-```json\n([\s\S]*?)\n```/);
-        let replyText = text.replace(/
-```json\n[\s\S]*?\n```/, '').trim();
+        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+        let replyText = text.replace(/```json\n[\s\S]*?\n```/, '').trim();
         document.getElementById(typingId).outerHTML = `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl">${replyText}</div>`;
         logEl.scrollTop = logEl.scrollHeight;
         if (jsonMatch) {

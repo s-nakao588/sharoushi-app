@@ -47,7 +47,7 @@ window.onload = function() {
         const savedKey = localStorage.getItem('gemini_api_key');
         const savedModel = localStorage.getItem('gemini_api_model');
         const savedMute = localStorage.getItem('sharoushi_is_muted');
-        const savedCond = localStorage.getItem('sharoushi_condition'); // 🌟 講師モード復元
+        const savedCond = localStorage.getItem('sharoushi_condition');
         
         if(savedKey) { document.getElementById('api-key-input').value = savedKey; userApiKey = savedKey; }
         if(savedModel) { document.getElementById('api-model-input').value = savedModel; userModel = savedModel; }
@@ -59,7 +59,6 @@ window.onload = function() {
         }
         updateSoundButtons();
         
-        // 🌟 講師モード変更時の保存
         document.getElementById('condition-select').addEventListener('change', function(e) {
             localStorage.setItem('sharoushi_condition', e.target.value);
         });
@@ -469,7 +468,6 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
     if (!userApiKey) { alert("APIキーを入力してください！"); document.getElementById('api-settings-wrapper').classList.remove('hidden'); return; }
     try { localStorage.setItem('gemini_api_key', userApiKey); localStorage.setItem('gemini_api_model', userModel); } catch(e) {}
     
-    // 🌟 スマホ用：画面タップ直後に無音再生してアンロック
     unlockAudio();
     
     cumulativeQuestions = 0; setCorrectCount = 0; todayMistakes = []; usedQuestionIds = new Set();
@@ -489,7 +487,7 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
 
     if (globalTimeLeftSeconds !== null) {
         document.getElementById('time-display').classList.remove('hidden');
-        document.getElementById('time-display').textContent = `⏳ --秒`; // 🌟 スタート待機中はタイマーを止めおく
+        document.getElementById('time-display').textContent = `⏳ --秒`;
     } else {
         document.getElementById('time-display').textContent = '無制限';
     }
@@ -539,7 +537,6 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
     initialGlobalTime = globalTimeLeftSeconds;
     eventTriggeredThisSession = false;
 
-    // 🌟 音声オンの場合は暗転待機、オフの場合は即スタート
     if (!isMuted) {
         document.getElementById('start-wait-overlay').classList.remove('hidden');
         document.getElementById('start-wait-overlay').classList.add('flex');
@@ -547,14 +544,12 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
         document.getElementById('start-wait-text').textContent = "準備中...💬";
         
         let promptType = mode === 'normal' ? "start_all" : `start_${playlistQueue[0].type === '択一' ? 'takuitsu' : 'sentaku'}`;
-        // isStartScreen フラグを true として渡す
         generateAiMessage(promptType, { total: totalQuestionsToPlay, textOnly: false }, true);
     } else {
         startSessionAndTimer();
     }
 }
 
-// 🌟 スタート画面で音声が開始されたら呼ばれる関数
 function onAiGreetingStarted() {
     const overlay = document.getElementById('start-wait-overlay');
     if(!overlay.classList.contains('hidden')) {
@@ -604,7 +599,6 @@ function startNextPlaylistSet(isFirstOfAll = false) {
     if (isSenbonKnock || isSuddenDeath || isCountdownRelay || isSurpriseAttack) {
         document.getElementById('btn-surrender').classList.remove('hidden');
     }
-    // isFirstOfAllを伝播させて二重挨拶を防止
     loadQuestion(false, true, isFirstOfAll);
 }
 
@@ -707,10 +701,20 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
     document.getElementById('q-subject-badge').textContent = q._subjectName;
     document.getElementById('q-chapter-text').textContent = q.項目 || (isAlchemy ? "Pro AI 錬金問題" : "条文");
     
-    const hist = userHistory[q._id] || { playCount: 0, correctCount: 0 };
+    const hist = userHistory[q._id] || { playCount: 0, correctCount: 0, historyStr: "", status: "" };
     let maxScore = q._type === '選択' ? (hist.playCount * 5) : hist.playCount;
     const rate = hist.playCount > 0 ? Math.round((hist.correctCount / maxScore) * 100) : 0;
     document.getElementById('q-history-stats').textContent = `挑戦:${hist.playCount} 過去正答:${rate}%`;
+    
+    // 🌟 直近履歴テキストの更新 (PC/iPad用)
+    const recentHistoryText = document.getElementById('recent-history-text');
+    if(recentHistoryText) {
+        recentHistoryText.textContent = hist.historyStr || "-----";
+    }
+    const lastEvalText = document.getElementById('last-eval-text');
+    if(lastEvalText) {
+        lastEvalText.textContent = hist.status || "なし";
+    }
 
     document.getElementById('explanation-area').classList.add('hidden');
     document.getElementById('ai-fix-action').classList.add('hidden');
@@ -851,7 +855,6 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
             else if(isBonusMode) generateAiMessage("start_bonus", { textOnly: false });
             else if(isSenbonKnock) generateAiMessage("start_senbon", { textOnly: true });
             else if(isSurpriseAttack) generateAiMessage("start_surprise", { textOnly: false });
-            // 🌟 オーバーレイで初回の挨拶を済ませている場合は二重に挨拶しない
             else if(!isSuddenDeath && !isCountdownRelay && !isTrapMode && !isHardcore && !isFirstOfAll) {
                 generateAiMessage(`start_${q._type === '択一' ? 'takuitsu' : 'sentaku'}`, { textOnly: false });
             }
@@ -1080,6 +1083,7 @@ async function saveToGAS(q_id, actionStr, isCorrect, score, traps) {
         if(data.success && userHistory[q_id]) {
             userHistory[q_id].playCount = data.playCount;
             userHistory[q_id].correctCount = data.correctCount;
+            if (data.histStr) userHistory[q_id].historyStr = data.histStr;
         }
     } catch(e) {}
 }
@@ -1122,6 +1126,8 @@ function markEvalSentaku(status) {
     const statusStr = `${status}(${checked.join(',')})`;
     const q = currentQuestions[currentIndex];
     fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_status', q_id: q._id, status: statusStr }) });
+    if(!userHistory[q._id]) userHistory[q._id] = {};
+    userHistory[q._id].status = statusStr;
     document.querySelectorAll('input[name="eval-target"]:checked').forEach(cb => { cb.parentElement.classList.add('opacity-30', 'bg-yellow-200'); cb.checked = false; });
     nextQuestion();
 }

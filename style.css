@@ -157,6 +157,9 @@ option.hidden-option { display: none !important; }
     #eval-guide-text, #eval-guide-text-takuitsu { font-size: 0.85rem !important; margin-bottom: 0.5rem !important; }
     .btn-mistake-action { font-size: 0.9rem !important; padding: 0.5rem 1rem !important; }
 
+    /* 🌟 スマホ版での履歴表示エリア非表示 🌟 */
+    #recent-history-area { display: none !important; }
+
     /* 🌟 スマホ版の下部固定フロート＆順序入れ替え 🌟 */
     body { display: block !important; overflow: hidden !important; }
     
