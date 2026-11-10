@@ -46,14 +46,24 @@ window.onload = function() {
     try {
         const savedKey = localStorage.getItem('gemini_api_key');
         const savedModel = localStorage.getItem('gemini_api_model');
-        const savedMute = localStorage.getItem('sharoushi_is_muted'); // 🌟 状態復元
+        const savedMute = localStorage.getItem('sharoushi_is_muted');
+        const savedCond = localStorage.getItem('sharoushi_condition'); // 🌟 講師モード復元
         
         if(savedKey) { document.getElementById('api-key-input').value = savedKey; userApiKey = savedKey; }
         if(savedModel) { document.getElementById('api-model-input').value = savedModel; userModel = savedModel; }
         if(savedMute !== null) { 
             isMuted = (savedMute === 'true');
         }
+        if(savedCond) {
+            document.getElementById('condition-select').value = savedCond;
+        }
         updateSoundButtons();
+        
+        // 🌟 講師モード変更時の保存
+        document.getElementById('condition-select').addEventListener('change', function(e) {
+            localStorage.setItem('sharoushi_condition', e.target.value);
+        });
+        
     } catch(e) {}
     
     sessionTimerInterval = setInterval(() => { sessionTotalTimeSec++; }, 1000);
@@ -80,7 +90,6 @@ function unlockAudio() {
             audioCtx.resume();
         }
         
-        // 🌟 スマホでのAPI遅延による自動再生ブロックを先回りして解除
         const player = document.getElementById('tts-player');
         if (player) {
             const isPlaying = player.currentTime > 0 && !player.paused && !player.ended && player.readyState > 2;
@@ -89,7 +98,6 @@ function unlockAudio() {
             }
         }
         
-        // 🌟 自然な声のキャッシュ用（無音再生）
         if ('speechSynthesis' in window) {
             window.speechSynthesis.getVoices(); 
             let u = new SpeechSynthesisUtterance("");
@@ -107,15 +115,9 @@ function stopAudio() {
 
 function toggleSound() {
     isMuted = !isMuted; 
-    
-    // 🌟 音声設定を確実にローカルストレージへ保存する
     try { localStorage.setItem('sharoushi_is_muted', isMuted); } catch(e){}
-    
-    if (isMuted) {
-        stopAudio();
-    } else {
-        unlockAudio();
-    }
+    if (isMuted) stopAudio();
+    else unlockAudio();
     updateSoundButtons();
 }
 
@@ -466,6 +468,8 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
     userModel = document.getElementById('api-model-input').value;
     if (!userApiKey) { alert("APIキーを入力してください！"); document.getElementById('api-settings-wrapper').classList.remove('hidden'); return; }
     try { localStorage.setItem('gemini_api_key', userApiKey); localStorage.setItem('gemini_api_model', userModel); } catch(e) {}
+    
+    // 🌟 スマホ用：画面タップ直後に無音再生してアンロック
     unlockAudio();
     
     cumulativeQuestions = 0; setCorrectCount = 0; todayMistakes = []; usedQuestionIds = new Set();
@@ -485,7 +489,7 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
 
     if (globalTimeLeftSeconds !== null) {
         document.getElementById('time-display').classList.remove('hidden');
-        globalTimerInterval = setInterval(globalTimerTick, 1000);
+        document.getElementById('time-display').textContent = `⏳ --秒`; // 🌟 スタート待機中はタイマーを止めおく
     } else {
         document.getElementById('time-display').textContent = '無制限';
     }
@@ -534,6 +538,42 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
     
     initialGlobalTime = globalTimeLeftSeconds;
     eventTriggeredThisSession = false;
+
+    // 🌟 音声オンの場合は暗転待機、オフの場合は即スタート
+    if (!isMuted) {
+        document.getElementById('start-wait-overlay').classList.remove('hidden');
+        document.getElementById('start-wait-overlay').classList.add('flex');
+        document.getElementById('btn-actual-start').classList.add('hidden');
+        document.getElementById('start-wait-text').textContent = "準備中...💬";
+        
+        let promptType = mode === 'normal' ? "start_all" : `start_${playlistQueue[0].type === '択一' ? 'takuitsu' : 'sentaku'}`;
+        // isStartScreen フラグを true として渡す
+        generateAiMessage(promptType, { total: totalQuestionsToPlay, textOnly: false }, true);
+    } else {
+        startSessionAndTimer();
+    }
+}
+
+// 🌟 スタート画面で音声が開始されたら呼ばれる関数
+function onAiGreetingStarted() {
+    const overlay = document.getElementById('start-wait-overlay');
+    if(!overlay.classList.contains('hidden')) {
+        document.getElementById('start-wait-text').textContent = "よし、いけるよ！";
+        document.querySelector('#start-wait-icon').classList.remove('animate-pulse');
+        document.getElementById('btn-actual-start').classList.remove('hidden');
+    }
+}
+
+function hideStartWaitOverlayAndStart() {
+    document.getElementById('start-wait-overlay').classList.add('hidden');
+    document.getElementById('start-wait-overlay').classList.remove('flex');
+    startSessionAndTimer();
+}
+
+function startSessionAndTimer() {
+    if (globalTimeLeftSeconds !== null && !globalTimerInterval) {
+        globalTimerInterval = setInterval(globalTimerTick, 1000);
+    }
     startNextPlaylistSet(true);
 }
 
@@ -564,7 +604,8 @@ function startNextPlaylistSet(isFirstOfAll = false) {
     if (isSenbonKnock || isSuddenDeath || isCountdownRelay || isSurpriseAttack) {
         document.getElementById('btn-surrender').classList.remove('hidden');
     }
-    loadQuestion(false, isFirstOfAll);
+    // isFirstOfAllを伝播させて二重挨拶を防止
+    loadQuestion(false, true, isFirstOfAll);
 }
 
 function startCountdownRelayTimer() {
@@ -653,7 +694,7 @@ function toggleEvalPanel(type) {
     }
 }
 
-function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
+function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = false) {
     const q = currentQuestions[currentIndex];
     if (!q) return;
     
@@ -810,7 +851,8 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
             else if(isBonusMode) generateAiMessage("start_bonus", { textOnly: false });
             else if(isSenbonKnock) generateAiMessage("start_senbon", { textOnly: true });
             else if(isSurpriseAttack) generateAiMessage("start_surprise", { textOnly: false });
-            else if(!isSuddenDeath && !isCountdownRelay && !isTrapMode && !isHardcore) {
+            // 🌟 オーバーレイで初回の挨拶を済ませている場合は二重に挨拶しない
+            else if(!isSuddenDeath && !isCountdownRelay && !isTrapMode && !isHardcore && !isFirstOfAll) {
                 generateAiMessage(`start_${q._type === '択一' ? 'takuitsu' : 'sentaku'}`, { textOnly: false });
             }
         }
