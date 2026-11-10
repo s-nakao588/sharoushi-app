@@ -706,7 +706,6 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
     const rate = hist.playCount > 0 ? Math.round((hist.correctCount / maxScore) * 100) : 0;
     document.getElementById('q-history-stats').textContent = `挑戦:${hist.playCount} 過去正答:${rate}%`;
     
-    // 🌟 直近履歴テキストの更新 (PC/iPad用)
     const recentHistoryText = document.getElementById('recent-history-text');
     if(recentHistoryText) {
         recentHistoryText.textContent = hist.historyStr || "-----";
