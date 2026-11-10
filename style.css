@@ -25,6 +25,25 @@ button { -webkit-tap-highlight-color: transparent; }
 option.hidden-option { display: none !important; }
 .highlight-clue { background-color: #fef08a; padding: 0 2px; border-radius: 2px; font-weight: bold; border-bottom: 2px solid #eab308; }
 
+/* 🌟 PC版およびiPad版（768px以上）の共通調整（履歴表示エリアの確実な配置） */
+@media (min-width: 768px) {
+    #recent-history-area {
+        position: absolute !important;
+        bottom: 120px !important; /* 〇✖ボタンのすぐ上に配置 */
+        left: 0 !important;
+        width: 100% !important;
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        z-index: 30 !important;
+    }
+    #recent-history-area > div {
+        font-size: 1.1rem !important;
+        padding: 0.4rem 1.2rem !important;
+    }
+}
+
 /* 💡 iPad・タブレット専用（タッチ端末 ＆ 画面幅768px以上） */
 @media (hover: none) and (pointer: coarse) and (min-width: 768px) {
     /* 🌟 特訓画面ヘッダーの見切れ防止（余白とボタンサイズを微調整） */
@@ -91,7 +110,16 @@ option.hidden-option { display: none !important; }
     .btn-mistake-action { font-size: 1.25rem !important; padding: 0.75rem 1.25rem !important; }
     
     /* iPad用絶対配置パディング調整 */
-    .takuitsu-q-container { padding-bottom: 12rem !important; }
+    .takuitsu-q-container { padding-bottom: 14rem !important; }
+
+    /* 🌟 iPad版用の履歴表示エリア拡大調整 */
+    #recent-history-area {
+        bottom: 130px !important; 
+    }
+    #recent-history-area > div {
+        font-size: 1.4rem !important;
+        padding: 0.6rem 1.6rem !important;
+    }
 
     /* 🌟 iPad専用: マイノート画面の最大化＆見やすさ向上 🌟 */
     #notebook-modal > div,
@@ -157,7 +185,7 @@ option.hidden-option { display: none !important; }
     #eval-guide-text, #eval-guide-text-takuitsu { font-size: 0.85rem !important; margin-bottom: 0.5rem !important; }
     .btn-mistake-action { font-size: 0.9rem !important; padding: 0.5rem 1rem !important; }
 
-    /* 🌟 スマホ版での履歴表示エリア非表示 🌟 */
+    /* 🌟 スマホ版での履歴表示エリア完全非表示 🌟 */
     #recent-history-area { display: none !important; }
 
     /* 🌟 スマホ版の下部固定フロート＆順序入れ替え 🌟 */
