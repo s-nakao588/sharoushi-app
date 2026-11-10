@@ -46,8 +46,14 @@ window.onload = function() {
     try {
         const savedKey = localStorage.getItem('gemini_api_key');
         const savedModel = localStorage.getItem('gemini_api_model');
+        const savedMute = localStorage.getItem('sharoushi_is_muted'); // 🌟 状態復元
+        
         if(savedKey) { document.getElementById('api-key-input').value = savedKey; userApiKey = savedKey; }
         if(savedModel) { document.getElementById('api-model-input').value = savedModel; userModel = savedModel; }
+        if(savedMute !== null) { 
+            isMuted = (savedMute === 'true');
+        }
+        updateSoundButtons();
     } catch(e) {}
     
     sessionTimerInterval = setInterval(() => { sessionTotalTimeSec++; }, 1000);
@@ -56,6 +62,14 @@ window.onload = function() {
     fetchHistory(); 
     if (typeof updateStartScreenNotebookBadge === "function") updateStartScreenNotebookBadge();
 };
+
+function updateSoundButtons() {
+    const txt = isMuted ? "🔇 音声オフ" : "🔊 音声オン";
+    const btn1 = document.getElementById('sound-toggle-start-btn');
+    const btn2 = document.getElementById('sound-toggle-main-btn');
+    if(btn1) btn1.innerHTML = txt;
+    if(btn2) btn2.innerHTML = txt;
+}
 
 function unlockAudio() {
     try {
@@ -75,7 +89,9 @@ function unlockAudio() {
             }
         }
         
+        // 🌟 自然な声のキャッシュ用（無音再生）
         if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices(); 
             let u = new SpeechSynthesisUtterance("");
             u.volume = 0;
             window.speechSynthesis.speak(u);
@@ -91,13 +107,16 @@ function stopAudio() {
 
 function toggleSound() {
     isMuted = !isMuted; 
-    if (isMuted) stopAudio();
-    else unlockAudio();
-    const txt = isMuted ? "🔇 音声オフ" : "🔊 音声オン";
-    const btn1 = document.getElementById('sound-toggle-start-btn');
-    const btn2 = document.getElementById('sound-toggle-main-btn');
-    if(btn1) btn1.innerHTML = txt;
-    if(btn2) btn2.innerHTML = txt;
+    
+    // 🌟 音声設定を確実にローカルストレージへ保存する
+    try { localStorage.setItem('sharoushi_is_muted', isMuted); } catch(e){}
+    
+    if (isMuted) {
+        stopAudio();
+    } else {
+        unlockAudio();
+    }
+    updateSoundButtons();
 }
 
 function toggleCustomTime() {
@@ -608,7 +627,6 @@ function startNapQuick(minutes) {
     if(typeof generateAiMessage === "function") generateAiMessage("nap_start", { textOnly: true });
 }
 
-// 🌟 パネル折りたたみ・展開処理
 function toggleEvalPanel(type) {
     const target = document.getElementById(`${type}-eval-collapse-target`);
     const toggleBtn = document.getElementById(`${type}-eval-toggle`);
@@ -656,7 +674,6 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
     document.getElementById('explanation-area').classList.add('hidden');
     document.getElementById('ai-fix-action').classList.add('hidden');
     
-    // 🌟 ロード時に評価パネルを初期状態（展開）にリセット
     document.getElementById('self-eval-area-takuitsu').classList.add('hidden');
     document.getElementById('self-eval-area-takuitsu').classList.remove('block', '!block');
     document.getElementById('takuitsu-eval-toggle').classList.add('hidden');
@@ -802,7 +819,6 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
 }
 
 function answerTakuitsu(userAnswer) {
-    // 🌟 回答タップの瞬間に音声をアンロック
     unlockAudio();
 
     if (isAnsweredTakuitsu) return;
@@ -861,7 +877,6 @@ function answerTakuitsu(userAnswer) {
     evalArea.classList.remove('hidden');
     evalArea.classList.add('block', '!block');
     
-    // 🌟 パネル表示時にトグルボタンを出現
     const toggleBtn = document.getElementById('takuitsu-eval-toggle');
     if(toggleBtn) {
         toggleBtn.classList.remove('hidden');
@@ -931,7 +946,6 @@ function fillRandomAnswers() {
 }
 
 function submitSentakuAnswers() {
-    // 🌟 回答タップの瞬間に音声をアンロック
     unlockAudio();
     
     let hasUnanswered = false; let userAns = {};
@@ -984,7 +998,6 @@ function submitSentakuAnswers() {
     evalAreaSentaku.classList.remove('hidden');
     evalAreaSentaku.classList.add('block', '!block');
     
-    // 🌟 パネル表示時にトグルボタンを出現
     const toggleBtnSentaku = document.getElementById('sentaku-eval-toggle');
     if(toggleBtnSentaku) {
         toggleBtnSentaku.classList.remove('hidden');
@@ -1042,7 +1055,6 @@ function selectEvalTakuitsu(status) {
     nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
     nextBtn.textContent = "次の問題へ ➡";
     
-    // 🌟 評価選択後に自動でパネルを折りたたみ見やすくする
     const target = document.getElementById('takuitsu-eval-collapse-target');
     if (target && !target.classList.contains('hidden')) {
         toggleEvalPanel('takuitsu');
@@ -1180,7 +1192,6 @@ function finishAllPlaylists() {
     document.getElementById('rest-proposal-menu-takuitsu').classList.add('hidden'); document.getElementById('rest-proposal-menu-takuitsu').classList.remove('flex');
     document.getElementById('infinite-drill-menu').classList.remove('hidden'); document.getElementById('infinite-drill-menu').classList.add('flex');
     
-    // パネル展開状態のリセット
     document.getElementById('takuitsu-eval-toggle').classList.add('hidden');
     
     if (typeof generateAiMessage === "function") generateAiMessage("end_all", { totalPlayed: cumulativeQuestions, mistakes: todayMistakes.length, textOnly: false });

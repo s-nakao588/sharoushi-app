@@ -18,41 +18,14 @@ async function speakText(text) {
         if (isMuted) return;
 
         const p = document.getElementById('tts-player');
-        p.src = `data:audio/mp3;base64,${data.candidates[0].content.parts[0].inlineData.data}`; p.play();
+        p.src = `data:audio/mp3;base64,${data.candidates[0].content.parts[0].inlineData.data}`; 
+        p.play();
     } catch (err) {
-        console.warn("Gemini API Error (Fallback to Web Speech):", err);
+        // 🌟 バックアップに準拠したシンプルなフォールバック
         if ('speechSynthesis' in window && !isMuted) {
-            
-            const playFallbackVoice = () => {
-                const utterance = new SpeechSynthesisUtterance(cleanText); 
-                utterance.lang = 'ja-JP';
-                utterance.rate = 1.1; 
-                utterance.pitch = 1.2;
-
-                const voices = window.speechSynthesis.getVoices();
-                const preferredVoices = voices.filter(voice => 
-                    voice.lang === 'ja-JP' && (
-                        voice.name.includes('Kyoko') || 
-                        voice.name.includes('Google') || 
-                        voice.name.includes('Otoya') ||
-                        voice.name.includes('Siri')
-                    )
-                );
-                
-                if (preferredVoices.length > 0) {
-                    const kyoko = preferredVoices.find(v => v.name.includes('Kyoko'));
-                    const google = preferredVoices.find(v => v.name.includes('Google'));
-                    utterance.voice = kyoko || google || preferredVoices[0];
-                }
-                window.speechSynthesis.speak(utterance);
-            };
-
-            // iOSはVoicesの読み込みにラグがあるため、確実に取得してから再生する
-            if (window.speechSynthesis.getVoices().length === 0) {
-                window.speechSynthesis.onvoiceschanged = playFallbackVoice;
-            } else {
-                playFallbackVoice();
-            }
+            const utterance = new SpeechSynthesisUtterance(cleanText); 
+            utterance.lang = 'ja-JP';
+            window.speechSynthesis.speak(utterance);
         }
     }
 }
