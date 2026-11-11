@@ -58,7 +58,8 @@
 
     <!-- 📓 マイノート編集・閲覧モーダル -->
     <div id="notebook-modal" class="fixed inset-0 bg-slate-900/80 z-[150] hidden items-center justify-center p-3 md:p-6 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl shadow-2xl max-w-3xl w-full max-h-[92dvh] flex flex-col overflow-hidden border-2 md:border-4 border-amber-300 animate-in fade-in">
+        <!-- 💡 PC版(lg:)のみ画面いっぱいに広げる指定を追加 -->
+        <div class="bg-white rounded-3xl shadow-2xl max-w-3xl lg:max-w-[96vw] w-full lg:h-[96dvh] max-h-[92dvh] lg:max-h-[96dvh] flex flex-col overflow-hidden border-2 md:border-4 border-amber-300 animate-in fade-in">
             <div class="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-5 py-3 md:py-4 flex justify-between items-center shrink-0">
                 <h3 class="text-lg md:text-2xl font-black flex items-center gap-2">
                     <span>📓 マイノート</span>
@@ -69,8 +70,8 @@
 
             <div class="p-4 md:p-6 overflow-y-auto flex-1 flex flex-col gap-5 text-slate-800">
                 
-                <!-- 🌟 フリーノート用の科目・項目選択エリア（通常は非表示） -->
-                <div id="nb-free-select-area" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-5 flex flex-col gap-4 shadow-inner">
+                <!-- 🌟 フリーノート用の科目・項目選択エリア -->
+                <div id="nb-free-select-area" class="hidden bg-slate-50 border border-slate-200 rounded-2xl p-4 md:p-5 flex flex-col gap-4 shadow-inner shrink-0">
                     <div>
                         <label class="block text-xs md:text-sm font-black text-slate-700 mb-1">科目</label>
                         <select id="nb-free-subject-select" onchange="updateFreeNoteChapterSelect()" class="w-full border-2 border-slate-300 rounded-lg p-2 md:p-3 text-sm md:text-base font-bold bg-white focus:outline-none focus:border-amber-500">
@@ -109,33 +110,39 @@
                     </div>
                 </div>
 
-                <div>
-                    <label class="block text-sm md:text-base font-black text-amber-900 mb-2 flex items-center gap-1.5">
+                <!-- 💡 PC版のみ入力エリアを大きくする(lg:flex-[2]) -->
+                <div class="flex-1 lg:flex-[2] flex flex-col min-h-[12rem]">
+                    <label class="block text-sm md:text-base font-black text-amber-900 mb-2 flex items-center gap-1.5 shrink-0">
                         <span>✏️ 自作解説・テキスト要点・暗記メモ</span>
                     </label>
                     
-                    <!-- 🌟 リッチテキストツールバー -->
-                    <div class="flex items-center gap-1 mb-1 bg-amber-50 border border-amber-200 p-1.5 md:p-2 rounded-t-xl">
+                    <div class="flex items-center gap-1 mb-1 bg-amber-50 border border-amber-200 p-1.5 md:p-2 rounded-t-xl shrink-0">
                         <button onclick="formatNotebookText('bold')" class="w-8 h-8 md:w-10 md:h-10 flex items-center justify-center font-serif font-bold text-lg bg-white border border-amber-200 rounded hover:bg-amber-100 active:scale-95 shadow-sm text-slate-800" title="太字">B</button>
                         <div class="w-px h-6 bg-amber-200 mx-1"></div>
                         <input type="color" id="nb-color-picker" value="#ef4444" class="w-8 h-8 md:w-10 md:h-10 cursor-pointer border-0 bg-transparent p-0" title="文字色を選択">
-                        <button onclick="formatNotebookText('foreColor')" class="px-2 h-8 md:h-10 flex items-center justify-center font-bold text-xs md:text-sm bg-white border border-amber-200 rounded hover:bg-amber-100 active:scale-95 shadow-sm text-slate-800" title="選択した色を適用">🎨 色を塗る</button>
                         <button onclick="formatNotebookText('removeFormat')" class="ml-auto px-2 h-8 md:h-10 flex items-center justify-center font-bold text-xs md:text-sm bg-white border border-amber-200 rounded hover:bg-amber-100 active:scale-95 shadow-sm text-slate-500" title="書式をクリア">🧹 クリア</button>
                     </div>
-                    <!-- 🌟 リッチテキスト入力エリア (contenteditable) -->
-                    <div id="nb-note-input" contenteditable="true" class="w-full min-h-[8rem] border-2 border-amber-300 rounded-b-xl p-3 text-sm md:text-base font-medium focus:outline-none focus:border-amber-500 transition-colors bg-white shadow-sm overflow-y-auto" placeholder="PDFの該当ページ、ひっかけポイント、自分なりの要約などを自由に入力してください..."></div>
+                    <div id="nb-note-input" contenteditable="true" class="flex-1 border-2 border-amber-300 rounded-b-xl p-3 text-sm md:text-base font-medium focus:outline-none focus:border-amber-500 transition-colors bg-white shadow-sm overflow-y-auto" placeholder="PDFの該当ページ、ひっかけポイント、自分なりの要約などを自由に入力してください..."></div>
                 </div>
 
-                <div class="border-t-2 border-dashed border-slate-200 pt-4 pb-2">
+                <div class="border-t-2 border-dashed border-slate-200 pt-4 pb-2 shrink-0">
                     <label class="block text-sm md:text-base font-black text-amber-900 mb-2 flex flex-col md:flex-row md:items-center justify-between gap-1">
                         <span class="flex items-center gap-1">📸 テキストのスクショ画像</span>
                         <span class="text-[11px] md:text-xs text-slate-500 font-normal bg-slate-100 px-2 py-1 rounded">※ブラウザ容量の都合上、1問題につき1枚まで</span>
                     </label>
                     <input type="file" id="nb-image-input" accept="image/*" class="block w-full text-xs md:text-sm text-slate-500 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs md:file:text-sm file:font-black file:bg-amber-100 file:text-amber-800 hover:file:bg-amber-200 cursor-pointer" onchange="handleNotebookImageUpload(event)">
                     
-                    <div id="nb-image-preview-box" class="mt-4 hidden relative border-2 border-amber-300 rounded-2xl p-2 bg-amber-50 flex justify-center items-center shadow-inner">
-                        <img id="nb-image-preview" src="" alt="添付画像" class="max-h-80 rounded-xl object-contain shadow-sm">
-                        <button onclick="removeNotebookImage()" class="absolute top-3 right-3 bg-red-600 hover:bg-red-700 text-white font-bold p-1.5 px-3 rounded-full text-xs shadow-md active:scale-95 transition-transform">✕ 削除</button>
+                    <div id="nb-image-preview-box" class="mt-4 hidden relative border-2 border-amber-300 rounded-2xl p-2 bg-amber-50 flex flex-col justify-center items-center shadow-inner">
+                        <img id="nb-image-preview" src="" alt="添付画像" class="max-h-80 rounded-xl object-contain shadow-sm mb-2">
+                        <div class="w-full flex justify-end gap-2">
+                            <!-- 別枠で開くボタン -->
+                            <button onclick="window.open(document.getElementById('nb-image-preview').src, '_blank')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold p-2 px-4 rounded-lg text-sm shadow active:scale-95 transition-transform flex items-center gap-1">
+                                <span>🔍</span> 別枠で拡大確認
+                            </button>
+                            <button onclick="removeNotebookImage()" class="bg-red-600 hover:bg-red-700 text-white font-bold p-2 px-4 rounded-lg text-sm shadow active:scale-95 transition-transform flex items-center gap-1">
+                                <span>✕</span> 削除
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -152,7 +159,8 @@
 
     <!-- 📚 マイノート一覧・集約ビューモーダル -->
     <div id="notebook-list-modal" class="fixed inset-0 bg-slate-900/90 z-[140] hidden items-center justify-center p-3 md:p-6 backdrop-blur-sm">
-        <div class="bg-slate-50 rounded-3xl shadow-2xl max-w-4xl w-full h-[92dvh] flex flex-col overflow-hidden border-2 md:border-4 border-amber-400 animate-in fade-in">
+        <!-- 💡 PC版(lg:)のみ画面いっぱいに広げる指定を追加 -->
+        <div class="bg-slate-50 rounded-3xl shadow-2xl max-w-4xl lg:max-w-[96vw] w-full h-[92dvh] lg:h-[96dvh] flex flex-col overflow-hidden border-2 md:border-4 border-amber-400 animate-in fade-in">
             <div class="bg-gradient-to-r from-amber-500 to-amber-600 text-white px-5 py-3 md:py-5 flex justify-between items-center shrink-0 shadow-md z-10">
                 <h3 class="text-xl md:text-3xl font-black flex items-center gap-2">
                     <span>📚 自作マイノート集</span>
@@ -176,7 +184,7 @@
         <div class="bg-white text-slate-800 p-4 md:p-12 rounded-[2rem] shadow-2xl max-w-7xl w-full mb-10">
             
             <div class="flex justify-end mb-2 gap-2 flex-wrap">
-                <!-- 🌟 新規フリーノート作成ボタンを追加 -->
+                <!-- 🌟 新規フリーノート作成ボタン -->
                 <button onclick="openNewFreeNotebook()" class="text-sm md:text-base font-black text-indigo-900 bg-indigo-100 hover:bg-indigo-200 px-4 py-2 rounded-full transition-colors border-2 border-indigo-400 shadow-sm flex items-center gap-1.5 active:scale-95">
                     <span>📝</span><span>新規フリーノート作成</span>
                 </button>

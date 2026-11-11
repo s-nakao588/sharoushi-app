@@ -37,6 +37,7 @@ function openNewFreeNotebook() {
 
     document.getElementById('notebook-modal').classList.remove('hidden');
     document.getElementById('notebook-modal').classList.add('flex');
+    initColorPicker(); // 🌟 カラーピッカーの初期化
 }
 
 // 🌟 フリーノートの「科目」が変更された時に「項目」ドロップダウンを更新
@@ -107,20 +108,34 @@ function openNotebookForCurrentQuestion() {
     document.getElementById('nb-image-input').value = "";
     document.getElementById('notebook-modal').classList.remove('hidden');
     document.getElementById('notebook-modal').classList.add('flex');
+    initColorPicker(); // 🌟 カラーピッカーの初期化
 }
 
 // 🌟 リッチテキストの書式適用関数
 function formatNotebookText(command) {
-    if (command === 'foreColor') {
-        const color = document.getElementById('nb-color-picker').value;
-        document.execCommand('styleWithCSS', false, true);
-        document.execCommand('foreColor', false, color);
-    } else if (command === 'removeFormat') {
+    if (command === 'removeFormat') {
         document.execCommand('removeFormat', false, null);
     } else {
         document.execCommand(command, false, null);
     }
     document.getElementById('nb-note-input').focus();
+}
+
+// 🌟 カラーピッカーの操作性改善（色を選んだ瞬間に自動反映してフォーカスを戻す）
+function initColorPicker() {
+    const colorPicker = document.getElementById('nb-color-picker');
+    const noteInput = document.getElementById('nb-note-input');
+    
+    // 以前のイベントリスナーが重複しないように一度削除してから登録
+    colorPicker.replaceWith(colorPicker.cloneNode(true));
+    const newColorPicker = document.getElementById('nb-color-picker');
+    
+    newColorPicker.addEventListener('change', function(e) {
+        // 色を選んだ瞬間にフォーカスを戻して色を適用
+        noteInput.focus();
+        document.execCommand('styleWithCSS', false, true);
+        document.execCommand('foreColor', false, e.target.value);
+    });
 }
 
 function handleNotebookImageUpload(event) {
@@ -149,6 +164,9 @@ function handleNotebookImageUpload(event) {
             currentNotebookImageBase64 = canvas.toDataURL('image/jpeg', 0.6);
             document.getElementById('nb-image-preview').src = currentNotebookImageBase64;
             document.getElementById('nb-image-preview-box').classList.remove('hidden');
+            // 画像追加時にもスクロールを下に移動
+            const infoArea = document.querySelector('#notebook-modal .overflow-y-auto');
+            if(infoArea) infoArea.scrollTop = infoArea.scrollHeight;
         };
         img.src = e.target.result;
     };
