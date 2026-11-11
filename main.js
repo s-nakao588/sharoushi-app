@@ -42,6 +42,9 @@ let eventQuestionsAnswered = 0, eventCorrectCount = 0;
 
 let isAnsweredTakuitsu = false, currentTakuitsuEval = null, pendingFixData = null;
 
+// フリーノート用のカテゴリキャッシュ
+let freeNoteSubjectMap = {}; 
+
 window.onload = function() {
     try {
         const savedKey = localStorage.getItem('gemini_api_key');
@@ -168,7 +171,7 @@ function generateAlchemyQuestion() {
 function startIdleTimers() {
     clearIdleTimers();
     if (isSenbonKnock || isCountdownRelay || isSuddenDeath || isSurpriseAttack) return; 
-    idleTimeoutWarn = setTimeout(() => { if(typeof generateAiMessage === "function") generateAiMessage("idle_warn", { textOnly: false }); }, 15000);
+    idleTimeoutWarn = setTimeout(() => { if(typeof generateAiMessage === "function") generateAiMessage("idle_warn", { textOnly: false }); }, 60000);
     idleTimeoutPenalty = setTimeout(() => { 
         if (continuousStudyTimeSec < 3600) {
             if (globalTimeLeftSeconds !== null) globalTimeLeftSeconds += 60; 
@@ -176,7 +179,7 @@ function startIdleTimers() {
         } else {
             if(typeof generateAiMessage === "function") generateAiMessage("idle_care", { textOnly: false }); 
         }
-    }, 30000);
+    }, 120000);
 }
 function clearIdleTimers() {
     if (idleTimeoutWarn) clearTimeout(idleTimeoutWarn);
@@ -263,6 +266,7 @@ async function loadAllSubjects() {
 function checkAllLoaded() {
     if (parsedSubjectsCount === SUBJECTS.length) {
         let localFixes = JSON.parse(localStorage.getItem('local_fixes') || '{}');
+        freeNoteSubjectMap = {}; // フリーノート用の抽出
         allDatabase.forEach(q => {
             if (localFixes[q._id]) {
                 let fix = localFixes[q._id];
@@ -270,9 +274,15 @@ function checkAllLoaded() {
                 if (fix.newExplanation) q.解説 = fix.newExplanation;
                 q._verified = true;
             }
+            // 科目・項目のマップを作成
+            let baseSubj = q._subjectName.replace(/\(択一\)|\(選択\)/g, ""); // "(択一)"などを除去してまとめる
+            if (!freeNoteSubjectMap[baseSubj]) freeNoteSubjectMap[baseSubj] = new Set();
+            freeNoteSubjectMap[baseSubj].add(q.項目);
         });
+        
         document.getElementById('loading-status').textContent = `✅ 完了 (${allDatabase.length}問)`;
-        buildSubjectAccordionUI(); updateDashboard();
+        buildSubjectAccordionUI(); 
+        updateDashboard();
     }
 }
 
@@ -848,6 +858,8 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
         }
     }
 
+    startIdleTimers();
+
     if (isFirstOfSet) {
         if (typeof generateAiMessage === "function") {
             if(isTimeAttack) generateAiMessage("start_timeattack", { textOnly: false });
@@ -944,7 +956,7 @@ function answerTakuitsu(userAnswer) {
         }
     }
 
-    startIdleTimers(); 
+    clearIdleTimers(); 
     
     if (isSenbonKnock || isSuddenDeath || isCountdownRelay || isSurpriseAttack) {
         const aiEl = document.getElementById('ai-message');
@@ -1066,7 +1078,7 @@ function submitSentakuAnswers() {
         document.getElementById('btn-next-sentaku').textContent = (currentPlaylistIndex < playlistQueue.length - 1) ? "🟢 次の科目セットへ" : "🟢 特訓終了！判定へ";
     }
     
-    startIdleTimers(); 
+    clearIdleTimers(); 
     if (typeof generateAiMessage === "function") generateAiMessage("result_sentaku", { score: score, textOnly: false });
 }
 

@@ -29,7 +29,7 @@ option.hidden-option { display: none !important; }
 @media (min-width: 768px) {
     #recent-history-area {
         position: absolute !important;
-        bottom: 120px !important; /* 〇✖ボタンのすぐ上に配置 */
+        bottom: 120px !important; 
         left: 0 !important;
         width: 100% !important;
         display: flex !important;
