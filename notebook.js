@@ -6,6 +6,7 @@
 let currentNotebookId = null;
 let currentNotebookImageBase64 = null;
 let isFreeNoteMode = false;
+let activeFreeNoteMap = {}; // 🌟 追加：確実に動的に取得するための変数
 
 // 🌟 メニュー画面からの「新規フリーノート作成」用
 function openNewFreeNotebook() {
@@ -15,18 +16,40 @@ function openNewFreeNotebook() {
 
     // UIの表示切り替え（フリー用ドロップダウン表示、問題文エリア非表示）
     document.getElementById('nb-free-select-area').classList.remove('hidden');
+    document.getElementById('nb-free-select-area').classList.add('flex');
     document.getElementById('nb-question-info-area').classList.add('hidden');
+    document.getElementById('nb-question-info-area').classList.remove('flex');
     document.getElementById('btn-delete-nb').classList.add('hidden');
     document.getElementById('nb-modal-subtitle').textContent = "フリーノート";
 
-    // 科目ドロップダウンの生成 (main.js で生成した freeNoteSubjectMap を利用)
+    // 🌟 確実にするため、クリック時に毎回 allDatabase から動的生成する
+    activeFreeNoteMap = {};
+    if (typeof allDatabase !== "undefined" && allDatabase.length > 0) {
+        allDatabase.forEach(q => {
+            let baseSubj = q._subjectName.replace(/\(択一\)|\(選択\)/g, ""); // "(択一)"等を除去
+            if (!activeFreeNoteMap[baseSubj]) activeFreeNoteMap[baseSubj] = new Set();
+            activeFreeNoteMap[baseSubj].add(q.項目 || "分類なし");
+        });
+    } else if (typeof freeNoteSubjectMap !== "undefined") {
+        // 万が一の予備フォールバック
+        activeFreeNoteMap = freeNoteSubjectMap;
+    }
+
+    // 科目ドロップダウンの生成
     const subjSelect = document.getElementById('nb-free-subject-select');
     subjSelect.innerHTML = "";
-    Object.keys(freeNoteSubjectMap).forEach(subj => {
-        let opt = document.createElement('option');
-        opt.value = subj; opt.textContent = subj;
-        subjSelect.appendChild(opt);
-    });
+    
+    const subjects = Object.keys(activeFreeNoteMap);
+    if (subjects.length === 0) {
+        subjSelect.innerHTML = '<option value="">(データ読み込み中またはデータなし)</option>';
+    } else {
+        subjects.forEach(subj => {
+            let opt = document.createElement('option');
+            opt.value = subj; opt.textContent = subj;
+            subjSelect.appendChild(opt);
+        });
+    }
+    
     updateFreeNoteChapterSelect(); // 連動して項目を更新
 
     // リッチテキストエリアと画像エリアの初期化
@@ -45,12 +68,15 @@ function updateFreeNoteChapterSelect() {
     const subj = document.getElementById('nb-free-subject-select').value;
     const chapSelect = document.getElementById('nb-free-chapter-select');
     chapSelect.innerHTML = "";
-    if(freeNoteSubjectMap[subj]) {
-        Array.from(freeNoteSubjectMap[subj]).forEach(chap => {
+    
+    if(subj && activeFreeNoteMap[subj]) {
+        Array.from(activeFreeNoteMap[subj]).forEach(chap => {
             let opt = document.createElement('option');
             opt.value = chap; opt.textContent = chap;
             chapSelect.appendChild(opt);
         });
+    } else {
+        chapSelect.innerHTML = '<option value="">(選択不可)</option>';
     }
 }
 
@@ -65,6 +91,7 @@ function openNotebookForCurrentQuestion() {
 
     // UIの表示切り替え（問題文エリア表示、フリー用非表示）
     document.getElementById('nb-free-select-area').classList.add('hidden');
+    document.getElementById('nb-free-select-area').classList.remove('flex');
     document.getElementById('nb-question-info-area').classList.remove('hidden');
     document.getElementById('nb-question-info-area').classList.add('flex');
     document.getElementById('nb-modal-subtitle').textContent = "個別メモ";
