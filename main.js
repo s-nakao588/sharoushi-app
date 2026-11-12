@@ -1,3 +1,4 @@
+// main.js
 const GAS_URL = "https://script.google.com/a/macros/sr-nakao.com/s/AKfycbyHu72D7p9XrmynRKYbt_4HOfhJ47D3xEdv-SgqTWS1iSrxWo6KuhZnzTbMvitQ7r0_Eg/exec";
 
 const SUBJECTS = [
@@ -163,6 +164,7 @@ let eventQuestionsAnswered = 0, eventCorrectCount = 0;
 
 let isAnsweredTakuitsu = false, currentTakuitsuEval = null, pendingFixData = null;
 let freeNoteSubjectMap = {}; 
+let currentQuestionStartTime = 0; // 🌟 問題ごとの解答スピード計測用
 
 window.onload = function() {
     try {
@@ -579,6 +581,8 @@ function executeStrategyPlan() {
     
     initialGlobalTime = null;
     eventTriggeredThisSession = false;
+    
+    sendKarteLog('session_start', { targetTime: null, condition: document.getElementById('condition-select').value }); // 🌟 追加: セッション開始ログ
     startNextPlaylistSet(true);
 }
 
@@ -657,6 +661,8 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
     
     initialGlobalTime = globalTimeLeftSeconds;
     eventTriggeredThisSession = false;
+    
+    sendKarteLog('session_start', { targetTime: globalTimeLeftSeconds, condition: document.getElementById('condition-select').value }); // 🌟 追加: セッション開始ログ
 
     if (!isMuted) {
         document.getElementById('start-wait-overlay').classList.remove('hidden');
@@ -983,6 +989,8 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
         }
     }
     if (typeof verifyDataWithPro === "function") verifyDataWithPro(q);
+    
+    currentQuestionStartTime = Date.now(); // 🌟 追加: 問題表示時刻を記録（スピード測定用）
 }
 
 function answerTakuitsu(userAnswer) {
@@ -990,6 +998,8 @@ function answerTakuitsu(userAnswer) {
 
     if (isAnsweredTakuitsu) return;
     isAnsweredTakuitsu = true;
+    
+    let timeTaken = Math.floor((Date.now() - currentQuestionStartTime) / 1000); // 🌟 追加: 解答にかかった時間を計算
     
     stopStudyTimer(); 
     flushStudyTimes(); 
@@ -1034,7 +1044,7 @@ function answerTakuitsu(userAnswer) {
         if (isCorrect) eventCorrectCount++;
     }
     
-    saveToGAS(q._id, 'save_answer', isCorrect, null, null);
+    saveToGAS(q._id, 'save_answer', isCorrect, null, null, timeTaken); // 🌟 変更: timeTaken を追加して送信
     
     document.getElementById('action-takuitsu').classList.add('hidden');
     document.getElementById('explanation-area').classList.remove('hidden');
@@ -1116,6 +1126,8 @@ function submitSentakuAnswers() {
     });
     if(hasUnanswered) { document.getElementById('warning-modal').classList.remove('hidden'); document.getElementById('warning-modal').classList.add('flex'); return; }
 
+    let timeTaken = Math.floor((Date.now() - currentQuestionStartTime) / 1000); // 🌟 追加: 解答にかかった時間を計算
+
     stopStudyTimer(); 
     flushStudyTimes(); 
 
@@ -1149,7 +1161,7 @@ function submitSentakuAnswers() {
         if (score === 5) eventCorrectCount++;
     }
     
-    saveToGAS(currentQuestions[currentIndex]._id, 'save_sentaku', false, score, trapsPicked.join(','));
+    saveToGAS(currentQuestions[currentIndex]._id, 'save_sentaku', false, score, trapsPicked.join(','), timeTaken); // 🌟 変更: timeTaken を追加して送信
 
     document.getElementById('action-sentaku').classList.add('hidden');
     document.getElementById('explanation-area').classList.remove('hidden');
@@ -1189,11 +1201,14 @@ function submitSentakuAnswers() {
 
 function closeWarningModal() { document.getElementById('warning-modal').classList.add('hidden'); document.getElementById('warning-modal').classList.remove('flex'); }
 
-async function saveToGAS(q_id, actionStr, isCorrect, score, traps) {
+// 🌟 変更: timeTaken 引数を追加し、ペイロードに含める
+async function saveToGAS(q_id, actionStr, isCorrect, score, traps, timeTaken = null) {
     try {
         let payload = { action: actionStr, q_id: q_id };
         if (actionStr === 'save_answer') payload.is_correct = isCorrect;
         if (actionStr === 'save_sentaku') { payload.score = score; payload.traps = traps; }
+        if (timeTaken !== null) payload.timeTaken = timeTaken; // 🌟 記録した秒数を追加
+        
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
         const data = await res.json();
         if(data.success && userHistory[q_id]) {
@@ -1357,6 +1372,9 @@ function finishAllPlaylists() {
     document.getElementById('infinite-drill-menu').classList.remove('hidden'); document.getElementById('infinite-drill-menu').classList.add('flex');
     
     document.getElementById('takuitsu-eval-toggle').classList.add('hidden');
+    
+    // 🌟 追加: セッション終了ログを送信
+    sendKarteLog('session_end', { totalAnswered: cumulativeQuestions, mistakes: todayMistakes.length, continuousStudyTimeSec: continuousStudyTimeSec });
     
     if (typeof generateAiMessage === "function") generateAiMessage("end_all", { totalPlayed: cumulativeQuestions, mistakes: todayMistakes.length, textOnly: false });
 }
