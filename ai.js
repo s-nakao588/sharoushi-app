@@ -1,171 +1,198 @@
-/* =========================================================
-   🤖 AI・Gemini連携モジュール
-   ========================================================= */
+// ai.js
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/";
 
-// main.js の変数を参照するため外部スコープを利用します。
+// 🌟 作戦会議用の会話履歴を保持する配列
+let strategyHistory = [];
 
-async function speakText(text, isStartScreen = false) {
-    if (isMuted || !text) return; 
-    let cleanText = text.replace(/<[^>]+>/g, '').trim(); if (!cleanText) return;
+async function callGeminiAPI(systemInstruction, userText, history = []) {
+    if (!userApiKey) {
+        console.warn("APIキーが設定されていません。");
+        return "ごめんね、APIキーが設定されていないみたい！設定画面から入力してね。";
+    }
+
+    const modelToUse = userModel || 'gemini-2.5-flash';
+    const endpoint = `${GEMINI_API_URL}${modelToUse}:generateContent?key=${userApiKey}`;
     
-    if (typeof stopAudio === "function") stopAudio();
+    // 過去の履歴と今回のメッセージを結合
+    let contents = [...history];
+    if (userText) {
+        contents.push({ role: "user", parts: [{ text: userText }] });
+    }
+
+    const payload = {
+        system_instruction: { parts: [{ text: systemInstruction }] },
+        contents: contents,
+        generationConfig: {
+            temperature: 0.7,
+            maxOutputTokens: 300,
+        }
+    };
 
     try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${userApiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: cleanText }] }] })
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
         });
-        if (!res.ok) throw new Error("TTS API Error");
-        const data = await res.json();
-        
-        if (isMuted) return;
-
-        const p = document.getElementById('tts-player');
-        p.src = `data:audio/mp3;base64,${data.candidates[0].content.parts[0].inlineData.data}`; 
-        p.onplay = () => {
-            if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
-        };
-        setTimeout(() => {
-            if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
-        }, 1000); 
-        p.play();
-    } catch (err) {
-        if ('speechSynthesis' in window && !isMuted) {
-            const utterance = new SpeechSynthesisUtterance(cleanText); 
-            utterance.lang = 'ja-JP';
-            utterance.onstart = () => {
-                if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
-            };
-            setTimeout(() => {
-                if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
-            }, 1000);
-            window.speechSynthesis.speak(utterance);
+        const data = await response.json();
+        if (data.candidates && data.candidates.length > 0) {
+            return data.candidates[0].content.parts[0].text;
+        } else {
+            throw new Error("APIレスポンスエラー");
         }
+    } catch (error) {
+        console.error("Gemini API Error:", error);
+        return "ごめん、ちょっと考え中…！もう一度試してみて！";
     }
 }
 
-async function generateAiMessage(situation, extraData = {}, isStartScreen = false) {
-    const aiMessageEl = document.getElementById('ai-message');
-    if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
+// 🌟 作戦会議（チャット）専用の送信関数
+async function sendStrategyMessage(userInput = null) {
+    const inputField = document.getElementById('strategy-input');
+    const text = userInput || inputField.value.trim();
+    if (!text && strategyHistory.length > 0) return;
     
-    const cond = document.getElementById('condition-select').value;
-    let prompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。受講生のモードは「${cond}」です。
+    if (inputField) inputField.value = '';
+
+    const chatArea = document.getElementById('strategy-chat-area');
+    if (chatArea && text) {
+        chatArea.innerHTML += `<div class="mb-2 text-right"><span class="inline-block bg-blue-100 text-blue-800 p-2 rounded-lg text-sm">${text}</span></div>`;
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    // AIに渡す情報の組み立て
+    const coachSelect = document.getElementById('coach-select');
+    const coachMode = coachSelect ? coachSelect.value : '普通';
+    const condition = document.getElementById('condition-select') ? document.getElementById('condition-select').value : '普通';
+    
+    // 試験日（2027年8月22日と仮定）までの日数
+    const examDate = new Date('2027-08-22');
+    const today = new Date();
+    const daysLeft = Math.ceil((examDate - today) / (1000 * 60 * 60 * 24));
+    
+    // 簡単な成績サマリーを生成
+    let statsSummary = "";
+    if (typeof getStatsSummary === "function") {
+        const stats = getStatsSummary();
+        let totalPlayed = 0; let totalQuestions = 0;
+        for (let subj in stats) {
+            totalPlayed += stats[subj].played;
+            totalQuestions += stats[subj].total;
+            if(stats[subj].played > 0) {
+                statsSummary += `[${subj}] 正答率:${stats[subj].masterRate}% `;
+            }
+        }
+        statsSummary += `\n全体進捗: ${totalPlayed}/${totalQuestions}問。`;
+    }
+
+    const systemPrompt = `
+あなたは18歳の女性講師として、ユーザーの社労士試験（2027年8月）合格をサポートする作戦会議を行います。
+試験まで残り: ${daysLeft}日
+現在の指導スタンス: ${coachMode}（このテンションに合わせること。スパルタなら厳しめ、寄り添いなら優しく）
+ユーザーの今日の体調: ${condition}
+学習データ: ${statsSummary}
+
 【絶対ルール】
-1. セリフ本文のみを1〜2文で出力すること。
-2. 定型文は一切使わず、毎回必ず状況に合わせて自分の言葉で考えて生成すること。
-3. 決して暴言や高圧的な説教はせず、親しみやすい現代の一般的な若い女性の自然な口語体で話すこと。\n`;
+1. 「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」などの不自然な役割語は絶対に禁止。自然な話し言葉にすること。
+2. 1回の返信は2〜3文以内で簡潔に。一気に複数の質問をしない。
 
-    if (situation === "start_all") prompt += `特訓スタート。全${extraData.total}問だよと伝えて短く前向きに気合を入れて。`;
-    else if (situation === "start_takuitsu") prompt += `択一式の特訓スタート。短く前向きに気合を入れて。`;
-    else if (situation === "start_sentaku") prompt += `選択式の特訓スタート。文脈を意識して埋めてみてと励まして。`;
-    else if (situation === "hint_takuitsu") prompt += `択一式のヒント。答えは言わず、見るべきポイントを1文で示して。問題:${extraData.questionText} 解説:${extraData.explanation}`;
-    else if (situation === "hint_sentaku") prompt += `選択式のヒント。「キーワードを黄色くしたから確認してみて」とアドバイスして。`;
-    else if (situation === "answer_takuitsu") prompt += `択一式解答。結果は【${extraData.isCorrect ? "正解" : "不正解"}】。解説から最重要ポイントを1文で要約して。解説:${extraData.explanation}`;
-    else if (situation === "result_sentaku") prompt += `選択式解答完了。5点中${extraData.score}点。点数に応じたコメントと、迷ったところは記録してねと促して。`;
-    else if (situation === "end_all") prompt += `全問題終了。頑張りを心から労い、次への励ましを。`;
+【作戦会議のステップ】
+以下の順番で会話のキャッチボールを行い、今日のメニューを決めてください。
+① データの分析と提案: 「労基法の正答率が低いね」や「最近健保をやってないね（忘却対策）」などのデータを提示し、「今日はどの科目をやる？」と聞く。
+② 量の相談: 科目が決まったら「何問くらい（または何分くらい）やる？」と聞く。
+③ 質の相談: 量が決まったら「弱点対策（間違えた問題）？それともまだ解いてない問題？完全ランダム？」と聞く。
+④ 合意と実行: すべて決まったら、「了解！じゃあ始めるね！」という言葉と共に、返信の【最後】に以下のJSONコードブロックのみを出力して会話を終了してください。
 
-    try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        if (!res.ok) throw new Error("API Error");
-        const data = await res.json();
-        const text = data.candidates[0].content.parts[0].text;
-        if(aiMessageEl) { aiMessageEl.textContent = text; }
-        if (!extraData.textOnly) speakText(text, isStartScreen); 
-        else if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
-    } catch(e) {
-        if(aiMessageEl) { aiMessageEl.textContent = `今日も一緒に一問ずつ進めていこうね！`; }
-        if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
-    }
-}
-
-async function verifyDataWithPro(q) {
-    if (q._verified) return; 
-    let localFixes = JSON.parse(localStorage.getItem('local_fixes') || '{}');
-    if (localFixes[q._id]) {
-        q._verified = true;
-        return;
-    }
-    const today = new Date(); const todayStr = `${today.getFullYear()}年${today.getMonth()+1}月${today.getDate()}日`;
-    const prompt = `あなたはデータ検証プロです。【本日の日付】: ${todayStr}。令和9年4月以前に施行される法令を基準に正誤を判断し、間違っていれば「NG | 〇か✖ | 新しい解説 | 理由」で出力。問題なければ「OK」のみ。問題文: ${q.問題文}\n正誤: ${q.正誤}\n解説: ${q.解説}`;
-    try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-pro-preview:generateContent?key=${userApiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-        const data = await res.json(); const text = data.candidates[0].content.parts[0].text;
-        q._verified = true; 
-        if (text.startsWith("NG")) {
-            const parts = text.split("|");
-            pendingFixData = { question: q, correctChoice: (parts[1]||"").trim(), newExplanation: (parts[2]||"").trim(), reason: (parts[3]||"").trim() };
-            document.getElementById('ai-fix-reason').textContent = pendingFixData.reason;
-            document.getElementById('ai-fix-action').classList.remove('hidden');
-        }
-    } catch(e) {}
-}
-
-async function sendStrategyMessage() {
-    userApiKey = document.getElementById('api-key-input').value.trim();
-    if(!userApiKey) { alert("APIキーが必要です"); document.getElementById('api-settings-wrapper').classList.remove('hidden'); return; }
-    const inputEl = document.getElementById('strategy-input'); const input = inputEl.value.trim();
-    if(!input) return;
-    if(typeof sendKarteLog === "function") sendKarteLog('strategy_chat', { message: input });
-    if(typeof saveRequestHabit === "function") saveRequestHabit(input);
-    const logEl = document.getElementById('strategy-chat-log');
-    logEl.innerHTML += `<div class="self-end bg-indigo-100 text-indigo-900 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tr-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl">${input}</div>`;
-    logEl.scrollTop = logEl.scrollHeight; inputEl.value = "";
-    const typingId = "typing-" + Date.now();
-    logEl.innerHTML += `<div id="${typingId}" class="self-start bg-white border-2 border-pink-200 text-slate-700 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl"><span class="typing">💬 考えてるよ...</span></div>`;
-    logEl.scrollTop = logEl.scrollHeight;
-    const cond = document.getElementById('condition-select').value; const health = document.getElementById('health-select').value;
-    const habits = localStorage.getItem('strategy_habits') || '[]';
-    
-    let systemPrompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。受講生の要望を最優先で聞き入れ、的確に特訓プランをまとめてください。
-【現在のコンディション】
-・現在時刻: ${new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'})}
-・過去の依頼傾向: ${habits}
-・講師モード: ${cond}
-・受講生の体調: ${health}
-
-【最重要ルール: 要望の遵守】
-受講生が科目数や問題数を具体的に指定した場合は、【絶対に勝手にすり替えたり減らしたりせず】、「了解！その通りに準備するね！」と受講生の指定をそのまま全肯定してプランを確定させてください。
-時間帯や過去の傾向から、先回りした提案をしてもよいです。不自然な役割語は絶対禁止。
-
-【プラン確定時のJSON出力ルール】
-受講生とプランが合意、または受講生から具体的な指定があった場合、返答の最後に必ず以下のJSON（複数科目対応）を出力してください。
 \`\`\`json
-{
-  "plan": [
-    { "subject": "労働基準法(択一)", "count": 10 }
-  ]
-}
-\`\`\``;
-    let apiMessages = [{ role: "user", parts: [{ text: systemPrompt + " 受講生の要望: " + input }] }];
-    try {
-        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: apiMessages })
-        });
-        if (!res.ok) throw new Error("通信エラー");
-        const data = await res.json(); const text = data.candidates[0].content.parts[0].text;
-        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
-        let replyText = text.replace(/```json\n[\s\S]*?\n```/, '').trim();
-        document.getElementById(typingId).outerHTML = `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl">${replyText}</div>`;
-        logEl.scrollTop = logEl.scrollHeight;
-        if (jsonMatch) {
-            strategyPlan = JSON.parse(jsonMatch[1]);
-            document.getElementById('btn-strategy-start').classList.remove('hidden');
-        }
-    } catch(e) {
-        document.getElementById(typingId).outerHTML = `<div class="self-start bg-red-50 text-red-600 p-2 md:p-3 rounded-xl md:rounded-2xl max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl border border-red-200">⚠️ 通信エラーが発生したみたい。もう一度話しかけてみて！</div>`;
-        logEl.scrollTop = logEl.scrollHeight;
+{"command": "start_strategy", "subject": "科目名(例:労働基準法(択一))", "target": "weakness または forget または unattempted または random", "count": 問題数}
+\`\`\`
+※JSONを出力すると自動でシステムが起動します。JSONの前後に余計な説明は入れないでください。`;
+
+    if (chatArea) {
+        chatArea.innerHTML += `<div class="mb-2 text-left" id="ai-typing"><span class="inline-block bg-slate-100 text-slate-600 p-2 rounded-lg text-sm">考え中...💬</span></div>`;
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    const aiResponse = await callGeminiAPI(systemPrompt, text, strategyHistory);
+    
+    // ユーザーの発言を履歴に追加
+    if (text) strategyHistory.push({ role: "user", parts: [{ text: text }] });
+    
+    // タイピング表示を削除
+    const typingEl = document.getElementById('ai-typing');
+    if (typingEl) typingEl.remove();
+
+    // JSONブロックの検出と抽出
+    const jsonMatch = aiResponse.match(/```json\n([\s\S]*?)\n```/);
+    let displayText = aiResponse;
+    
+    if (jsonMatch) {
+        displayText = aiResponse.replace(jsonMatch[0], '').trim();
+        try {
+            const config = JSON.parse(jsonMatch[1].trim());
+            if (config.command === 'start_strategy' && typeof startStrategyPlaylist === 'function') {
+                setTimeout(() => { startStrategyPlaylist(config); }, 1500); // 1.5秒後に自動スタート
+            }
+        } catch(e) { console.error("Strategy JSON Parse Error:", e); }
+    }
+
+    // AIの発言を履歴に追加
+    strategyHistory.push({ role: "model", parts: [{ text: aiResponse }] });
+
+    if (chatArea && displayText) {
+        chatArea.innerHTML += `<div class="mb-2 text-left"><span class="inline-block bg-slate-100 text-slate-800 p-2 rounded-lg text-sm font-bold border border-slate-300">${displayText.replace(/\n/g, '<br>')}</span></div>`;
+        chatArea.scrollTop = chatArea.scrollHeight;
+    }
+
+    // 音声読み上げ
+    if (!isMuted && typeof audioCtx !== 'undefined') {
+        let u = new SpeechSynthesisUtterance(displayText.replace(/[\*\#\`\_]/g, ''));
+        u.lang = 'ja-JP';
+        u.rate = 1.1;
+        window.speechSynthesis.speak(u);
     }
 }
 
-// ダッシュボードのAIアドバイス生成処理（main.jsから移動）
-function generateDashboardAdvice(stats) {
-    let prompt = `あなたは社労士試験の専属コーチです。成績データをもとに今日のおすすめ科目を1〜2文で提案して。データ: ${JSON.stringify(stats)}`;
-    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-    }).then(res => res.json()).then(data => {
-        if (data.candidates && data.candidates[0]) { document.getElementById('dash-ai-comment').textContent = data.candidates[0].content.parts[0].text; }
-    }).catch(e => {});
+// 🌟 通常のゲーム中のAIメッセージ生成
+async function generateAiMessage(type, data = {}, isFirst = false) {
+    const aiMessageEl = document.getElementById('ai-message');
+    if (aiMessageEl) aiMessageEl.innerHTML = '<span class="animate-pulse">考え中...💬</span>';
+
+    const coachSelect = document.getElementById('coach-select');
+    const coachMode = coachSelect ? coachSelect.value : '普通';
+    const condition = document.getElementById('condition-select') ? document.getElementById('condition-select').value : '普通';
+
+    let prompt = `あなたは18歳の女性講師。社労士試験の勉強をサポートしています。
+指導スタンス: ${coachMode}
+ユーザーの体調: ${condition}
+絶対ルール: 役割語（だぞ、だろ、わ、よ、ふふっ等）は禁止。1〜2文で短く自然な言葉で話すこと。
+
+状況: `;
+
+    if (type.startsWith('start_')) {
+        prompt += `これから学習セット（${data.total}問）を開始します。励ましてください。`;
+    } else if (type === 'answer_takuitsu') {
+        prompt += `ユーザーが問題を解きました。正解かどうか: ${data.isCorrect ? '正解' : '不正解'}。解説の要約を少し交えて一言コメントしてください。`;
+    } else if (type === 'result_sentaku') {
+        prompt += `選択式問題の結果が出ました。スコア: ${data.score}/5。一言コメントしてください。`;
+    } else if (type === 'end_all') {
+        prompt += `今日の学習セットがすべて終わりました。合計${data.totalPlayed}問、間違い${data.mistakes}問でした。労いの言葉をかけてください。`;
+    } else {
+        prompt += `ユーザーを応援してください。`;
+    }
+
+    const response = await callGeminiAPI(prompt, "");
+    
+    if (aiMessageEl) aiMessageEl.innerHTML = response;
+    
+    if (!isMuted && typeof audioCtx !== 'undefined') {
+        let u = new SpeechSynthesisUtterance(response.replace(/[\*\#\`\_]/g, ''));
+        u.lang = 'ja-JP';
+        u.rate = 1.1;
+        window.speechSynthesis.speak(u);
+    }
+    
+    if (isFirst && typeof onAiGreetingStarted === "function") {
+        onAiGreetingStarted();
+    }
 }
