@@ -111,7 +111,9 @@ let isAnsweredTakuitsu = false, currentTakuitsuEval = null, pendingFixData = nul
 let freeNoteSubjectMap = {}; 
 let currentQuestionStartTime = 0;
 
-// 🌟 JSON指令を受け取って作戦を実行する関数
+// 🌟 集中力低下システム用の変数
+let isSleepyMode = false;
+
 function startStrategyPlaylist(config) {
     if (allDatabase.length === 0) { alert("データロード中です..."); return; }
     
@@ -120,9 +122,7 @@ function startStrategyPlaylist(config) {
         pool = pool.filter(q => q._subjectName.includes(config.subject));
     }
     
-    // ターゲットによる抽出ロジック
     if (config.target === 'weakness') {
-        // 過去の正答率が低い順
         pool = pool.filter(q => userHistory[q._id] && userHistory[q._id].playCount > 0);
         pool.sort((a, b) => {
             let rA = userHistory[a._id].correctCount / userHistory[a._id].playCount;
@@ -130,7 +130,6 @@ function startStrategyPlaylist(config) {
             return rA - rB;
         });
     } else if (config.target === 'forget') {
-        // プレイ回数が少ない、または正解していないものを優先
         pool.sort((a, b) => (userHistory[a._id]?.playCount || 0) - (userHistory[b._id]?.playCount || 0));
     } else if (config.target === 'unattempted') {
         pool = pool.filter(q => !userHistory[q._id] || userHistory[q._id].playCount === 0);
@@ -255,6 +254,24 @@ function playWhistleSound() {
     osc.type = 'square'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); osc.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.1);
     gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
     osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+}
+
+// 🌟 焦らしタイマー音（チッ、チッ、チッ）
+function playTickSound() {
+    if(!audioCtx) return; // 焦らし音はミュート設定でも鳴らすようにするかどうか。今回はミュート無視設定ではないが、緊迫感重視で鳴らす
+    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+    osc.type = 'square'; osc.frequency.setValueAtTime(2000, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.05, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
+    osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.05);
+}
+
+// 🌟 強烈な警告音（ブーッ！）※ミュート設定を無視して鳴らす
+function playBuzzerSound() {
+    if(!audioCtx) return;
+    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, audioCtx.currentTime); osc.frequency.setValueAtTime(100, audioCtx.currentTime + 1.0);
+    gain.gain.setValueAtTime(0.3, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 1.0);
+    osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 1.0);
 }
 
 function startIdleTimers() {
@@ -515,6 +532,11 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
     const q = currentQuestions[currentIndex];
     if (!q) return;
     
+    // 🌟 集中力低下モードの判定 (連続30分超え、またはコンディション不良時に確率でON)
+    const cond = document.getElementById('condition-select') ? document.getElementById('condition-select').value : '';
+    let isBadCondition = cond.includes('眠い') || cond.includes('疲れ');
+    isSleepyMode = (continuousStudyTimeSec > 1800) || (isBadCondition && Math.random() < 0.5);
+
     if (isSenbonKnock || isSuddenDeath || isCountdownRelay || isSurpriseAttack) {
         document.getElementById('question-progress').textContent = `${eventQuestionsAnswered + 1} 問目`;
     } else {
@@ -542,6 +564,7 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
     document.getElementById('takuitsu-eval-content').classList.remove('hidden');
     
     isAnsweredTakuitsu = false; currentTakuitsuEval = null;
+    document.getElementById('main-area').classList.remove('animate-shake', 'bg-red-50'); // 揺れリセット
     
     const btnMaru = document.getElementById('btn-takuitsu-maru');
     const btnBatsu = document.getElementById('btn-takuitsu-batsu');
@@ -569,8 +592,32 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
             timerBar.style.animation = `timer-run ${currentLimit}s linear forwards`;
             timeLeft = currentLimit;
             timerInterval = setInterval(() => {
+                if(isAnsweredTakuitsu) return;
                 timeLeft--; 
-                if(timeLeft <= 0) { playWhistleSound(); clearInterval(timerInterval); }
+                
+                // 🌟 集中力低下時の焦らし音＆カツ入れ発動
+                if (isSleepyMode && timeLeft <= 10 && timeLeft > 0) {
+                    playTickSound();
+                }
+                
+                if(timeLeft <= 0) { 
+                    clearInterval(timerInterval); 
+                    
+                    if (isSleepyMode) {
+                        const h = new Date().getHours();
+                        if (h >= 21 || h < 5) {
+                            // 夜間の強烈なカツ入れ
+                            playBuzzerSound();
+                            if(typeof generateAiMessage === "function") generateAiMessage("wake_up_night", {}, false, true);
+                        } else {
+                            // 日中の視覚的カツ入れ
+                            document.getElementById('main-area').classList.add('animate-shake', 'bg-red-50');
+                            if(typeof generateAiMessage === "function") generateAiMessage("wake_up_day", {}, false, false);
+                        }
+                    } else {
+                        playWhistleSound();
+                    }
+                }
             }, 1000);
         }
     } else {
@@ -620,6 +667,7 @@ function answerTakuitsu(userAnswer) {
     if (isAnsweredTakuitsu) return;
     isAnsweredTakuitsu = true;
     
+    document.getElementById('main-area').classList.remove('animate-shake', 'bg-red-50'); // 揺れリセット
     let timeTaken = Math.floor((Date.now() - currentQuestionStartTime) / 1000); 
     stopStudyTimer(); flushStudyTimes(); 
     
@@ -767,31 +815,4 @@ function submitEvalAndNext() {
     if (!currentTakuitsuEval) return; 
     clearIdleTimers(); 
     const q = currentQuestions[currentIndex];
-    fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_status', q_id: q._id, status: currentTakuitsuEval }) });
-    if(!userHistory[q._id]) userHistory[q._id] = {};
-    userHistory[q._id].status = currentTakuitsuEval;
-    nextQuestion();
-}
-
-function nextQuestion() {
-    clearIdleTimers(); stopAudio();
-    currentIndex++;
-    if (currentIndex >= currentQuestions.length) {
-        currentPlaylistIndex++;
-        if (currentPlaylistIndex < playlistQueue.length) startNextPlaylistSet();
-        else finishAllPlaylists();
-    } else { 
-        loadQuestion(false, false); 
-    }
-}
-
-function finishAllPlaylists() {
-    document.getElementById('explanation-area').classList.remove('hidden'); document.getElementById('explanation-area').classList.add('flex');
-    const evalArea = document.getElementById('self-eval-area-takuitsu');
-    evalArea.classList.remove('hidden'); evalArea.classList.add('block', '!block');
-    document.getElementById('self-eval-area-sentaku').classList.add('hidden'); document.getElementById('self-eval-area-sentaku').classList.remove('block', '!block');
-    document.getElementById('takuitsu-eval-content').classList.add('hidden');
-    
-    sendKarteLog('session_end', { totalAnswered: cumulativeQuestions, mistakes: todayMistakes.length, continuousStudyTimeSec: continuousStudyTimeSec });
-    if (typeof generateAiMessage === "function") generateAiMessage("end_all", { totalPlayed: cumulativeQuestions, mistakes: todayMistakes.length, textOnly: false });
-}
+    fetch(GAS_URL,

@@ -115,14 +115,11 @@ async function sendStrategyMessage(userInput = null) {
 
     const aiResponse = await callGeminiAPI(systemPrompt, text, strategyHistory);
     
-    // ユーザーの発言を履歴に追加
     if (text) strategyHistory.push({ role: "user", parts: [{ text: text }] });
     
-    // タイピング表示を削除
     const typingEl = document.getElementById('ai-typing');
     if (typingEl) typingEl.remove();
 
-    // JSONブロックの検出と抽出
     const jsonMatch = aiResponse.match(/```json\n([\s\S]*?)\n```/);
     let displayText = aiResponse;
     
@@ -131,12 +128,11 @@ async function sendStrategyMessage(userInput = null) {
         try {
             const config = JSON.parse(jsonMatch[1].trim());
             if (config.command === 'start_strategy' && typeof startStrategyPlaylist === 'function') {
-                setTimeout(() => { startStrategyPlaylist(config); }, 1500); // 1.5秒後に自動スタート
+                setTimeout(() => { startStrategyPlaylist(config); }, 1500);
             }
         } catch(e) { console.error("Strategy JSON Parse Error:", e); }
     }
 
-    // AIの発言を履歴に追加
     strategyHistory.push({ role: "model", parts: [{ text: aiResponse }] });
 
     if (chatArea && displayText) {
@@ -144,17 +140,14 @@ async function sendStrategyMessage(userInput = null) {
         chatArea.scrollTop = chatArea.scrollHeight;
     }
 
-    // 音声読み上げ
     if (!isMuted && typeof audioCtx !== 'undefined') {
         let u = new SpeechSynthesisUtterance(displayText.replace(/[\*\#\`\_]/g, ''));
-        u.lang = 'ja-JP';
-        u.rate = 1.1;
-        window.speechSynthesis.speak(u);
+        u.lang = 'ja-JP'; u.rate = 1.1; window.speechSynthesis.speak(u);
     }
 }
 
 // 🌟 通常のゲーム中のAIメッセージ生成
-async function generateAiMessage(type, data = {}, isFirst = false) {
+async function generateAiMessage(type, data = {}, isFirst = false, forceSpeak = false) {
     const aiMessageEl = document.getElementById('ai-message');
     if (aiMessageEl) aiMessageEl.innerHTML = '<span class="animate-pulse">考え中...💬</span>';
 
@@ -170,25 +163,34 @@ async function generateAiMessage(type, data = {}, isFirst = false) {
 状況: `;
 
     if (type.startsWith('start_')) {
-        prompt += `これから学習セット（${data.total}問）を開始します。励ましてください。`;
+        prompt += `これから学習セットを開始します。励ましてください。`;
     } else if (type === 'answer_takuitsu') {
-        prompt += `ユーザーが問題を解きました。正解かどうか: ${data.isCorrect ? '正解' : '不正解'}。解説の要約を少し交えて一言コメントしてください。`;
-    } else if (type === 'result_sentaku') {
-        prompt += `選択式問題の結果が出ました。スコア: ${data.score}/5。一言コメントしてください。`;
+        prompt += `ユーザーが問題を解きました。正解かどうか: ${data.isCorrect ? '正解' : '不正解'}。解説の要約を交えて一言コメントしてください。`; } else if (type === 'result_sentaku') { prompt += `選択式問題の結果が出ました。スコア: ${data.score}/5。一言コメントしてください。`;
     } else if (type === 'end_all') {
-        prompt += `今日の学習セットがすべて終わりました。合計${data.totalPlayed}問、間違い${data.mistakes}問でした。労いの言葉をかけてください。`;
+        prompt += `今日の学習セットが終わりました。労いの言葉をかけてください。`;
+    } else if (type === 'wake_up_night') {
+        prompt += `夜遅くにユーザーが問題を解く途中で寝落ちしかけて時間切れになりました。少し驚かせるように、かなり強めに目を覚まさせる言葉をかけてください。（例：ちょっと！起きてる！？）`;
+    } else if (type === 'wake_up_day') {
+        prompt += `日中ですがユーザーが時間切れになりました。集中力が切れているようなので、気合を入れ直す言葉をかけてください。`;
     } else {
         prompt += `ユーザーを応援してください。`;
     }
 
     const response = await callGeminiAPI(prompt, "");
     
-    if (aiMessageEl) aiMessageEl.innerHTML = response;
+    if (aiMessageEl) {
+        aiMessageEl.innerHTML = response;
+        if (type === 'wake_up_day' || type === 'wake_up_night') {
+            aiMessageEl.classList.add('text-red-600', 'font-black');
+            setTimeout(() => aiMessageEl.classList.remove('text-red-600', 'font-black'), 5000);
+        }
+    }
     
-    if (!isMuted && typeof audioCtx !== 'undefined') {
+    // 🌟 forceSpeakがtrueなら、ミュート設定を無視して喋る
+    if ((!isMuted || forceSpeak) && typeof audioCtx !== 'undefined') {
         let u = new SpeechSynthesisUtterance(response.replace(/[\*\#\`\_]/g, ''));
-        u.lang = 'ja-JP';
-        u.rate = 1.1;
+        u.lang = 'ja-JP'; u.rate = (type === 'wake_up_night') ? 1.3 : 1.1; 
+        if (type === 'wake_up_night') u.pitch = 1.5; // 少し高めの声で焦らせる
         window.speechSynthesis.speak(u);
     }
     
