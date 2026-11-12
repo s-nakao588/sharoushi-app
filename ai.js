@@ -2,6 +2,8 @@
    🤖 AI・Gemini連携モジュール
    ========================================================= */
 
+// main.js の変数を参照するため外部スコープを利用します。
+
 async function speakText(text, isStartScreen = false) {
     if (isMuted || !text) return; 
     let cleanText = text.replace(/<[^>]+>/g, '').trim(); if (!cleanText) return;
@@ -22,7 +24,6 @@ async function speakText(text, isStartScreen = false) {
         p.onplay = () => {
             if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
         };
-        // 🌟 フォールバック用: もしiOSでonplayがうまく発火しなかった場合でも安全に進める
         setTimeout(() => {
             if (isStartScreen && typeof onAiGreetingStarted === "function") onAiGreetingStarted();
         }, 1000); 
@@ -107,8 +108,8 @@ async function sendStrategyMessage() {
     if(!userApiKey) { alert("APIキーが必要です"); document.getElementById('api-settings-wrapper').classList.remove('hidden'); return; }
     const inputEl = document.getElementById('strategy-input'); const input = inputEl.value.trim();
     if(!input) return;
-    sendKarteLog('strategy_chat', { message: input });
-    saveRequestHabit(input);
+    if(typeof sendKarteLog === "function") sendKarteLog('strategy_chat', { message: input });
+    if(typeof saveRequestHabit === "function") saveRequestHabit(input);
     const logEl = document.getElementById('strategy-chat-log');
     logEl.innerHTML += `<div class="self-end bg-indigo-100 text-indigo-900 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tr-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl">${input}</div>`;
     logEl.scrollTop = logEl.scrollHeight; inputEl.value = "";
@@ -157,4 +158,14 @@ async function sendStrategyMessage() {
         document.getElementById(typingId).outerHTML = `<div class="self-start bg-red-50 text-red-600 p-2 md:p-3 rounded-xl md:rounded-2xl max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl border border-red-200">⚠️ 通信エラーが発生したみたい。もう一度話しかけてみて！</div>`;
         logEl.scrollTop = logEl.scrollHeight;
     }
+}
+
+// ダッシュボードのAIアドバイス生成処理（main.jsから移動）
+function generateDashboardAdvice(stats) {
+    let prompt = `あなたは社労士試験の専属コーチです。成績データをもとに今日のおすすめ科目を1〜2文で提案して。データ: ${JSON.stringify(stats)}`;
+    fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    }).then(res => res.json()).then(data => {
+        if (data.candidates && data.candidates[0]) { document.getElementById('dash-ai-comment').textContent = data.candidates[0].content.parts[0].text; }
+    }).catch(e => {});
 }

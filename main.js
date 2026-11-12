@@ -159,15 +159,6 @@ function playWhistleSound() {
     osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.3);
 }
 
-function playCompletedArticle() {
-    const text = document.getElementById('article-text').textContent;
-    if(text && text !== "条文なし" && typeof speakText === "function") speakText(text);
-}
-
-function generateAlchemyQuestion() {
-    if(typeof generateAiMessage === "function") generateAiMessage("alchemy_prep", { textOnly: true });
-}
-
 function startIdleTimers() {
     clearIdleTimers();
     if (isSenbonKnock || isCountdownRelay || isSuddenDeath || isSurpriseAttack) return; 
@@ -222,13 +213,6 @@ async function flushStudyTimes() {
     }
 }
 
-function saveRequestHabit(input) {
-    let reqs = JSON.parse(localStorage.getItem('strategy_habits') || '[]');
-    reqs.push({ time: new Date().toISOString(), text: input });
-    if(reqs.length > 5) reqs.shift();
-    localStorage.setItem('strategy_habits', JSON.stringify(reqs));
-}
-
 function sendKarteLog(logType, detailObj) {
     const cond = document.getElementById('condition-select').value;
     const health = document.getElementById('health-select').value;
@@ -266,7 +250,7 @@ async function loadAllSubjects() {
 function checkAllLoaded() {
     if (parsedSubjectsCount === SUBJECTS.length) {
         let localFixes = JSON.parse(localStorage.getItem('local_fixes') || '{}');
-        freeNoteSubjectMap = {}; // フリーノート用の抽出
+        freeNoteSubjectMap = {}; 
         allDatabase.forEach(q => {
             if (localFixes[q._id]) {
                 let fix = localFixes[q._id];
@@ -274,8 +258,7 @@ function checkAllLoaded() {
                 if (fix.newExplanation) q.解説 = fix.newExplanation;
                 q._verified = true;
             }
-            // 科目・項目のマップを作成
-            let baseSubj = q._subjectName.replace(/\(択一\)|\(選択\)/g, ""); // "(択一)"などを除去してまとめる
+            let baseSubj = q._subjectName.replace(/\(択一\)|\(選択\)/g, ""); 
             if (!freeNoteSubjectMap[baseSubj]) freeNoteSubjectMap[baseSubj] = new Set();
             freeNoteSubjectMap[baseSubj].add(q.項目);
         });
@@ -373,13 +356,8 @@ function updateDashboard() {
     }
     container.innerHTML = htmlContent;
 
-    if(userApiKey && typeof generateAiMessage === "function") {
-        let prompt = `あなたは社労士試験の専属コーチです。成績データをもとに今日のおすすめ科目を1〜2文で提案して。データ: ${JSON.stringify(stats)}`;
-        fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        }).then(res => res.json()).then(data => {
-            if (data.candidates && data.candidates[0]) { document.getElementById('dash-ai-comment').textContent = data.candidates[0].content.parts[0].text; }
-        }).catch(e => {});
+    if(userApiKey && typeof generateDashboardAdvice === "function") {
+        generateDashboardAdvice(stats);
     }
 }
 
@@ -409,16 +387,6 @@ function buildSubjectAccordionUI() {
 }
 
 function checkAllChapters(check) { document.querySelectorAll('input[name="chapter-check"]').forEach(cb => cb.checked = check); }
-
-function triggerAnalysisStrategy() {
-    document.getElementById('strategy-input').value = '弱点を分析して特訓プランを作って！';
-    if(typeof sendStrategyMessage === "function") sendStrategyMessage();
-}
-
-function triggerEbbinghausStrategy() {
-    document.getElementById('strategy-input').value = '忘却曲線をベースに復習プランを作って！';
-    if(typeof sendStrategyMessage === "function") sendStrategyMessage();
-}
 
 function resetGameFlags() {
     isSenbonKnock = false; isTimeAttack = false; isBonusMode = false;
@@ -554,7 +522,7 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
         document.getElementById('start-wait-text').textContent = "準備中...💬";
         
         let promptType = mode === 'normal' ? "start_all" : `start_${playlistQueue[0].type === '択一' ? 'takuitsu' : 'sentaku'}`;
-        generateAiMessage(promptType, { total: totalQuestionsToPlay, textOnly: false }, true);
+        if(typeof generateAiMessage === "function") generateAiMessage(promptType, { total: totalQuestionsToPlay, textOnly: false }, true);
     } else {
         startSessionAndTimer();
     }
@@ -969,11 +937,6 @@ function answerTakuitsu(userAnswer) {
     }
 }
 
-function showHintTakuitsu() {
-    const q = currentQuestions[currentIndex];
-    if (typeof generateAiMessage === "function") generateAiMessage("hint_takuitsu", { questionText: q.問題文, explanation: q.解説 || "", textOnly: true });
-}
-
 function toggleStrike(word, el) {
     el.classList.toggle('line-through'); el.classList.toggle('text-slate-300');
     el.classList.toggle('bg-slate-100'); el.classList.toggle('opacity-50');
@@ -987,13 +950,7 @@ function toggleStrike(word, el) {
     });
 }
 function syncSelects(letter, value) { document.querySelectorAll(`.inline-select[data-letter="${letter}"]`).forEach(s => s.value = value); }
-function showHintSentaku() {
-    const qArea = document.getElementById('question-text-sentaku');
-    let text = qArea.innerHTML;
-    text = text.replace(/(なければならない|努め|こと|また|ただし|において|ため)/g, '<span class="highlight-clue">$1</span>');
-    qArea.innerHTML = text;
-    if (typeof generateAiMessage === "function") generateAiMessage("hint_sentaku", { textOnly: true });
-}
+
 function fillRandomAnswers() {
     ['A','B','C','D','E'].forEach(letter => {
         let randomWord = currentWordBank[Math.floor(Math.random() * currentWordBank.length)];
@@ -1346,4 +1303,33 @@ function stopNap() {
     clearInterval(napInterval);
     document.getElementById('nap-overlay').classList.add('hidden'); document.getElementById('nap-overlay').classList.remove('flex');
     resumeTimer();
+}
+
+// 🌟 ヒント系の連携処理（ai.jsへイベント送信）
+function showHintTakuitsu() {
+    const q = currentQuestions[currentIndex];
+    if (typeof generateAiMessage === "function") generateAiMessage("hint_takuitsu", { questionText: q.問題文, explanation: q.解説 || "", textOnly: true });
+}
+
+function showHintSentaku() {
+    const qArea = document.getElementById('question-text-sentaku');
+    let text = qArea.innerHTML;
+    text = text.replace(/(なければならない|努め|こと|また|ただし|において|ため)/g, '<span class="highlight-clue">$1</span>');
+    qArea.innerHTML = text;
+    if (typeof generateAiMessage === "function") generateAiMessage("hint_sentaku", { textOnly: true });
+}
+
+function executeAlchemyStart() {
+    if(typeof generateAiMessage === "function") generateAiMessage("alchemy_prep", { textOnly: true });
+}
+
+// 🌟 専属講師への作戦リクエストをまとめる連携
+function triggerAnalysisStrategy() {
+    document.getElementById('strategy-input').value = '弱点を分析して特訓プランを作って！';
+    if(typeof sendStrategyMessage === "function") sendStrategyMessage();
+}
+
+function triggerEbbinghausStrategy() {
+    document.getElementById('strategy-input').value = '忘却曲線をベースに復習プランを作って！';
+    if(typeof sendStrategyMessage === "function") sendStrategyMessage();
 }
