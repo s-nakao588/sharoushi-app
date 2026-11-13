@@ -38,7 +38,7 @@ async function speakText(text) {
 async function callGeminiAPI(systemInstruction, userText, history = []) {
     if (!userApiKey) {
         console.warn("APIキーが設定されていません。");
-        return "ごめんね、APIキーが設定されていないみたい！設定画面から入力してね。";
+        return "ごめんね、APIキーが設定されていないみたい！画面上の「⚙️ API設定・モデル変更」から入力してね。";
     }
 
     const modelToUse = userModel || 'gemini-2.5-flash';
@@ -87,15 +87,17 @@ async function sendStrategyMessage(userInput = null) {
     
     if (inputField) inputField.value = '';
 
-    const chatArea = document.getElementById('strategy-chat-area');
+    // 【修正】HTMLに合わせて「strategy-chat-log」に変更
+    const chatArea = document.getElementById('strategy-chat-log');
     if (chatArea && text) {
         chatArea.innerHTML += `<div class="mb-2 text-right"><span class="inline-block bg-blue-100 text-blue-800 p-2 rounded-lg text-sm">${text}</span></div>`;
         chatArea.scrollTop = chatArea.scrollHeight;
     }
 
-    const coachSelect = document.getElementById('coach-select');
+    // 【修正】HTMLのIDに合わせて講師モードと体調を修正
+    const coachSelect = document.getElementById('condition-select');
     const coachMode = coachSelect ? coachSelect.value : '普通';
-    const condSelect = document.getElementById('condition-select');
+    const condSelect = document.getElementById('health-select');
     const condition = condSelect ? condSelect.value : '普通';
     
     const examDate = new Date('2027-08-22');
@@ -174,12 +176,13 @@ async function sendStrategyMessage(userInput = null) {
     speakText(displayText);
 }
 
-// 🌟 AIセリフ生成機能（条件分岐完全復元 ＋ 眠気検知統合）
+// 🌟 AIセリフ生成機能
 async function generateAiMessage(situation, extraData = {}, isFirst = false, forceSpeak = false) {
     const aiMessageEl = document.getElementById('ai-message');
     if (aiMessageEl) aiMessageEl.innerHTML = '<span class="animate-pulse">💬 考え中...</span>';
 
-    const coachSelect = document.getElementById('coach-select');
+    // 【修正】HTMLのIDに合わせて修正
+    const coachSelect = document.getElementById('condition-select');
     const cond = coachSelect ? coachSelect.value : '普通';
     
     let prompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。受講生のモードは「${cond}」です。
