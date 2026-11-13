@@ -38,7 +38,7 @@ async function speakText(text) {
 async function callGeminiAPI(systemInstruction, userText, history = []) {
     if (!userApiKey) {
         console.warn("APIキーが設定されていません。");
-        return "ごめんね、APIキーが設定されていないみたい！画面上の「⚙️ API設定・モデル変更」から入力してね。";
+        return "ごめんね、APIキーが設定されていないみたい！設定画面から入力してね。";
     }
 
     const modelToUse = userModel || 'gemini-2.5-flash';
@@ -87,14 +87,12 @@ async function sendStrategyMessage(userInput = null) {
     
     if (inputField) inputField.value = '';
 
-    // 【修正】HTMLに合わせて「strategy-chat-log」に変更
     const chatArea = document.getElementById('strategy-chat-log');
     if (chatArea && text) {
-        chatArea.innerHTML += `<div class="mb-2 text-right"><span class="inline-block bg-blue-100 text-blue-800 p-2 rounded-lg text-sm">${text}</span></div>`;
+        chatArea.innerHTML += `<div class="self-end bg-indigo-100 text-indigo-900 p-3 rounded-2xl rounded-tr-none max-w-[80%] shadow-sm font-bold text-sm md:text-base border border-indigo-200">${text}</div>`;
         chatArea.scrollTop = chatArea.scrollHeight;
     }
 
-    // 【修正】HTMLのIDに合わせて講師モードと体調を修正
     const coachSelect = document.getElementById('condition-select');
     const coachMode = coachSelect ? coachSelect.value : '普通';
     const condSelect = document.getElementById('health-select');
@@ -141,7 +139,7 @@ async function sendStrategyMessage(userInput = null) {
 ※JSONを出力すると自動でシステムが起動します。JSONの前後に余計な説明は入れないでください。`;
 
     if (chatArea) {
-        chatArea.innerHTML += `<div class="mb-2 text-left" id="ai-typing"><span class="inline-block bg-slate-100 text-slate-600 p-2 rounded-lg text-sm">考え中...💬</span></div>`;
+        chatArea.innerHTML += `<div class="self-start bg-slate-100 text-slate-500 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm" id="ai-typing">考え中...💬</div>`;
         chatArea.scrollTop = chatArea.scrollHeight;
     }
 
@@ -166,22 +164,23 @@ async function sendStrategyMessage(userInput = null) {
         } catch(e) { console.error("Strategy JSON Parse Error:", e); }
     }
 
+    displayText = displayText.replace(/```json/g, '').replace(/```/g, '').trim();
+
     strategyHistory.push({ role: "model", parts: [{ text: aiResponse }] });
 
     if (chatArea && displayText) {
-        chatArea.innerHTML += `<div class="mb-2 text-left"><span class="inline-block bg-slate-100 text-slate-800 p-2 rounded-lg text-sm font-bold border border-slate-300">${displayText.replace(/\n/g, '<br>')}</span></div>`;
+        chatArea.innerHTML += `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-base">${displayText.replace(/\n/g, '<br>')}</div>`;
         chatArea.scrollTop = chatArea.scrollHeight;
     }
 
     speakText(displayText);
 }
 
-// 🌟 AIセリフ生成機能
+// 🌟 AIセリフ生成機能（条件分岐完全復元 ＋ 眠気検知統合）
 async function generateAiMessage(situation, extraData = {}, isFirst = false, forceSpeak = false) {
     const aiMessageEl = document.getElementById('ai-message');
     if (aiMessageEl) aiMessageEl.innerHTML = '<span class="animate-pulse">💬 考え中...</span>';
 
-    // 【修正】HTMLのIDに合わせて修正
     const coachSelect = document.getElementById('condition-select');
     const cond = coachSelect ? coachSelect.value : '普通';
     
@@ -197,7 +196,7 @@ async function generateAiMessage(situation, extraData = {}, isFirst = false, for
     else if (situation === "start_timeattack") prompt += `熱血タイムアタック開始！「15秒で直感で解こう！」と熱く鼓舞して。`;
     else if (situation === "start_bonus") prompt += `ご褒美モード開始！「得意な問題を集めたから、自信つけていこう！」と優しく促して。`;
     else if (situation === "start_suddendeath") prompt += `サドンデスモード発動！「時間が余ってるから、サクッとこれやろう！1問でも間違えたら即終了だよ！」と煽って。`;
-    else if (situation === "start_relay") prompt += `カウントダウン・リレー発動！「時間が余ってるから、タイムアタックの進化版やろう！正解すると5秒回復するよ！」と楽しく挑発して。`;
+    else if (situation === "start_relay") prompt += `カウントダウン・リレー発発動！「時間が余ってるから、タイムアタックの進化版やろう！正解すると5秒回復するよ！」と楽しく挑発して。`;
     else if (situation === "start_trap") prompt += `ひっかけ特化モード発動！「今まで間違えた問題や、正答率の低い問題を集めたよ！罠に引っかからないように注意して！」と警告して。`;
     else if (situation === "start_hardcore") prompt += `ハードコア選択式発動！「だいぶ知識がついてきたみたいだから、語群を没収するね！まずは自力で思い出してみて！」と挑戦的に。`;
     else if (situation === "start_surprise") prompt += `不意打ちの1問発動！「油断大敵！気が抜けたところに苦手問題を1問だけ出題するよ！」と警告して。`;
