@@ -1,5 +1,5 @@
 // main.js
-const GAS_URL = "https://script.google.com/a/macros/sr-nakao.com/s/AKfycbyHu72D7p9XrmynRKYbt_4HOfhJ47D3xEdv-SgqTWS1iSrxWo6KuhZnzTbMvitQ7r0_Eg/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbwptevf0-SETg8D7-F54qWDwfwKLEAyJzQgNu_C2D1Z_Ohn0toWgWk_D7Czn8uSf1m5kQ/exec";
 
 const SUBJECTS = [
     { id: "rouki", type: "択一", name: "労働基準法(択一)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?output=csv" },
