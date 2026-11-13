@@ -152,7 +152,9 @@ async function sendStrategyMessage(userInput = null) {
     const typingEl = document.getElementById('ai-typing');
     if (typingEl) typingEl.remove();
 
-    const jsonMatch = aiResponse.match(/```json\n([\s\S]*?)\n```/);
+    // 🌟 エラー回避のため正規表現を安全な形式に修正（バックアップと同様）
+    const regex = new RegExp("```json\\n([\\s\\S]*?)\\n```");
+    const jsonMatch = aiResponse.match(regex);
     let displayText = aiResponse;
     
     if (jsonMatch) {

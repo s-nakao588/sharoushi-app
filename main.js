@@ -98,6 +98,7 @@ let setCorrectCount = 0, cumulativeQuestions = 0, todayMistakes = [];
 let eliminatedWords = new Set(), currentWordBank = [], currentAnswers = {}, currentFullText = "";
 let lastAnswerWasCorrect = false;
 let strategyPlan = null;
+let currentQuestionStartTime = 0; // 🌟 時間計測用
 
 let initialPlaylistConfig = [];
 
@@ -136,7 +137,7 @@ let isAnsweredTakuitsu = false;
 let currentTakuitsuEval = null;
 
 let pendingFixData = null;
-let isSleepyMode = false; 
+let isSleepyMode = false;
 
 window.onload = function() {
     try {
@@ -316,7 +317,8 @@ function startStudyTimer(subjectName) {
     if(!studyTimerInterval) {
         studyTimerInterval = setInterval(() => {
             continuousStudyTimeSec++; 
-            let pendingTimes = JSON.parse(localStorage.getItem('pending_study_times') || '{}');
+            let pendingTimes = {};
+            try { pendingTimes = JSON.parse(localStorage.getItem('pending_study_times') || '{}'); } catch(e){}
             pendingTimes['ALL'] = (pendingTimes['ALL'] || 0) + 1;
             if(activeSubjectForTime) pendingTimes[activeSubjectForTime] = (pendingTimes[activeSubjectForTime] || 0) + 1;
             localStorage.setItem('pending_study_times', JSON.stringify(pendingTimes));
@@ -329,7 +331,8 @@ function stopStudyTimer() {
 }
 
 async function flushStudyTimes() {
-    let pendingTimes = JSON.parse(localStorage.getItem('pending_study_times') || '{}');
+    let pendingTimes = {};
+    try { pendingTimes = JSON.parse(localStorage.getItem('pending_study_times') || '{}'); } catch(e){}
     let keys = Object.keys(pendingTimes);
     if(keys.length === 0) return;
     localStorage.removeItem('pending_study_times'); 
@@ -339,7 +342,8 @@ async function flushStudyTimes() {
             try {
                 await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'update_time', subject: key, time_sec: sec }) });
             } catch(e) {
-                let current = JSON.parse(localStorage.getItem('pending_study_times') || '{}');
+                let current = {};
+                try { current = JSON.parse(localStorage.getItem('pending_study_times') || '{}'); } catch(e){}
                 current[key] = (current[key] || 0) + sec;
                 localStorage.setItem('pending_study_times', JSON.stringify(current));
             }
@@ -348,7 +352,8 @@ async function flushStudyTimes() {
 }
 
 function saveRequestHabit(input) {
-    let reqs = JSON.parse(localStorage.getItem('strategy_habits') || '[]');
+    let reqs = [];
+    try { reqs = JSON.parse(localStorage.getItem('strategy_habits') || '[]'); } catch(e){}
     reqs.push({ time: new Date().toISOString(), text: input });
     if(reqs.length > 5) reqs.shift();
     localStorage.setItem('strategy_habits', JSON.stringify(reqs));
@@ -390,7 +395,8 @@ async function loadAllSubjects() {
 
 function checkAllLoaded() {
     if (parsedSubjectsCount === SUBJECTS.length) {
-        let localFixes = JSON.parse(localStorage.getItem('local_fixes') || '{}');
+        let localFixes = {};
+        try { localFixes = JSON.parse(localStorage.getItem('local_fixes') || '{}'); } catch(e){}
         allDatabase.forEach(q => {
             if (localFixes[q._id]) {
                 let fix = localFixes[q._id];
@@ -445,7 +451,8 @@ function updateDashboard() {
     if(!container) return;
     container.innerHTML = "";
     
-    let pendingTimes = JSON.parse(localStorage.getItem('pending_study_times') || '{}');
+    let pendingTimes = {};
+    try { pendingTimes = JSON.parse(localStorage.getItem('pending_study_times') || '{}'); } catch(e){}
     let displayTotalTime = (userTimes['ALL'] || 0) + (pendingTimes['ALL'] || 0);
     const totalStudyTimeEl = document.getElementById('total-study-time');
     if(totalStudyTimeEl) totalStudyTimeEl.textContent = formatTime(displayTotalTime);
@@ -888,7 +895,8 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false) {
     const drillMenu = document.getElementById('infinite-drill-menu');
     if(drillMenu) { drillMenu.classList.add('hidden'); drillMenu.classList.remove('flex'); }
     
-    const ignoredFixes = JSON.parse(localStorage.getItem('ignored_fixes') || '{}');
+    let ignoredFixes = {};
+    try { ignoredFixes = JSON.parse(localStorage.getItem('ignored_fixes') || '{}'); } catch(e){}
     const badge = document.getElementById('ignored-fix-badge');
     if (badge) {
         if (ignoredFixes[q._id]) {
@@ -1540,18 +1548,20 @@ function nextQuestion() {
     }
 }
 
+// 🌟 エラー回避：+ を使った安全な文字列結合でJSONフォーマットを維持
 async function judgeTimeUpExtension() {
     isExtensionAdded = true; 
     const aiMessageEl = document.getElementById('ai-message');
     if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 延長戦するか考えてるよ...</span>';
     
     const cond = document.getElementById('condition-select') ? document.getElementById('condition-select').value : '普通';
+    
     let prompt = `あなたは社労士試験の専属講師（若い女性）です。受講生の目標時間が今終わりました。モードは「${cond}」です。
 受講生を少し休ませて「終了」させるか、限界を超えるため「延長戦（1〜3問、または千本ノック）」を追加するか性格に基づいて判定してください。
 以下のJSONで返してください。メッセージは定型文を使わず、現代の自然な口語（1〜2文、アニメ口調絶対禁止）で。
-\`\`\`json
-{ "action": "end" または "extend", "eventType": "normal", "senbonKnock", "timeAttack", "bonus", "count": 1〜10の数字, "message": "セリフ" }
-\`\`\``;
+` + "```json\n" + 
+`{ "action": "end" または "extend", "eventType": "normal", "senbonKnock", "timeAttack", "bonus", "count": 1〜10の数字, "message": "セリフ" }
+` + "```";
 
     try {
         const res = await fetch(`[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){userModel}:generateContent?key=${userApiKey}`, {
@@ -1560,7 +1570,6 @@ async function judgeTimeUpExtension() {
         const data = await res.json();
         const text = data.candidates[0].content.parts[0].text;
         
-        // 🌟 改行によるエラーを防ぐため、安全な正規表現に修正
         const regex = new RegExp("```json\\n([\\s\\S]*?)\\n```");
         const jsonMatch = text.match(regex);
         
@@ -1623,6 +1632,7 @@ function saveRestDecision(log) {
     localStorage.setItem('rest_decisions', JSON.stringify(decisions));
 }
 
+// 🌟 エラー回避：+ を使った安全な文字列結合でJSONフォーマットを維持
 async function judgeRestRecommendation() {
     if (sessionTotalTimeSec < 5400) { 
         if (continuousStudyTimeSec < 3600) { 
@@ -1657,9 +1667,9 @@ async function judgeRestRecommendation() {
 
 このデータから、今すぐ休憩（または仮眠）を促すべきか判定し、休憩が必要ならその分数（5〜30分）を提案してください。履歴を見て「拒否が多い」なら長めに集中できるタイプとして提案を控えめにするなど学習結果を反映して。
 以下のJSONで返してください。メッセージは定型文を使わず自然な口語で。
-\`\`\`json
-{ "recommendRest": true または false, "restMinutes": 5〜30の数字, "message": "セリフ" }
-\`\`\``;
+` + "```json\n" + 
+`{ "recommendRest": true または false, "restMinutes": 5〜30の数字, "message": "セリフ" }
+` + "```";
 
     try {
         const res = await fetch(`[https://generativelanguage.googleapis.com/v1beta/models/$](https://generativelanguage.googleapis.com/v1beta/models/$){userModel}:generateContent?key=${userApiKey}`, {
@@ -1668,7 +1678,6 @@ async function judgeRestRecommendation() {
         const data = await res.json();
         const text = data.candidates[0].content.parts[0].text;
         
-        // 🌟 改行によるエラーを防ぐため、安全な正規表現に修正
         const regex = new RegExp("```json\\n([\\s\\S]*?)\\n```");
         const jsonMatch = text.match(regex);
         
