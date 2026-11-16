@@ -48,7 +48,7 @@ const CATEGORY_MANUAL_MAP = {
     "3 被保険者": "2 被保険者・被保険者期間等", "被保険者の資格の得喪の確認": "2 被保険者・被保険者期間等", "5 被保険者期間等": "2 被保険者・被保険者期間等", "6 届出等": "2 被保険者・被保険者期間等", "被保険者に関する原簿等": "2 被保険者・被保険者期間等", "1 被保険者等・標準報酬": "2 被保険者・被保険者期間等",
     "標準報酬月額及び標準賞与額（標準報酬）": "3 標準報酬等",
     "11 裁定等": "4 給付通則等", "5 給付通則等": "4 給付通則等",
-    "督促、滞納処分及び延滞金": "5 費用の負担・保険料等", "6 費用の負担・不服申立て等": "5 費用の負担・保険料等", "費用の負担・保険料等": "5 費用の負担・保険料等", // CSV上の「保険料」は他の条件とかぶる可能性があるため自動マッチで処理
+    "督促、滞納処分及び延滞金": "5 費用の負担・保険料等", "6 費用の負担・不服申立て等": "5 費用の負担・保険料等", "費用の負担・保険料等": "5 費用の負担・保険料等", 
     "12 本来支給の老齢厚生年金の支給要件": "6 老齢厚生年金", "報酬比例部分の額": "6 老齢厚生年金", "14 経過的加算額": "6 老齢厚生年金", "15 加給年金額": "6 老齢厚生年金", "16 在職老齢年金 (高在老)": "6 老齢厚生年金", "老齢厚生年金の支給の繰上げ": "6 老齢厚生年金", "老齢厚生年金の支給の繰下げ": "6 老齢厚生年金", "特別支給の老齢厚生年金の支給要件・年金額": "6 老齢厚生年金", "特別支給の老齢厚生年金の支給開始年齢": "6 老齢厚生年金", "21 障害者・長期加入者等の特例": "6 老齢厚生年金", "22 雇用保険法の失業等給付との調整": "6 老齢厚生年金", "老齢厚生年金の支給繰上げの特例": "6 老齢厚生年金", "2 老齢厚生年金": "6 老齢厚生年金",
     "障害厚生年金の支給要件": "7 障害厚生年金・障害手当金", "25 障害厚生年金の併給の調整（併合認定）": "7 障害厚生年金・障害手当金", "障害厚生年金等の年金額": "7 障害厚生年金・障害手当金", "障害の程度が変わった場合の年金額の改定": "7 障害厚生年金・障害手当金", "障害厚生年金の支給停止": "7 障害厚生年金・障害手当金", "障害厚生年金の失権": "7 障害厚生年金・障害手当金", "障害手当金": "7 障害厚生年金・障害手当金", "3 障害厚生年金・障害手当金": "7 障害厚生年金・障害手当金", "Step-Up 3 障害厚生年金・障害手当金": "7 障害厚生年金・障害手当金",
     "遺族厚生年金の支給要件": "8 遺族厚生年金・脱退一時金", "遺族": "8 遺族厚生年金・脱退一時金", "4 遺族厚生年金・脱退一時金": "8 遺族厚生年金・脱退一時金", "遺族厚生年金の年金額": "8 遺族厚生年金・脱退一時金", "34 妻に支給する遺族厚生年金の加算額": "8 遺族厚生年金・脱退一時金", "遺族厚生年金の支給停止": "8 遺族厚生年金・脱退一時金", "遺族厚生年金の失権": "8 遺族厚生年金・脱退一時金", "37 脱退一時金": "8 遺族厚生年金・脱退一時金",
@@ -125,6 +125,8 @@ let eventQuestionsAnswered = 0, eventCorrectCount = 0;
 
 let isAnsweredTakuitsu = false, currentTakuitsuEval = null, pendingFixData = null;
 let freeNoteSubjectMap = {}; 
+let currentQuestionStartTime = 0; // 🌟 追加: 解答時間計測用
+let currentQuestionHintCount = 0; // 🌟 追加: ヒント使用回数記録用
 
 window.onload = function() {
     try {
@@ -512,7 +514,7 @@ function resetGameFlags() {
     document.getElementById('timer-bar').style.backgroundColor = '#10b981';
 }
 
-// 🌟 AIによる作戦会議の結果を反映する機能（追加分）
+// 🌟 AIによる作戦会議の結果を反映する機能
 function startStrategyPlaylist(config) {
     if (allDatabase.length === 0) { return; }
     
@@ -561,7 +563,9 @@ function startStrategyPlaylist(config) {
     document.getElementById('aside-area').classList.remove('hidden');
     document.getElementById('aside-area').classList.add('flex');
     
-    sendKarteLog('strategy_start', { target: config.target, count: count });
+    const timeLimitVal = document.getElementById('time-limit-select') ? document.getElementById('time-limit-select').value : '無制限';
+    sendKarteLog('session_start', { mode: 'strategy_auto', target: config.target, count: count, timeLimit: timeLimitVal });
+    
     startNextPlaylistSet(true);
 }
 
@@ -607,6 +611,9 @@ function executeStrategyPlan() {
         localStorage.setItem('trap_done_date', '');
         localStorage.setItem('today_sentaku_count', '0');
     }
+    
+    const timeLimitVal = document.getElementById('time-limit-select') ? document.getElementById('time-limit-select').value : '無制限';
+    sendKarteLog('session_start', { mode: 'strategy', plan: strategyPlan, timeLimit: timeLimitVal });
     
     startNextPlaylistSet(true);
 }
@@ -692,6 +699,8 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
         localStorage.setItem('trap_done_date', '');
         localStorage.setItem('today_sentaku_count', '0');
     }
+
+    sendKarteLog('session_start', { mode: mode, targetSubject: targetSubject, excludePerfect: excludePerfect, count: count, timeLimit: timeLimitVal });
 
     if (!isMuted) {
         document.getElementById('start-wait-overlay').classList.remove('hidden');
@@ -918,7 +927,7 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
         btnBatsu.disabled = false; btnBatsu.classList.remove('opacity-30', 'ring-4', 'ring-red-500', 'cursor-not-allowed');
     }
     
-    const evalBtns = ['eval-btn-kanpeki', 'eval-btn-mayotta', 'eval-btn-wakaran'];
+    const evalBtns = ['eval-btn-kanpeki', 'eval-btn-kantan', 'eval-btn-mayotta', 'eval-btn-wakaran'];
     evalBtns.forEach(id => {
         let el = document.getElementById(id);
         if(el) el.classList.remove('opacity-40', 'ring-2', 'ring-offset-2', 'ring-slate-400');
@@ -1026,6 +1035,9 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
         }
     }
     if (typeof verifyDataWithPro === "function") verifyDataWithPro(q);
+    
+    currentQuestionStartTime = Date.now();
+    currentQuestionHintCount = 0;
 }
 
 function answerTakuitsu(userAnswer) {
@@ -1077,7 +1089,8 @@ function answerTakuitsu(userAnswer) {
         if (isCorrect) eventCorrectCount++;
     }
     
-    saveToGAS(q._id, 'save_answer', isCorrect, null, null);
+    let answerTimeSec = Math.floor((Date.now() - currentQuestionStartTime) / 1000);
+    saveToGAS(q._id, 'save_answer', isCorrect, null, null, answerTimeSec, currentQuestionHintCount);
     
     document.getElementById('action-takuitsu').classList.add('hidden');
     document.getElementById('explanation-area').classList.remove('hidden');
@@ -1187,7 +1200,8 @@ function submitSentakuAnswers() {
         if (score === 5) eventCorrectCount++;
     }
     
-    saveToGAS(currentQuestions[currentIndex]._id, 'save_sentaku', false, score, trapsPicked.join(','));
+    let answerTimeSec = Math.floor((Date.now() - currentQuestionStartTime) / 1000);
+    saveToGAS(currentQuestions[currentIndex]._id, 'save_sentaku', false, score, trapsPicked.join(','), answerTimeSec, currentQuestionHintCount);
 
     document.getElementById('action-sentaku').classList.add('hidden');
     document.getElementById('explanation-area').classList.remove('hidden');
@@ -1227,9 +1241,9 @@ function submitSentakuAnswers() {
 
 function closeWarningModal() { document.getElementById('warning-modal').classList.add('hidden'); document.getElementById('warning-modal').classList.remove('flex'); }
 
-async function saveToGAS(q_id, actionStr, isCorrect, score, traps) {
+async function saveToGAS(q_id, actionStr, isCorrect, score, traps, timeSec = 0, hintCount = 0) {
     try {
-        let payload = { action: actionStr, q_id: q_id };
+        let payload = { action: actionStr, q_id: q_id, time_sec: timeSec, hint_count: hintCount };
         if (actionStr === 'save_answer') payload.is_correct = isCorrect;
         if (actionStr === 'save_sentaku') { payload.score = score; payload.traps = traps; }
         const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
@@ -1244,7 +1258,7 @@ async function saveToGAS(q_id, actionStr, isCorrect, score, traps) {
 
 function selectEvalTakuitsu(status) {
     currentTakuitsuEval = status;
-    const btns = { '完璧': 'eval-btn-kanpeki', '迷った': 'eval-btn-mayotta', 'わからん': 'eval-btn-wakaran' };
+    const btns = { '完璧': 'eval-btn-kanpeki', '簡単': 'eval-btn-kantan', '迷った': 'eval-btn-mayotta', 'わからん': 'eval-btn-wakaran' };
     for (let key in btns) {
         let el = document.getElementById(btns[key]);
         if (!el) continue;
@@ -1289,6 +1303,7 @@ function markEvalSentaku(status) {
 async function cancelMistake() {
     if(confirm("直近の解答記録を取り消しますか？")) {
         const q = currentQuestions[currentIndex];
+        sendKarteLog('cancel_mistake', { q_id: q._id });
         try {
             await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'cancel_answer', q_id: q._id, was_correct: lastAnswerWasCorrect }) });
             if(q._type === '択一') {
@@ -1662,7 +1677,8 @@ function finishAllPlaylists() {
     
     document.getElementById('takuitsu-eval-toggle').classList.add('hidden');
     
-    // 🌟 終了時のイベント専用メッセージ呼び出し処理の復元
+    sendKarteLog('session_end', { totalAnswered: cumulativeQuestions, mistakes: todayMistakes.length, continuousStudyTimeSec: continuousStudyTimeSec });
+    
     if (isSenbonKnock || isTimeAttack || isBonusMode || isSuddenDeath || isCountdownRelay || isTrapMode || isHardcore || isSurpriseAttack) {
         let evType = isSenbonKnock ? "senbonKnock" : (isTimeAttack ? "timeAttack" : (isSuddenDeath ? "suddenDeath" : (isCountdownRelay ? "countdownRelay" : (isTrapMode ? "trapMode" : (isHardcore ? "hardcore" : (isSurpriseAttack ? "surpriseAttack" : "bonus"))))));
         if (typeof generateAiMessage === "function") generateAiMessage("end_event", { eventType: evType, qCount: eventQuestionsAnswered, correct: eventCorrectCount, textOnly: false });
@@ -1718,6 +1734,16 @@ function startInfiniteDrill(mode) {
     document.getElementById('infinite-drill-menu').classList.add('hidden');
     document.getElementById('infinite-drill-menu').classList.remove('flex');
     document.getElementById('takuitsu-eval-content').classList.remove('hidden');
+    
+    const btns = ['eval-btn-kanpeki', 'eval-btn-kantan', 'eval-btn-mayotta', 'eval-btn-wakaran'];
+    btns.forEach(id => {
+        let el = document.getElementById(id);
+        if(el) {
+            el.classList.add('opacity-40');
+            el.classList.remove('ring-2', 'ring-offset-2', 'ring-slate-400');
+        }
+    });
+    
     startNextPlaylistSet(true);
 }
 
@@ -1763,13 +1789,15 @@ function stopNap() {
     resumeTimer();
 }
 
-// 🌟 ヒント系の連携処理（ai.jsへイベント送信）
+// 🌟 ヒント系の連携処理
 function showHintTakuitsu() {
+    currentQuestionHintCount++;
     const q = currentQuestions[currentIndex];
     if (typeof generateAiMessage === "function") generateAiMessage("hint_takuitsu", { questionText: q.問題文, explanation: q.解説 || "", textOnly: true });
 }
 
 function showHintSentaku() {
+    currentQuestionHintCount++;
     const qArea = document.getElementById('question-text-sentaku');
     let text = qArea.innerHTML;
     text = text.replace(/(なければならない|努め|こと|また|ただし|において|ため)/g, '<span class="highlight-clue">$1</span>');
