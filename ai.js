@@ -78,7 +78,7 @@ function speakText(text) {
     window.speechSynthesis.speak(u);
 }
 
-// 🌟 作戦会議チャット送信処理（本丸：コース料理の作成）
+// 🌟 作戦会議チャット送信処理（本丸：コース料理の作成とターゲット指定）
 async function sendStrategyMessage() {
     const inputEl = document.getElementById('strategy-input');
     const userMessage = inputEl.value.trim();
@@ -115,15 +115,20 @@ ${fatigueContext}
    (例: 1時間希望で「苦手と忘却」なら、労基(弱点)10問、安衛(弱点)10問、健保(忘却)10問...のように組み合わせてください)
 3. 提案できる科目は以下の4つのみです。これ以外は絶対に含めないでください。
    「労働基準法(択一)」「労働基準法(選択)」「安全衛生法(択一)」「安全衛生法(選択)」「健康保険法(択一)」「健康保険法(選択)」「厚生年金保険法(択一)」「厚生年金保険法(選択)」
-4. 疲労している夜間などの場合は、無理のないセット数や復習（忘却対策）を中心としたプランを提案してください。
+4. 疲労している夜間などの場合は、無理のないセット数や復習を中心としたプランを提案してください。
+5. 【重要】各セットの出題方針を \`target\` として指定してください。
+   - 「弱点」：正答率が低い問題を中心に
+   - 「復習」：最後に解いたのが古い、または忘却対策
+   - 「周回遅れ」：プレイ回数が少なく放置されている問題の底上げ（ユーザーが回数の少ないものを希望した場合）
+   - 「ランダム」：全体的な確認
 
 以下のJSONフォーマットのみを返してください。
 {
   "plan": [
-    { "subject": "科目名", "chapter": "項目名(空欄可)", "count": 10 },
-    { "subject": "科目名", "chapter": "項目名(空欄可)", "count": 10 }
+    { "subject": "科目名", "chapter": "項目名(空欄可)", "count": 10, "target": "弱点" },
+    { "subject": "科目名", "chapter": "項目名(空欄可)", "count": 10, "target": "周回遅れ" }
   ],
-  "message": "ユーザーへの返答メッセージ（自然な口語で。プランの意図や『中尾さん、1時間ならこんな感じで弱点と復習をミックスしてみたよ！』などの言葉を添える）"
+  "message": "ユーザーへの返答メッセージ（自然な口語で。中尾さんへの呼びかけやプランの意図を添える）"
 }
 `;
 
@@ -205,11 +210,11 @@ async function generateDashboardAdvice(stats) {
     let weakSubjects = [];
     for (let subj in stats) {
         if (stats[subj].masterRate > 0 && stats[subj].masterRate < 60) weakSubjects.push(subj);
-        statsSummary += `[${subj}] 進捗:${stats[subj].progressRate}% 正解:${stats[subj].masterRate}% \n`;
+        statsSummary += `[${subj}] 進捗:${stats[subj].progressRate}% 正解:${stats[subj].masterRate}% 平均周回数:${stats[subj].avgLaps}周\n`;
     }
 
     const prompt = `
-アプリ起動時のダッシュボードに表示する、ユーザーへの挨拶と学習アドバイスを生成してください。
+アプリ起動時のダッシュボードに表示する、中尾さんへの挨拶と学習アドバイスを生成してください。
 時刻: ${h}時
 【現在の学習データ】
 ${statsSummary}
@@ -224,7 +229,7 @@ ${statsSummary}
     if (resText) {
         adviceEl.textContent = resText;
     } else {
-        adviceEl.textContent = "今日も一緒にがんばろう！";
+        adviceEl.textContent = "中尾さん、今日も一緒にがんばろう！";
     }
 }
 
