@@ -48,7 +48,7 @@ const CATEGORY_MANUAL_MAP = {
     "3 被保険者": "2 被保険者・被保険者期間等", "被保険者の資格の得喪の確認": "2 被保険者・被保険者期間等", "5 被保険者期間等": "2 被保険者・被保険者期間等", "6 届出等": "2 被保険者・被保険者期間等", "被保険者に関する原簿等": "2 被保険者・被保険者期間等", "1 被保険者等・標準報酬": "2 被保険者・被保険者期間等",
     "標準報酬月額及び標準賞与額（標準報酬）": "3 標準報酬等",
     "11 裁定等": "4 給付通則等", "5 給付通則等": "4 給付通則等",
-    "督促、滞納処分及び延滞金": "5 費用の負担・保険料等", "6 費用の負担・不服申立て等": "5 費用の負担・保険料等", "費用の負担・保険料等": "5 費用の負担・保険料等", // CSV上の「保険料」は他の条件とかぶる可能性があるため自動マッチで処理
+    "督促、滞納処分及び延滞金": "5 費用の負担・保険料等", "6 費用の負担・不服申立て等": "5 費用の負担・保険料等", "費用の負担・保険料等": "5 費用の負担・保険料等", 
     "12 本来支給の老齢厚生年金の支給要件": "6 老齢厚生年金", "報酬比例部分の額": "6 老齢厚生年金", "14 経過的加算額": "6 老齢厚生年金", "15 加給年金額": "6 老齢厚生年金", "16 在職老齢年金 (高在老)": "6 老齢厚生年金", "老齢厚生年金の支給の繰上げ": "6 老齢厚生年金", "老齢厚生年金の支給の繰下げ": "6 老齢厚生年金", "特別支給の老齢厚生年金の支給要件・年金額": "6 老齢厚生年金", "特別支給の老齢厚生年金の支給開始年齢": "6 老齢厚生年金", "21 障害者・長期加入者等の特例": "6 老齢厚生年金", "22 雇用保険法の失業等給付との調整": "6 老齢厚生年金", "老齢厚生年金の支給繰上げの特例": "6 老齢厚生年金", "2 老齢厚生年金": "6 老齢厚生年金",
     "障害厚生年金の支給要件": "7 障害厚生年金・障害手当金", "25 障害厚生年金の併給の調整（併合認定）": "7 障害厚生年金・障害手当金", "障害厚生年金等の年金額": "7 障害厚生年金・障害手当金", "障害の程度が変わった場合の年金額の改定": "7 障害厚生年金・障害手当金", "障害厚生年金の支給停止": "7 障害厚生年金・障害手当金", "障害厚生年金の失権": "7 障害厚生年金・障害手当金", "障害手当金": "7 障害厚生年金・障害手当金", "3 障害厚生年金・障害手当金": "7 障害厚生年金・障害手当金", "Step-Up 3 障害厚生年金・障害手当金": "7 障害厚生年金・障害手当金",
     "遺族厚生年金の支給要件": "8 遺族厚生年金・脱退一時金", "遺族": "8 遺族厚生年金・脱退一時金", "4 遺族厚生年金・脱退一時金": "8 遺族厚生年金・脱退一時金", "遺族厚生年金の年金額": "8 遺族厚生年金・脱退一時金", "34 妻に支給する遺族厚生年金の加算額": "8 遺族厚生年金・脱退一時金", "遺族厚生年金の支給停止": "8 遺族厚生年金・脱退一時金", "遺族厚生年金の失権": "8 遺族厚生年金・脱退一時金", "37 脱退一時金": "8 遺族厚生年金・脱退一時金",
@@ -294,6 +294,13 @@ async function flushStudyTimes() {
     }
 }
 
+function saveRequestHabit(input) {
+    let reqs = JSON.parse(localStorage.getItem('strategy_habits') || '[]');
+    reqs.push({ time: new Date().toISOString(), text: input });
+    if(reqs.length > 5) reqs.shift();
+    localStorage.setItem('strategy_habits', JSON.stringify(reqs));
+}
+
 function sendKarteLog(logType, detailObj) {
     const cond = document.getElementById('condition-select').value;
     const health = document.getElementById('health-select').value;
@@ -505,6 +512,59 @@ function resetGameFlags() {
     document.getElementById('timer-bar').style.backgroundColor = '#10b981';
 }
 
+// 🌟 AIによる作戦会議の結果を反映する機能（追加分）
+function startStrategyPlaylist(config) {
+    if (allDatabase.length === 0) { return; }
+    
+    let pool = allDatabase;
+    if (config.subject && config.subject !== '全科目' && config.subject !== 'ランダム') {
+        pool = pool.filter(q => q._subjectName.includes(config.subject));
+    }
+    
+    if (config.target === 'weakness') {
+        pool = pool.filter(q => userHistory[q._id] && userHistory[q._id].playCount > 0);
+        pool.sort((a, b) => {
+            let rA = userHistory[a._id].correctCount / userHistory[a._id].playCount;
+            let rB = userHistory[b._id].correctCount / userHistory[b._id].playCount;
+            return rA - rB;
+        });
+    } else if (config.target === 'forget') {
+        pool.sort((a, b) => (userHistory[a._id]?.playCount || 0) - (userHistory[b._id]?.playCount || 0));
+    } else if (config.target === 'unattempted') {
+        pool = pool.filter(q => !userHistory[q._id] || userHistory[q._id].playCount === 0);
+    }
+    
+    if (config.target === 'random' || pool.length === 0) {
+        pool.sort(() => Math.random() - 0.5);
+    }
+    
+    let count = parseInt(config.count) || 10;
+    let qs = pool.slice(0, count);
+    if (qs.length === 0) qs = allDatabase.sort(()=>Math.random()-0.5).slice(0, 10);
+    
+    playlistQueue = [{
+        subjectName: config.subject || "AIセレクト",
+        chapterName: `[作戦決行] ${config.target}`,
+        type: qs[0]._type,
+        questions: qs
+    }];
+    
+    resetGameFlags();
+    currentPlaylistIndex = 0;
+    cumulativeQuestions = 0; setCorrectCount = 0; todayMistakes = [];
+    isReviewAdded = false; isExtensionAdded = false; hasRestRecommended = false;
+    initialPlaylistConfig = playlistQueue.map(q => ({ subjectName: q.subjectName, chapterName: q.chapterName, type: q.type }));
+    
+    document.getElementById('start-screen').classList.add('hidden');
+    document.getElementById('main-area').classList.remove('hidden');
+    document.getElementById('main-area').classList.add('flex');
+    document.getElementById('aside-area').classList.remove('hidden');
+    document.getElementById('aside-area').classList.add('flex');
+    
+    sendKarteLog('strategy_start', { target: config.target, count: count });
+    startNextPlaylistSet(true);
+}
+
 function executeStrategyPlan() {
     if(!strategyPlan) return;
     userApiKey = document.getElementById('api-key-input').value.trim();
@@ -541,6 +601,13 @@ function executeStrategyPlan() {
     
     initialGlobalTime = null;
     eventTriggeredThisSession = false;
+    let todayStr = new Date().toDateString();
+    if (localStorage.getItem('last_play_date') !== todayStr) {
+        localStorage.setItem('last_play_date', todayStr);
+        localStorage.setItem('trap_done_date', '');
+        localStorage.setItem('today_sentaku_count', '0');
+    }
+    
     startNextPlaylistSet(true);
 }
 
@@ -619,6 +686,12 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
     
     initialGlobalTime = globalTimeLeftSeconds;
     eventTriggeredThisSession = false;
+    let todayStr = new Date().toDateString();
+    if (localStorage.getItem('last_play_date') !== todayStr) {
+        localStorage.setItem('last_play_date', todayStr);
+        localStorage.setItem('trap_done_date', '');
+        localStorage.setItem('today_sentaku_count', '0');
+    }
 
     if (!isMuted) {
         document.getElementById('start-wait-overlay').classList.remove('hidden');
@@ -682,6 +755,12 @@ function startNextPlaylistSet(isFirstOfAll = false) {
     if (isSenbonKnock || isSuddenDeath || isCountdownRelay || isSurpriseAttack) {
         document.getElementById('btn-surrender').classList.remove('hidden');
     }
+    
+    if (currentSet.type === '選択' && !isHardcore && !isSurpriseAttack) {
+        let count = parseInt(localStorage.getItem('today_sentaku_count') || '0') + currentQuestions.length;
+        localStorage.setItem('today_sentaku_count', count.toString());
+    }
+
     loadQuestion(false, true, isFirstOfAll);
 }
 
@@ -938,8 +1017,10 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
             if(isTimeAttack) generateAiMessage("start_timeattack", { textOnly: false });
             else if(isBonusMode) generateAiMessage("start_bonus", { textOnly: false });
             else if(isSenbonKnock) generateAiMessage("start_senbon", { textOnly: true });
+            else if(isTrapMode) generateAiMessage("start_trap", { textOnly: false });
+            else if(isHardcore) generateAiMessage("start_hardcore", { textOnly: false });
             else if(isSurpriseAttack) generateAiMessage("start_surprise", { textOnly: false });
-            else if(!isSuddenDeath && !isCountdownRelay && !isTrapMode && !isHardcore && !isFirstOfAll) {
+            else if(!isSuddenDeath && !isCountdownRelay && !isFirstOfAll) {
                 generateAiMessage(`start_${q._type === '択一' ? 'takuitsu' : 'sentaku'}`, { textOnly: false });
             }
         }
@@ -1212,7 +1293,7 @@ async function cancelMistake() {
             await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'cancel_answer', q_id: q._id, was_correct: lastAnswerWasCorrect }) });
             if(q._type === '択一') {
                 if(lastAnswerWasCorrect && setCorrectCount > 0) setCorrectCount--; else if(!lastAnswerWasCorrect) todayMistakes.pop();
-                if (isSenKnock || isTimeAttack || isBonusMode || isSuddenDeath || isCountdownRelay || isTrapMode || isSurpriseAttack) {
+                if (isSenbonKnock || isTimeAttack || isBonusMode || isSuddenDeath || isCountdownRelay || isTrapMode || isSurpriseAttack) {
                     if(lastAnswerWasCorrect && eventCorrectCount > 0) eventCorrectCount--;
                 }
             }
@@ -1267,6 +1348,7 @@ function surrenderSenbonKnock() {
     nextQuestion();
 }
 
+// 🌟 長時間のプレイにおける特別イベント（悪魔の罠、ハードコア等）の判定と開始処理の復元
 function checkSpecialEvents() {
     if (!eventTriggeredThisSession && initialGlobalTime >= 5400 && globalTimeLeftSeconds !== null && globalTimeLeftSeconds >= 600 && globalTimeLeftSeconds <= 900) {
         eventTriggeredThisSession = true;
@@ -1284,6 +1366,70 @@ function checkSpecialEvents() {
         startNextPlaylistSet();
         return true;
     }
+    
+    let today = new Date().toDateString();
+    let trapDone = localStorage.getItem('trap_done_date');
+    if (continuousStudyTimeSec >= 3600 && trapDone !== today && Math.random() < 0.25) {
+        localStorage.setItem('trap_done_date', today);
+        let pool = allDatabase.filter(q => q._type === '択一' && userHistory[q._id] && userHistory[q._id].playCount > 0);
+        pool = pool.filter(q => {
+            let hist = userHistory[q._id];
+            let rate = hist.playCount > 0 ? (hist.correctCount / hist.playCount) : 1;
+            let lastAns = hist.historyStr ? hist.historyStr.split(',').pop() : '';
+            return rate < 0.5 || lastAns === '✖';
+        });
+        if (pool.length >= 10) {
+            let qs = pool.sort(()=>Math.random()-0.5).slice(0, 10);
+            playlistQueue = [{ subjectName: "😈 悪魔の罠", chapterName: "ひっかけ特化", type: "択一", questions: qs }];
+            currentPlaylistIndex = 0; currentIndex = 0;
+            resetGameFlags();
+            isTrapMode = true;
+            if (typeof generateAiMessage === "function") generateAiMessage("start_trap", { textOnly: false });
+            startNextPlaylistSet();
+            return true;
+        }
+    }
+    
+    let lastSet = playlistQueue[playlistQueue.length - 1];
+    if (lastSet && lastSet.type === '選択' && !isHardcore) {
+        let sentakuPool = allDatabase.filter(q => q._type === '選択');
+        let playedSum = sentakuPool.reduce((sum, q) => sum + (userHistory[q._id] ? userHistory[q._id].playCount : 0), 0);
+        let avgPlay = playedSum / (sentakuPool.length || 1);
+        let todaySentakuCount = parseInt(localStorage.getItem('today_sentaku_count') || '0');
+        
+        if (avgPlay >= 3 && todaySentakuCount >= 30 && Math.random() < 0.5) {
+            let qs = sentakuPool.sort(()=>Math.random()-0.5).slice(0, 5);
+            playlistQueue = [{ subjectName: "💀 ハードコア", chapterName: "語群没収", type: "選択", questions: qs }];
+            currentPlaylistIndex = 0; currentIndex = 0;
+            resetGameFlags();
+            isHardcore = true;
+            if (typeof generateAiMessage === "function") generateAiMessage("start_hardcore", { textOnly: false });
+            startNextPlaylistSet();
+            return true;
+        }
+    }
+    
+    if (continuousStudyTimeSec >= 1800 && Math.random() < 0.15) {
+        let pool = allDatabase.filter(q => userHistory[q._id] && userHistory[q._id].playCount > 0);
+        pool = pool.filter(q => {
+            let hist = userHistory[q._id];
+            let maxScore = q._type === '選択' ? (hist.playCount * 5) : hist.playCount;
+            let rate = hist.playCount > 0 ? (hist.correctCount / maxScore) : 1;
+            let lastAns = hist.historyStr ? hist.historyStr.split(',').pop() : '';
+            return rate < 0.5 || lastAns === '✖' || (q._type === '選択' && !lastAns.includes('5点'));
+        });
+        if (pool.length >= 1) {
+            let qs = pool.sort(()=>Math.random()-0.5).slice(0, 1);
+            playlistQueue = [{ subjectName: "🎯 不意打ちの1問", chapterName: "油断大敵", type: qs[0]._type, questions: qs }];
+            currentPlaylistIndex = 0; currentIndex = 0;
+            resetGameFlags();
+            isSurpriseAttack = true;
+            if (typeof generateAiMessage === "function") generateAiMessage("start_surprise", { textOnly: false });
+            startNextPlaylistSet();
+            return true;
+        }
+    }
+    
     return false;
 }
 
@@ -1293,15 +1439,216 @@ function nextQuestion() {
     
     currentIndex++;
     if (currentIndex >= currentQuestions.length) {
+        
+        // 🌟 特別イベント中の科目変更と次セットへの移行
+        if (isSuddenDeath || isCountdownRelay) {
+            let subjList = ["労働基準法(択一)", "安全衛生法(択一)", "健康保険法(択一)", "厚生年金保険法(択一)"];
+            let currentSubj = currentQuestions[0]._subjectName;
+            let nextSubjIdx = (subjList.indexOf(currentSubj) + 1) % subjList.length;
+            let nextSubj = subjList[nextSubjIdx];
+            let pool = allDatabase.filter(q => q._subjectName === nextSubj && q._type === '択一');
+            let qs = pool.sort(()=>Math.random()-0.5).slice(0, 10);
+            
+            playlistQueue.push({ subjectName: nextSubj, chapterName: isSuddenDeath ? "☠️ サドンデス" : "⏱️ カウントダウン", type: "択一", questions: qs });
+            currentPlaylistIndex++;
+            startNextPlaylistSet();
+            return;
+        }
+        
         currentPlaylistIndex++;
-        if (currentPlaylistIndex < playlistQueue.length) startNextPlaylistSet();
-        else {
+        if (currentPlaylistIndex < playlistQueue.length) {
+            startNextPlaylistSet();
+        } else {
             if (checkSpecialEvents()) return;
-            finishAllPlaylists();
+            
+            // 🌟 目標時間到達時の延長戦判定と長時間学習時の休憩提案判定の復元
+            if (isTimeUp && continuousStudyTimeSec >= 3600 && !isExtensionAdded) {
+                if (typeof judgeTimeUpExtension === "function") judgeTimeUpExtension();
+                else finishAllPlaylists();
+            } else if (!hasRestRecommended && !isSenbonKnock && !isTimeAttack && !isBonusMode) {
+                if (typeof judgeRestRecommendation === "function") judgeRestRecommendation();
+                else finishAllPlaylists();
+            } else {
+                finishAllPlaylists();
+            }
         }
     } else { 
         loadQuestion(currentQuestions[currentIndex].解説 && currentQuestions[currentIndex].解説.includes('錬金術'), false); 
     }
+}
+
+// 🌟 延長戦判定機能（復元）
+async function judgeTimeUpExtension() {
+    isExtensionAdded = true; 
+    const aiMessageEl = document.getElementById('ai-message');
+    if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 延長戦するか考えてるよ...</span>';
+    
+    const condSelect = document.getElementById('condition-select');
+    const cond = condSelect ? condSelect.value : '普通';
+    
+    let prompt = `あなたは社労士試験の専属講師（若い女性）です。受講生の目標時間が今終わりました。モードは「${cond}」です。
+受講生を少し休ませて「終了」させるか、限界を超えるため「延長戦（1〜3問、または千本ノック）」を追加するか性格に基づいて判定してください。
+以下のJSONで返してください。メッセージは定型文を使わず、現代の自然な口語（1〜2文、アニメ口調絶対禁止）で。
+\`\`\`json
+{ "action": "end" または "extend", "eventType": "normal", "senbonKnock", "timeAttack", "bonus", "count": 1〜10の数字, "message": "セリフ" }
+\`\`\``;
+
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await res.json();
+        const text = data.candidates[0].content.parts[0].text;
+        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+        
+        if (jsonMatch) {
+            let judge = JSON.parse(jsonMatch[1]);
+            if(aiMessageEl) { aiMessageEl.textContent = judge.message; }
+            if(typeof speakText === "function") speakText(judge.message);
+            
+            if (judge.action === 'extend') {
+                hasRestRecommended = true; 
+                eventQuestionsAnswered = 0; eventCorrectCount = 0; 
+                
+                let qs = [];
+                let pool = allDatabase.filter(q => q._type === '択一');
+                
+                if (cond === '厳しめ' || judge.eventType === 'senbonKnock') {
+                    isSenbonKnock = true;
+                    qs = pool.filter(q => !userHistory[q._id] || userHistory[q._id].playCount === 0).slice(0, 50);
+                    if(qs.length < 50) qs = qs.concat(pool.sort(()=>Math.random()-0.5)).slice(0,50);
+                    playlistQueue.push({ subjectName: "👹 千本ノック", chapterName: "降参するまで終わらない", questions: qs });
+                } else if (cond === '熱血' || judge.eventType === 'timeAttack') {
+                    isTimeAttack = true;
+                    qs = pool.sort(()=>Math.random()-0.5).slice(0, 10);
+                    playlistQueue.push({ subjectName: "🔥 タイムアタック", chapterName: "15秒決戦", questions: qs });
+                } else if (cond === '普通' || judge.eventType === 'bonus') {
+                    isBonusMode = true;
+                    qs = pool.filter(q => userHistory[q._id] && userHistory[q._id].status === '完璧').slice(0,10);
+                    if(qs.length < 10) qs = pool.sort(()=>Math.random()-0.5).slice(0,10);
+                    playlistQueue.push({ subjectName: "🌱 ご褒美モード", chapterName: "自信回復！", questions: qs });
+                } else {
+                    qs = pool.sort(()=>Math.random()-0.5).slice(0, judge.count || 3);
+                    playlistQueue.push({ subjectName: "🔥 延長戦", chapterName: "AIからの挑戦状", questions: qs });
+                }
+                
+                startNextPlaylistSet();
+                return;
+            }
+        }
+    } catch(e) {}
+    
+    if(typeof judgeRestRecommendation === "function") judgeRestRecommendation();
+    else finishAllPlaylists();
+}
+
+// 🌟 休憩提案機能の受容・拒否処理と保存（復元）
+function acceptRestProposal(minutes) {
+    saveRestDecision(`連続${Math.floor(continuousStudyTimeSec/60)}分での${minutes}分休憩提案を受容`);
+    startNap(minutes);
+}
+
+function rejectRestProposal() {
+    saveRestDecision(`連続${Math.floor(continuousStudyTimeSec/60)}分での休憩提案を拒否`);
+    const rpMen = document.getElementById('rest-proposal-menu-takuitsu');
+    if(rpMen) { rpMen.classList.add('hidden'); rpMen.classList.remove('flex'); }
+    finishAllPlaylists();
+}
+
+function saveRestDecision(log) {
+    let decisions = [];
+    try { decisions = JSON.parse(localStorage.getItem('rest_decisions') || '[]'); } catch(e){}
+    decisions.push(log);
+    if(decisions.length > 5) decisions.shift(); 
+    localStorage.setItem('rest_decisions', JSON.stringify(decisions));
+}
+
+// 🌟 AIによる休憩提案機能（復元）
+async function judgeRestRecommendation() {
+    if (sessionTotalTimeSec < 5400) { 
+        if (continuousStudyTimeSec < 3600) { 
+            finishAllPlaylists();
+            return;
+        }
+    } else { 
+        if (continuousStudyTimeSec < 2700) { 
+            finishAllPlaylists();
+            return;
+        }
+    }
+    
+    hasRestRecommended = true;
+    const aiMessageEl = document.getElementById('ai-message');
+    if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 休憩について考えてるよ...</span>';
+    
+    const healthSelect = document.getElementById('health-select');
+    const health = healthSelect ? healthSelect.value : '普通';
+    const accuracy = cumulativeQuestions > 0 ? Math.round((setCorrectCount / cumulativeQuestions) * 100) : 100;
+    const lastNap = localStorage.getItem('last_nap_time') || '記録なし';
+    const recentDecisions = localStorage.getItem('rest_decisions') || '[]';
+    
+    let prompt = `あなたは社労士試験の専属講師（若い女性）です。受講生が今のプレイリストを完走しました。
+【状態データ】
+・現在時刻: ${new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'})}
+・アプリ起動からの総経過時間: ${Math.floor(sessionTotalTimeSec / 60)}分
+・今回の連続勉強時間: ${Math.floor(continuousStudyTimeSec / 60)}分
+・申告された体調: ${health}
+・ここまでの正答率: ${accuracy}% (集中力の目安)
+・前回の休憩時刻: ${lastNap}
+・過去の休憩提案への反応履歴: ${recentDecisions}
+
+このデータから、今すぐ休憩（または仮眠）を促すべきか判定し、休憩が必要ならその分数（5〜30分）を提案してください。履歴を見て「拒否が多い」なら長めに集中できるタイプとして提案を控えめにするなど学習結果を反映して。
+以下のJSONで返してください。メッセージは定型文を使わず自然な口語で。
+\`\`\`json
+{ "recommendRest": true または false, "restMinutes": 5〜30の数字, "message": "セリフ" }
+\`\`\``;
+
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        const data = await res.json();
+        const text = data.candidates[0].content.parts[0].text;
+        const jsonMatch = text.match(/```json\n([\s\S]*?)\n```/);
+        
+        if (jsonMatch) {
+            let judge = JSON.parse(jsonMatch[1]);
+            if (judge.recommendRest) {
+                if(aiMessageEl) { aiMessageEl.textContent = judge.message; }
+                if(typeof speakText === "function") speakText(judge.message);
+                
+                const expA = document.getElementById('explanation-area');
+                if(expA) { expA.classList.remove('hidden'); expA.classList.add('flex'); }
+                
+                const sTak = document.getElementById('self-eval-area-takuitsu');
+                if(sTak) { sTak.classList.remove('hidden'); sTak.classList.add('block', '!block'); }
+                
+                const sSen = document.getElementById('self-eval-area-sentaku');
+                if(sSen) { sSen.classList.add('hidden'); sSen.classList.remove('block', '!block'); }
+                
+                const tCon = document.getElementById('takuitsu-eval-content');
+                if(tCon) tCon.classList.add('hidden');
+                const iMenu = document.getElementById('infinite-drill-menu');
+                if(iMenu) iMenu.classList.add('hidden');
+                
+                const rpm = document.getElementById('rest-proposal-menu-takuitsu');
+                if(rpm) {
+                    rpm.innerHTML = `
+                        <p class="text-center text-sm md:text-base font-bold text-slate-600 mb-3">${judge.message}</p>
+                        <div class="flex gap-2">
+                            <button onclick="acceptRestProposal(${judge.restMinutes})" class="flex-1 bg-indigo-500 text-white font-black py-3 rounded-xl shadow-md active:scale-95 transition-all text-base md:text-lg">💤 ${judge.restMinutes}分 休む</button>
+                            <button onclick="rejectRestProposal()" class="flex-1 bg-slate-300 text-slate-700 font-black py-3 rounded-xl shadow-md active:scale-95 transition-all text-base md:text-lg">今は休まず次へ</button>
+                        </div>
+                    `;
+                    rpm.classList.remove('hidden');
+                    rpm.classList.add('flex');
+                }
+                return;
+            }
+        }
+    } catch(e) {}
+    
+    finishAllPlaylists();
 }
 
 function finishAllPlaylists() {
@@ -1315,7 +1662,13 @@ function finishAllPlaylists() {
     
     document.getElementById('takuitsu-eval-toggle').classList.add('hidden');
     
-    if (typeof generateAiMessage === "function") generateAiMessage("end_all", { totalPlayed: cumulativeQuestions, mistakes: todayMistakes.length, textOnly: false });
+    // 🌟 終了時のイベント専用メッセージ呼び出し処理の復元
+    if (isSenbonKnock || isTimeAttack || isBonusMode || isSuddenDeath || isCountdownRelay || isTrapMode || isHardcore || isSurpriseAttack) {
+        let evType = isSenbonKnock ? "senbonKnock" : (isTimeAttack ? "timeAttack" : (isSuddenDeath ? "suddenDeath" : (isCountdownRelay ? "countdownRelay" : (isTrapMode ? "trapMode" : (isHardcore ? "hardcore" : (isSurpriseAttack ? "surpriseAttack" : "bonus"))))));
+        if (typeof generateAiMessage === "function") generateAiMessage("end_event", { eventType: evType, qCount: eventQuestionsAnswered, correct: eventCorrectCount, textOnly: false });
+    } else {
+        if (typeof generateAiMessage === "function") generateAiMessage("end_all", { totalPlayed: cumulativeQuestions, mistakes: todayMistakes.length, textOnly: false });
+    }
 }
 
 function startInfiniteDrill(mode) {
