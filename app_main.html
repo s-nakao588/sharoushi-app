@@ -427,7 +427,7 @@
             </div>
         </div>
 
-        <div class="flex-1 overflow-y-auto p-3 md:p-6 flex flex-col gap-3 pb-32 md:pb-48">
+        <div class="flex-1 overflow-y-auto p-3 md:p-6 flex flex-col gap-3 pb-40 md:pb-56">
             <div id="action-takuitsu" class="hidden flex-col gap-2">
                 <button onclick="showHintTakuitsu()" class="action-btn w-full bg-yellow-100 hover:bg-yellow-200 text-yellow-800 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm border-2 border-yellow-300 text-sm md:text-lg active:scale-95 transition-all">
                     💡 AIにヒントをもらう
@@ -486,11 +486,10 @@
             </div>
         </div>
 
-        <div id="self-eval-area-takuitsu" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-4 bg-white/95 rounded-t-2xl md:rounded-3xl border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-50">
+        <div id="self-eval-area-takuitsu" class="hidden absolute bottom-0 left-0 w-full p-2 md:p-4 bg-white/95 backdrop-blur-md rounded-t-2xl md:rounded-3xl border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-50">
             <div id="takuitsu-eval-content" class="w-full flex flex-col">
                 <p id="eval-guide-text-takuitsu" class="text-center text-[9px] md:text-[11px] font-bold text-slate-500 mb-1 md:mb-2">自己評価を選んで次へ進んでね！</p>
                 
-                <!-- 🌟 評価ボタンを4つに変更（🔵簡単を追加） -->
                 <div class="flex gap-2 md:gap-3 justify-center mb-2" id="takuitsu-eval-buttons">
                     <button id="eval-btn-kanpeki" onclick="selectEvalTakuitsu('完璧')" class="eval-btn-takuitsu flex-1 bg-green-50 hover:bg-green-500 hover:text-white text-green-700 border md:border-2 border-green-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">🟢 完璧</button>
                     <button id="eval-btn-kantan" onclick="selectEvalTakuitsu('簡単')" class="eval-btn-takuitsu flex-1 bg-blue-50 hover:bg-blue-500 hover:text-white text-blue-700 border md:border-2 border-blue-200 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">🔵 簡単</button>
@@ -508,6 +507,17 @@
                 <button onclick="startInfiniteDrill('nextChapter')" class="w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold py-2 md:py-3 rounded-xl border border-blue-200 shadow-sm active:scale-95 text-sm md:text-base">➡ 関連する次の項目へ</button>
                 <button onclick="startInfiniteDrill('review')" class="w-full bg-pink-50 hover:bg-pink-100 text-pink-700 font-bold py-2 md:py-3 rounded-xl border border-pink-200 shadow-sm active:scale-95 text-sm md:text-base">🔄 この項目の復習</button>
                 <button onclick="location.reload()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 md:py-3 rounded-xl border border-slate-300 shadow-sm active:scale-95 text-sm md:text-base">🏠 ホームに戻る</button>
+            </div>
+            
+            <!-- 🌟 体調ヒアリングパネル（初期状態は非表示） -->
+            <div id="health-hearing-area" class="hidden flex-col gap-2 w-full mt-1 md:mt-2 mb-1">
+                <p class="text-center text-[10px] md:text-sm font-bold text-slate-500 mb-1">今の体調はどう？（AIがメニューを調整します）</p>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
+                    <button onclick="submitHealthHearing('元気')" class="bg-green-50 hover:bg-green-500 hover:text-white text-green-700 border md:border-2 border-green-200 font-black py-2.5 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">✨ 元気</button>
+                    <button onclick="submitHealthHearing('普通')" class="bg-blue-50 hover:bg-blue-500 hover:text-white text-blue-700 border md:border-2 border-blue-200 font-black py-2.5 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">🙂 普通</button>
+                    <button onclick="submitHealthHearing('疲れ気味')" class="bg-yellow-50 hover:bg-yellow-500 hover:text-white text-yellow-700 border md:border-2 border-yellow-200 font-black py-2.5 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">💦 疲れ気味</button>
+                    <button onclick="submitHealthHearing('眠い')" class="bg-slate-100 hover:bg-slate-600 hover:text-white text-slate-700 border md:border-2 border-slate-300 font-black py-2.5 md:py-3 rounded-lg md:rounded-xl shadow-sm transition-all text-sm md:text-base">🥱 眠い</button>
+                </div>
             </div>
         </div>
 

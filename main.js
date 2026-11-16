@@ -125,9 +125,11 @@ let eventQuestionsAnswered = 0, eventCorrectCount = 0;
 
 let isAnsweredTakuitsu = false, currentTakuitsuEval = null, pendingFixData = null;
 let freeNoteSubjectMap = {}; 
-let currentQuestionStartTime = 0; // 🌟 追加: 解答時間計測用
-let currentQuestionHintCount = 0; // 🌟 追加: ヒント使用回数記録用
-let isSleepyMode = false; // 🌟 追加: 居眠り・疲労判定用フラグ
+let currentQuestionStartTime = 0;
+let currentQuestionHintCount = 0;
+let isSleepyMode = false; 
+
+let lastHealthCheckTimeSec = 0; // 🌟 追加: 前回の体調ヒアリング時刻
 
 window.onload = function() {
     try {
@@ -353,7 +355,6 @@ async function loadAllSubjects() {
                     data.forEach(q => { 
                         q._subjectName = subject.name; 
                         q._type = subject.type; 
-                        // 🌟 CSVの状態に関わらずここで完全な項目名に強制変換する
                         q.項目 = normalizeCategory(q.項目 || "分類なし"); 
                         q._id = q.問題文.substring(0, 30); 
                     });
@@ -441,7 +442,6 @@ function updateDashboard() {
         
         let chaptersHtml = `<div class="mt-3 hidden border-t border-slate-200 pt-3 text-left w-full" id="dash-chap-${idx}">`;
         
-        // 🌟 ダッシュボードの項目も重み付け順にソートして出力する
         let chaptersArray = Object.keys(s.chapters);
         chaptersArray.sort((a, b) => {
             let wA = CATEGORY_SORT_WEIGHTS[a] || 9999;
@@ -510,7 +510,6 @@ function buildSubjectAccordionUI() {
         content.className = "accordion-content bg-white";
         let checkboxHTML = `<div class="p-4 md:p-6 grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-4">`;
         
-        // 🌟 ここで指定した順番（SORT_WEIGHTS）通りに並べ替える
         let chaptersArray = Array.from(chaptersSet);
         chaptersArray.sort((a, b) => {
             let wA = CATEGORY_SORT_WEIGHTS[a] || 9999;
@@ -543,7 +542,6 @@ function resetGameFlags() {
     if (tb) { tb.style.width = '100%'; tb.style.backgroundColor = '#10b981'; }
 }
 
-// 🌟 AIによる作戦会議の結果を反映する機能
 function startStrategyPlaylist(config) {
     if (allDatabase.length === 0) { return; }
     
@@ -594,6 +592,8 @@ function startStrategyPlaylist(config) {
     const timeLimitVal = tl ? tl.value : '無制限';
     sendKarteLog('session_start', { mode: 'strategy_auto', target: config.target, count: count, timeLimit: timeLimitVal });
     
+    lastHealthCheckTimeSec = continuousStudyTimeSec; 
+    
     startNextPlaylistSet(true);
 }
 
@@ -643,6 +643,8 @@ function executeStrategyPlan() {
     const tl = document.getElementById('time-limit-select');
     const timeLimitVal = tl ? tl.value : '無制限';
     sendKarteLog('session_start', { mode: 'strategy', plan: strategyPlan, timeLimit: timeLimitVal });
+    
+    lastHealthCheckTimeSec = continuousStudyTimeSec;
     
     startNextPlaylistSet(true);
 }
@@ -733,6 +735,8 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
     }
 
     sendKarteLog('session_start', { mode: mode, targetSubject: targetSubject, excludePerfect: excludePerfect, count: count, timeLimit: timeLimitVal });
+    
+    lastHealthCheckTimeSec = continuousStudyTimeSec;
 
     if (!isMuted) {
         const sw = document.getElementById('start-wait-overlay'); if(sw) { sw.classList.remove('hidden'); sw.classList.add('flex'); }
@@ -962,6 +966,11 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
     
     const tec = document.getElementById('takuitsu-eval-content');
     if(tec) tec.classList.remove('hidden');
+    
+    // 🌟 パネル類をいったん全て隠す
+    const hha = document.getElementById('health-hearing-area');
+    if (hha) { hha.classList.add('hidden'); hha.classList.remove('flex'); }
+    
     const rpmt = document.getElementById('rest-proposal-menu-takuitsu');
     if(rpmt) { rpmt.classList.add('hidden'); rpmt.classList.remove('flex'); }
     const idm = document.getElementById('infinite-drill-menu');
@@ -1372,6 +1381,7 @@ async function saveToGAS(q_id, actionStr, isCorrect, score, traps, timeSec = 0, 
     } catch(e) {}
 }
 
+// 🌟 修正: 最後の問題を解いた後の画面遷移（ヒアリング条件の追加）
 function selectEvalTakuitsu(status) {
     currentTakuitsuEval = status;
     const btns = { 
@@ -1386,6 +1396,7 @@ function selectEvalTakuitsu(status) {
         if (key === status) { el.classList.remove('opacity-40'); el.classList.add('ring-2', 'ring-offset-2', 'ring-slate-400'); }
         else { el.classList.add('opacity-40'); el.classList.remove('ring-2', 'ring-offset-2', 'ring-slate-400'); }
     }
+    
     const nextBtn = document.getElementById('btn-next-takuitsu');
     if (nextBtn) {
         nextBtn.classList.remove('opacity-50', 'cursor-not-allowed');
@@ -1407,6 +1418,16 @@ function submitEvalAndNext() {
         if(!userHistory[q._id]) userHistory[q._id] = {};
         userHistory[q._id].status = currentTakuitsuEval;
     }
+    
+    // 🌟 追加: 最後の問題を解き終えたタイミングでの体調ヒアリング判定
+    if (currentIndex >= currentQuestions.length - 1 && currentPlaylistIndex >= playlistQueue.length - 1) {
+        // 前回ヒアリングから1200秒（20分）経過しているかチェック
+        if (continuousStudyTimeSec - lastHealthCheckTimeSec >= 1200) {
+            showHealthHearingPanel();
+            return;
+        }
+    }
+    
     nextQuestion();
 }
 
@@ -1425,6 +1446,61 @@ function markEvalSentaku(status) {
             cb.checked = false; 
         }
     });
+    
+    // 🌟 追加: 最後の問題を解き終えたタイミングでの体調ヒアリング判定
+    if (currentIndex >= currentQuestions.length - 1 && currentPlaylistIndex >= playlistQueue.length - 1) {
+        if (continuousStudyTimeSec - lastHealthCheckTimeSec >= 1200) {
+            showHealthHearingPanel();
+            return;
+        }
+    }
+    
+    nextQuestion();
+}
+
+// 🌟 新規追加: 体調ヒアリングパネルの表示
+function showHealthHearingPanel() {
+    const tec = document.getElementById('takuitsu-eval-content');
+    if (tec) tec.classList.add('hidden');
+    const etb = document.getElementById('eval-target-buttons');
+    if (etb) etb.classList.add('hidden');
+    const seb = document.getElementById('sentaku-eval-buttons');
+    if (seb) seb.classList.add('hidden');
+    const egt = document.getElementById('eval-guide-text');
+    if (egt) egt.classList.add('hidden');
+
+    // 択一・選択どちらから呼ばれても対応できるよう、共通の親コンテナとして択一の評価エリアを活用
+    const seat = document.getElementById('self-eval-area-takuitsu');
+    if (seat) { seat.classList.remove('hidden'); seat.classList.add('block', '!block'); }
+    
+    const seas = document.getElementById('self-eval-area-sentaku');
+    if (seas) { seas.classList.add('hidden'); seas.classList.remove('block', '!block'); }
+
+    const hha = document.getElementById('health-hearing-area');
+    if (hha) {
+        hha.classList.remove('hidden');
+        hha.classList.add('flex');
+    }
+    
+    if (typeof generateAiMessage === "function") generateAiMessage("health_check", { textOnly: true });
+}
+
+// 🌟 新規追加: 体調ボタンが押された時の処理
+function submitHealthHearing(statusStr) {
+    // 選択された体調をセレクトボックスに反映（後の処理で利用するため）
+    const hs = document.getElementById('health-select');
+    if (hs) hs.value = statusStr;
+    
+    // Karteシートへ送信
+    sendKarteLog('health_update', { condition: statusStr, continuousTimeSec: continuousStudyTimeSec });
+    
+    // 次回の判定用にリセット
+    lastHealthCheckTimeSec = continuousStudyTimeSec;
+    
+    // パネルを隠して本来の終了処理へ
+    const hha = document.getElementById('health-hearing-area');
+    if (hha) { hha.classList.add('hidden'); hha.classList.remove('flex'); }
+    
     nextQuestion();
 }
 
@@ -1769,6 +1845,11 @@ async function judgeRestRecommendation() {
                 
                 const tCon = document.getElementById('takuitsu-eval-content');
                 if(tCon) tCon.classList.add('hidden');
+                
+                // ヒアリング画面が出ていれば消す
+                const hha = document.getElementById('health-hearing-area');
+                if (hha) { hha.classList.add('hidden'); hha.classList.remove('flex'); }
+                
                 const iMenu = document.getElementById('infinite-drill-menu');
                 if(iMenu) iMenu.classList.add('hidden');
                 
@@ -1804,6 +1885,10 @@ function finishAllPlaylists() {
     
     const teCon = document.getElementById('takuitsu-eval-content');
     if(teCon) teCon.classList.add('hidden');
+    
+    // ヒアリング画面が出ていれば消す
+    const hha = document.getElementById('health-hearing-area');
+    if (hha) { hha.classList.add('hidden'); hha.classList.remove('flex'); }
     
     const rpmTak = document.getElementById('rest-proposal-menu-takuitsu');
     if(rpmTak) { rpmTak.classList.add('hidden'); rpmTak.classList.remove('flex'); }
@@ -1977,7 +2062,7 @@ function updateNapDisplay() {
     if(nc) nc.textContent = `${m}:${s}`;
 }
 function stopNap() {
-    clearInterval(napInterval); if(beepInterval) clearInterval(beepInterval);
+    clearInterval(napInterval); 
     const nc = document.getElementById('nap-countdown'); if(nc) nc.classList.remove('animate-ping', 'text-red-500');
     const no = document.getElementById('nap-overlay'); if(no) { no.classList.add('hidden'); no.classList.remove('flex'); }
     
@@ -1986,7 +2071,6 @@ function stopNap() {
     if (typeof generateAiMessage === "function") generateAiMessage("nap_end", { textOnly: true }); 
 }
 
-// 🌟 ヒント系の連携処理
 function showHintTakuitsu() {
     currentQuestionHintCount++;
     const q = currentQuestions[currentIndex];
@@ -2006,7 +2090,6 @@ function executeAlchemyStart() {
     if(typeof generateAiMessage === "function") generateAiMessage("alchemy_prep", { textOnly: true });
 }
 
-// 🌟 専属講師への作戦リクエストをまとめる連携
 function triggerAnalysisStrategy() {
     const si = document.getElementById('strategy-input');
     if (si) si.value = '弱点を分析して特訓プランを作って！';
