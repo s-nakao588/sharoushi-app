@@ -11,7 +11,6 @@ const SUBJECTS = [
     { id: "kounen_s", type: "選択", name: "厚生年金保険法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=268551140&single=true&output=csv" }
 ];
 
-// 🌟 項目の完全統合ルール
 const CATEGORY_MANUAL_MAP = {
     // 労基法
     "1 労働憲章、適用等": "1 労働基準法の基本理念", "労働者・使用者の定義等": "1 労働基準法の基本理念", "1 労働基準法の基本理念等": "1 労働基準法の基本理念", "労働基準法の基本理念等": "1 労働基準法の基本理念",
@@ -56,14 +55,13 @@ const CATEGORY_MANUAL_MAP = {
     "不服申立て・雑則等": "10 不服申立て・雑則等"
 };
 
-// 🌟 表示順の重み付け（数字が小さい順に上から並ぶ）
 const CATEGORY_SORT_WEIGHTS = {
     // 労働基準法
     "1 労働基準法の基本理念": 10, "2 労働契約": 20, "3 賃金、賃金の支払の5原則": 30, "4 労働時間、休憩、休日": 40, "5 労働時間、変形労働時間制": 50, "6 時間外・休日労働、割増賃金": 60, "労働時間の計算等": 70, "8 年次有給休暇": 80, "9 年少者、妊産婦等": 90, "就業規則、監督等その他": 100,
-    "雑則等": 999, // 🌟 最下部
+    "雑則等": 999,
     
     // 安全衛生法
-    "1 総則等": 200, // 🌟 一番上
+    "1 総則等": 200,
     "1 安全衛生管理体制等": 210, "2 機械等及び危険・有害物に関する規制": 220, "3 労働者の就業管理・健康管理等": 230,
     
     // 健康保険法
@@ -71,26 +69,19 @@ const CATEGORY_SORT_WEIGHTS = {
     
     // 厚生年金保険法
     "1 総則・適用事業所等": 350, "2 被保険者・被保険者期間等": 360, "3 標準報酬等": 370, "4 給付通則等": 380,
-    "5 費用の負担・保険料等": 390, // 🌟 給付通則等の後ろ
+    "5 費用の負担・保険料等": 390,
     "6 老齢厚生年金": 400, "7 障害厚生年金・障害手当金": 410, "8 遺族厚生年金・脱退一時金": 420, "9 年金分割の特例": 430, "10 不服申立て・雑則等": 440
 };
 
-// 🌟 データ読み込み時に項目名を強制的に整理する関数
 function normalizeCategory(cat) {
     if (!cat) return "分類なし";
     let c = cat.trim();
     if (c === "過去問" || c === "最新問題") return c;
     if (CATEGORY_MANUAL_MAP[c]) return CATEGORY_MANUAL_MAP[c];
-    
-    // 前方一致や部分一致のチェック
     for (let key in CATEGORY_MANUAL_MAP) {
-        if (c.startsWith(key) || key.startsWith(c)) {
-            return CATEGORY_MANUAL_MAP[key];
-        }
+        if (c.startsWith(key) || key.startsWith(c)) { return CATEGORY_MANUAL_MAP[key]; }
     }
-    // 厚生年金の「保険料」特例マッチ
     if (c === "保険料") return "5 費用の負担・保険料等";
-    
     return c;
 }
 
@@ -129,7 +120,7 @@ let currentQuestionStartTime = 0;
 let currentQuestionHintCount = 0;
 let isSleepyMode = false; 
 
-let lastHealthCheckTimeSec = 0; // 🌟 追加: 前回の体調ヒアリング時刻
+let lastHealthCheckTimeSec = 0;
 
 window.onload = function() {
     try {
@@ -140,18 +131,13 @@ window.onload = function() {
         
         if(savedKey) { document.getElementById('api-key-input').value = savedKey; userApiKey = savedKey; }
         if(savedModel) { document.getElementById('api-model-input').value = savedModel; userModel = savedModel; }
-        if(savedMute !== null) { 
-            isMuted = (savedMute === 'true');
-        }
-        if(savedCond) {
-            document.getElementById('condition-select').value = savedCond;
-        }
+        if(savedMute !== null) { isMuted = (savedMute === 'true'); }
+        if(savedCond) { document.getElementById('condition-select').value = savedCond; }
         updateSoundButtons();
         
         document.getElementById('condition-select').addEventListener('change', function(e) {
             localStorage.setItem('sharoushi_condition', e.target.value);
         });
-        
     } catch(e) {}
     
     sessionTimerInterval = setInterval(() => { sessionTotalTimeSec++; }, 1000);
@@ -171,21 +157,13 @@ function updateSoundButtons() {
 
 function unlockAudio() {
     try {
-        if(!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        }
-        if(audioCtx.state === 'suspended') {
-            audioCtx.resume();
-        }
-        
+        if(!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
+        if(audioCtx.state === 'suspended') { audioCtx.resume(); }
         const player = document.getElementById('tts-player');
         if (player) {
             const isPlaying = player.currentTime > 0 && !player.paused && !player.ended && player.readyState > 2;
-            if (!isPlaying) {
-                player.play().catch(e => {}); 
-            }
+            if (!isPlaying) { player.play().catch(e => {}); }
         }
-        
         if ('speechSynthesis' in window) {
             window.speechSynthesis.getVoices(); 
             let u = new SpeechSynthesisUtterance("");
@@ -204,16 +182,14 @@ function stopAudio() {
 function toggleSound() {
     isMuted = !isMuted; 
     try { localStorage.setItem('sharoushi_is_muted', isMuted); } catch(e){}
-    if (isMuted) stopAudio();
-    else unlockAudio();
+    if (isMuted) stopAudio(); else unlockAudio();
     updateSoundButtons();
 }
 
 function toggleCustomTime() {
     const selectVal = document.getElementById('time-limit-select').value;
     const customInput = document.getElementById('custom-time-input');
-    if (selectVal === 'custom') customInput.classList.remove('hidden');
-    else customInput.classList.add('hidden');
+    if (selectVal === 'custom') customInput.classList.remove('hidden'); else customInput.classList.add('hidden');
 }
 function formatTime(sec) {
     if(!sec) return "0分";
@@ -244,7 +220,6 @@ function playWhistleSound() {
     gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
     osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.3);
 }
-
 function playTickSound() {
     if(!audioCtx) return; 
     const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
@@ -252,7 +227,6 @@ function playTickSound() {
     gain.gain.setValueAtTime(0.05, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.05);
     osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.05);
 }
-
 function playBuzzerSound() {
     if(!audioCtx) return;
     const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
@@ -389,38 +363,64 @@ function checkAllLoaded() {
     }
 }
 
+// 🌟 平均周回数・ボーナス計算を追加
 function getStatsSummary() {
     let stats = {};
     allDatabase.forEach(q => {
         let subj = q._subjectName; let chap = q.項目 || "分類なし";
-        if (!stats[subj]) stats[subj] = { total: 0, played: 0, latestScore: 0, latestMax: 0, chapters: {} };
-        if (!stats[subj].chapters[chap]) stats[subj].chapters[chap] = { total: 0, played: 0, latestScore: 0, latestMax: 0 };
+        if (!stats[subj]) stats[subj] = { total: 0, played: 0, latestScore: 0, latestMax: 0, chapters: {}, rawPlays: [] };
+        if (!stats[subj].chapters[chap]) stats[subj].chapters[chap] = { total: 0, played: 0, latestScore: 0, latestMax: 0, rawPlays: [] };
         stats[subj].total++; stats[subj].chapters[chap].total++;
+        
         let hist = userHistory[q._id];
-        if (hist && hist.playCount > 0 && hist.historyStr) {
-            stats[subj].played++; stats[subj].chapters[chap].played++;
-            let hArr = String(hist.historyStr).split(',');
-            let latest = hArr[hArr.length - 1];
-            let lScore = 0; let mScore = q._type === '選択' ? 5 : 1;
-            if (q._type === '択一') { if (latest === '〇') lScore = 1; } 
-            else { let match = latest.match(/(\d+)点/); if (match) lScore = parseInt(match[1], 10); }
-            stats[subj].latestScore += lScore; stats[subj].latestMax += mScore;
-            stats[subj].chapters[chap].latestScore += lScore; stats[subj].chapters[chap].latestMax += mScore;
+        let pCount = 0;
+        let isPerf = false;
+        
+        if (hist && hist.playCount > 0) {
+            pCount = hist.playCount;
+            isPerf = (hist.status === '完璧');
+            if (hist.historyStr) {
+                stats[subj].played++; stats[subj].chapters[chap].played++;
+                let hArr = String(hist.historyStr).split(',');
+                let latest = hArr[hArr.length - 1];
+                let lScore = 0; let mScore = q._type === '選択' ? 5 : 1;
+                if (q._type === '択一') { if (latest === '〇') lScore = 1; } 
+                else { let match = latest.match(/(\d+)点/); if (match) lScore = parseInt(match[1], 10); }
+                stats[subj].latestScore += lScore; stats[subj].latestMax += mScore;
+                stats[subj].chapters[chap].latestScore += lScore; stats[subj].chapters[chap].latestMax += mScore;
+            }
         }
+        stats[subj].rawPlays.push({ play: pCount, perf: isPerf });
+        stats[subj].chapters[chap].rawPlays.push({ play: pCount, perf: isPerf });
     });
+    
     for (let subj in stats) {
         let s = stats[subj];
         s.progressRate = s.total > 0 ? Math.round((s.played / s.total) * 100) : 0;
         s.masterRate = s.latestMax > 0 ? Math.round((s.latestScore / s.latestMax) * 100) : 0;
+        
+        // 科目全体の平均周回数（完璧な問題は最大プレイ回数と同じとみなす）
+        let maxSPlay = Math.max(0, ...s.rawPlays.map(r => r.play));
+        let totalSPlay = 0;
+        s.rawPlays.forEach(r => { totalSPlay += r.perf ? Math.max(r.play, maxSPlay) : r.play; });
+        s.avgLaps = s.total > 0 ? (totalSPlay / s.total).toFixed(1) : "0.0";
+        
         for (let chap in s.chapters) {
             let c = s.chapters[chap];
             c.progressRate = c.total > 0 ? Math.round((c.played / c.total) * 100) : 0;
             c.masterRate = c.latestMax > 0 ? Math.round((c.latestScore / c.latestMax) * 100) : 0;
+            
+            // 項目ごとの平均周回数
+            let maxCPlay = Math.max(0, ...c.rawPlays.map(r => r.play));
+            let totalCPlay = 0;
+            c.rawPlays.forEach(r => { totalCPlay += r.perf ? Math.max(r.play, maxCPlay) : r.play; });
+            c.avgLaps = c.total > 0 ? (totalCPlay / c.total).toFixed(1) : "0.0";
         }
     }
     return stats;
 }
 
+// 🌟 ダッシュボードの表示レイアウト強化（平均周回数を追加）
 function updateDashboard() {
     if (allDatabase.length === 0) return;
     const stats = getStatsSummary();
@@ -455,9 +455,9 @@ function updateDashboard() {
             let cmColor = c.masterRate >= 80 ? 'bg-green-500' : (c.masterRate >= 50 ? 'bg-yellow-400' : 'bg-red-400');
             chaptersHtml += `
                 <div class="mb-2">
-                    <div class="flex justify-between text-[10px] md:text-xs font-bold text-slate-600 mb-1">
-                        <span class="truncate w-3/5" title="${chap}">${chap}</span>
-                        <span class="w-2/5 text-right text-[9px] md:text-[10px]">進:${c.progressRate}% 正:${c.masterRate}%</span>
+                    <div class="flex justify-between items-end text-[10px] md:text-xs font-bold text-slate-600 mb-1 gap-1">
+                        <span class="truncate flex-1" title="${chap}">${chap}</span>
+                        <span class="text-right shrink-0">進:${c.progressRate}% 正:${c.masterRate}% <span class="text-indigo-600 font-black ml-1 bg-indigo-50 px-1 rounded">${c.avgLaps}周</span></span>
                     </div>
                     <div class="flex gap-1 h-1 w-full">
                         <div class="w-1/2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-blue-500" style="width: ${c.progressRate}%"></div></div>
@@ -466,17 +466,27 @@ function updateDashboard() {
                 </div>`;
         }
         chaptersHtml += `</div>`;
+        
         htmlContent += `
             <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm text-center flex flex-col justify-start cursor-pointer hover:bg-slate-50 transition-colors" onclick="document.getElementById('dash-chap-${idx}').classList.toggle('hidden')">
-                <p class="text-xs md:text-sm font-bold text-slate-700 mb-2 break-words" title="${subj}">${subj} <span class="text-[10px] text-slate-400">▼</span></p>
+                <p class="text-xs md:text-sm font-bold text-slate-700 mb-2 break-words leading-tight flex flex-col items-center justify-center gap-1" title="${subj}">
+                    <span>${subj}</span>
+                    <span class="text-[10px] md:text-xs text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100 shadow-sm font-black">🔥平均 ${s.avgLaps}周</span>
+                </p>
                 <div class="mb-2">
-                    <p class="text-[10px] md:text-xs font-bold text-slate-600 mb-1">勉強: ${formatTime(subjTime)} / 進捗: ${s.progressRate}%</p>
+                    <div class="flex justify-between text-[10px] md:text-xs font-bold text-slate-600 mb-1">
+                        <span>時間: ${formatTime(subjTime)}</span>
+                        <span>進捗: ${s.progressRate}%</span>
+                    </div>
                     <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div class="h-full bg-blue-500" style="width: ${s.progressRate}%"></div>
                     </div>
                 </div>
                 <div>
-                    <p class="text-[10px] md:text-xs font-bold text-slate-600 mb-1">最新正解: ${s.masterRate}%</p>
+                    <div class="flex justify-between text-[10px] md:text-xs font-bold text-slate-600 mb-1">
+                        <span>最新正解:</span>
+                        <span>${s.masterRate}%</span>
+                    </div>
                     <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
                         <div class="h-full ${mColor}" style="width: ${s.masterRate}%"></div>
                     </div>
@@ -967,7 +977,6 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
     const tec = document.getElementById('takuitsu-eval-content');
     if(tec) tec.classList.remove('hidden');
     
-    // 🌟 パネル類をいったん全て隠す
     const hha = document.getElementById('health-hearing-area');
     if (hha) { hha.classList.add('hidden'); hha.classList.remove('flex'); }
     
@@ -1381,7 +1390,6 @@ async function saveToGAS(q_id, actionStr, isCorrect, score, traps, timeSec = 0, 
     } catch(e) {}
 }
 
-// 🌟 修正: 最後の問題を解いた後の画面遷移（ヒアリング条件の追加）
 function selectEvalTakuitsu(status) {
     currentTakuitsuEval = status;
     const btns = { 
@@ -1419,9 +1427,7 @@ function submitEvalAndNext() {
         userHistory[q._id].status = currentTakuitsuEval;
     }
     
-    // 🌟 追加: 最後の問題を解き終えたタイミングでの体調ヒアリング判定
     if (currentIndex >= currentQuestions.length - 1 && currentPlaylistIndex >= playlistQueue.length - 1) {
-        // 前回ヒアリングから1200秒（20分）経過しているかチェック
         if (continuousStudyTimeSec - lastHealthCheckTimeSec >= 1200) {
             showHealthHearingPanel();
             return;
@@ -1447,7 +1453,6 @@ function markEvalSentaku(status) {
         }
     });
     
-    // 🌟 追加: 最後の問題を解き終えたタイミングでの体調ヒアリング判定
     if (currentIndex >= currentQuestions.length - 1 && currentPlaylistIndex >= playlistQueue.length - 1) {
         if (continuousStudyTimeSec - lastHealthCheckTimeSec >= 1200) {
             showHealthHearingPanel();
@@ -1458,7 +1463,6 @@ function markEvalSentaku(status) {
     nextQuestion();
 }
 
-// 🌟 新規追加: 体調ヒアリングパネルの表示
 function showHealthHearingPanel() {
     const tec = document.getElementById('takuitsu-eval-content');
     if (tec) tec.classList.add('hidden');
@@ -1469,7 +1473,6 @@ function showHealthHearingPanel() {
     const egt = document.getElementById('eval-guide-text');
     if (egt) egt.classList.add('hidden');
 
-    // 択一・選択どちらから呼ばれても対応できるよう、共通の親コンテナとして択一の評価エリアを活用
     const seat = document.getElementById('self-eval-area-takuitsu');
     if (seat) { seat.classList.remove('hidden'); seat.classList.add('block', '!block'); }
     
@@ -1485,19 +1488,14 @@ function showHealthHearingPanel() {
     if (typeof generateAiMessage === "function") generateAiMessage("health_check", { textOnly: true });
 }
 
-// 🌟 新規追加: 体調ボタンが押された時の処理
 function submitHealthHearing(statusStr) {
-    // 選択された体調をセレクトボックスに反映（後の処理で利用するため）
     const hs = document.getElementById('health-select');
     if (hs) hs.value = statusStr;
     
-    // Karteシートへ送信
     sendKarteLog('health_update', { condition: statusStr, continuousTimeSec: continuousStudyTimeSec });
     
-    // 次回の判定用にリセット
     lastHealthCheckTimeSec = continuousStudyTimeSec;
     
-    // パネルを隠して本来の終了処理へ
     const hha = document.getElementById('health-hearing-area');
     if (hha) { hha.classList.add('hidden'); hha.classList.remove('flex'); }
     
@@ -1846,7 +1844,6 @@ async function judgeRestRecommendation() {
                 const tCon = document.getElementById('takuitsu-eval-content');
                 if(tCon) tCon.classList.add('hidden');
                 
-                // ヒアリング画面が出ていれば消す
                 const hha = document.getElementById('health-hearing-area');
                 if (hha) { hha.classList.add('hidden'); hha.classList.remove('flex'); }
                 
@@ -1886,7 +1883,6 @@ function finishAllPlaylists() {
     const teCon = document.getElementById('takuitsu-eval-content');
     if(teCon) teCon.classList.add('hidden');
     
-    // ヒアリング画面が出ていれば消す
     const hha = document.getElementById('health-hearing-area');
     if (hha) { hha.classList.add('hidden'); hha.classList.remove('flex'); }
     
