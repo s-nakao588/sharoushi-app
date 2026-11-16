@@ -56,18 +56,14 @@ const CATEGORY_MANUAL_MAP = {
 };
 
 const CATEGORY_SORT_WEIGHTS = {
-    // 労働基準法
     "1 労働基準法の基本理念": 10, "2 労働契約": 20, "3 賃金、賃金の支払の5原則": 30, "4 労働時間、休憩、休日": 40, "5 労働時間、変形労働時間制": 50, "6 時間外・休日労働、割増賃金": 60, "労働時間の計算等": 70, "8 年次有給休暇": 80, "9 年少者、妊産婦等": 90, "就業規則、監督等その他": 100,
     "雑則等": 999,
     
-    // 安全衛生法
     "1 総則等": 200,
     "1 安全衛生管理体制等": 210, "2 機械等及び危険・有害物に関する規制": 220, "3 労働者の就業管理・健康管理等": 230,
     
-    // 健康保険法
     "目的等": 240, "1 保険者・適用事業所等": 250, "2 被保険者・被扶養者": 260, "3 報酬・標準報酬月額等": 270, "届出・通知等": 280, "保険医療機関等・療養担当者": 290, "費用の負担・保険料等": 300, "4 保険給付 1 (療養の給付等)": 310, "5 保険給付 2 (現金給付・資格喪失後の給付等)": 320, "日雇特例・保健福祉事業": 330, "時効・不服申立て・雑則等": 340,
     
-    // 厚生年金保険法
     "1 総則・適用事業所等": 350, "2 被保険者・被保険者期間等": 360, "3 標準報酬等": 370, "4 給付通則等": 380,
     "5 費用の負担・保険料等": 390,
     "6 老齢厚生年金": 400, "7 障害厚生年金・障害手当金": 410, "8 遺族厚生年金・脱退一時金": 420, "9 年金分割の特例": 430, "10 不服申立て・雑則等": 440
@@ -363,7 +359,6 @@ function checkAllLoaded() {
     }
 }
 
-// 🌟 平均周回数・ボーナス計算を追加
 function getStatsSummary() {
     let stats = {};
     allDatabase.forEach(q => {
@@ -399,7 +394,6 @@ function getStatsSummary() {
         s.progressRate = s.total > 0 ? Math.round((s.played / s.total) * 100) : 0;
         s.masterRate = s.latestMax > 0 ? Math.round((s.latestScore / s.latestMax) * 100) : 0;
         
-        // 科目全体の平均周回数（完璧な問題は最大プレイ回数と同じとみなす）
         let maxSPlay = Math.max(0, ...s.rawPlays.map(r => r.play));
         let totalSPlay = 0;
         s.rawPlays.forEach(r => { totalSPlay += r.perf ? Math.max(r.play, maxSPlay) : r.play; });
@@ -410,7 +404,6 @@ function getStatsSummary() {
             c.progressRate = c.total > 0 ? Math.round((c.played / c.total) * 100) : 0;
             c.masterRate = c.latestMax > 0 ? Math.round((c.latestScore / c.latestMax) * 100) : 0;
             
-            // 項目ごとの平均周回数
             let maxCPlay = Math.max(0, ...c.rawPlays.map(r => r.play));
             let totalCPlay = 0;
             c.rawPlays.forEach(r => { totalCPlay += r.perf ? Math.max(r.play, maxCPlay) : r.play; });
@@ -420,7 +413,6 @@ function getStatsSummary() {
     return stats;
 }
 
-// 🌟 ダッシュボードの表示レイアウト強化（平均周回数を追加）
 function updateDashboard() {
     if (allDatabase.length === 0) return;
     const stats = getStatsSummary();
@@ -607,6 +599,7 @@ function startStrategyPlaylist(config) {
     startNextPlaylistSet(true);
 }
 
+// 🌟 修正: AIからの target 指定を受け取り、問題をフィルタリング・ソートする処理
 function executeStrategyPlan() {
     if(!strategyPlan) return;
     const ap = document.getElementById('api-key-input');
@@ -621,16 +614,47 @@ function executeStrategyPlan() {
     
     let planList = strategyPlan.plan || [strategyPlan];
     planList.forEach(item => {
+        // AI指定の科目に完全一致するものをプール
         let pool = allDatabase.filter(q => q._subjectName === item.subject);
         if (item.chapter) pool = pool.filter(q => q.項目 === item.chapter);
+        
         if(pool.length > 0) {
+            // 完璧な問題は除外
+            let targetPool = pool.filter(q => !(userHistory[q._id] && userHistory[q._id].status === '完璧'));
+            if(targetPool.length === 0) targetPool = pool; // 全部完璧なら妥協
+            
+            // 🌟 ターゲットに応じたソート
+            if (item.target === "弱点") {
+                targetPool.sort((a, b) => {
+                    let rA = userHistory[a._id] && userHistory[a._id].playCount > 0 ? (userHistory[a._id].correctCount / userHistory[a._id].playCount) : 1;
+                    let rB = userHistory[b._id] && userHistory[b._id].playCount > 0 ? (userHistory[b._id].correctCount / userHistory[b._id].playCount) : 1;
+                    return rA - rB;
+                });
+            } else if (item.target === "復習" || item.target === "周回遅れ") {
+                targetPool.sort((a, b) => {
+                    let cA = userHistory[a._id] ? userHistory[a._id].playCount : 0;
+                    let cB = userHistory[b._id] ? userHistory[b._id].playCount : 0;
+                    return cA - cB;
+                });
+            } else {
+                targetPool.sort(() => Math.random() - 0.5);
+            }
+            
             let chapterMap = {};
-            pool.forEach(q => { let c = q.項目 || "分類なし"; if(!chapterMap[c]) chapterMap[c] = []; chapterMap[c].push(q); });
+            targetPool.forEach(q => { let c = q.項目 || "分類なし"; if(!chapterMap[c]) chapterMap[c] = []; chapterMap[c].push(q); });
             let pickedChapter = Object.keys(chapterMap)[0];
-            let qs = (chapterMap[pickedChapter] || pool).sort(() => Math.random() - 0.5).slice(0, item.count || 10);
-            if (qs.length > 0) { playlistQueue.push({ subjectName: item.subject, chapterName: pickedChapter, type: qs[0]._type, questions: qs }); totalQuestionsToPlay += qs.length; }
+            let qs = (chapterMap[pickedChapter] || targetPool).slice(0, item.count || 10);
+            
+            if (qs.length > 0) {
+                // chapterNameにターゲット情報を付与してわかりやすく
+                let displayChapter = pickedChapter;
+                if (item.target) displayChapter += ` (${item.target})`;
+                playlistQueue.push({ subjectName: item.subject, chapterName: displayChapter, type: qs[0]._type, questions: qs });
+                totalQuestionsToPlay += qs.length;
+            }
         }
     });
+    
     if(playlistQueue.length === 0) { alert("条件に合う問題が見つかりませんでした。"); return; }
     
     resetGameFlags();
