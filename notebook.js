@@ -79,7 +79,7 @@ function updateFreeNoteChapterSelect() {
     }
 }
 
-// 🌟 通常の「問題に紐づくマイノート」を開く処理
+// 🌟 通常の「問題に紐づくマイノート」を問題画面から開く処理
 function openNotebookForCurrentQuestion() {
     isFreeNoteMode = false;
     const q = currentQuestions[currentIndex];
@@ -116,7 +116,7 @@ function openNotebookForCurrentQuestion() {
     const deleteBtn = document.getElementById('btn-delete-nb');
     
     if (existingNote) {
-        inputArea.innerHTML = existingNote.text || ""; // innerHTMLでリッチテキスト復元
+        inputArea.innerHTML = existingNote.text || ""; 
         deleteBtn.classList.remove('hidden');
         if (existingNote.image) {
             currentNotebookImageBase64 = existingNote.image;
@@ -137,7 +137,97 @@ function openNotebookForCurrentQuestion() {
     document.getElementById('nb-image-input').value = "";
     document.getElementById('notebook-modal').classList.remove('hidden');
     document.getElementById('notebook-modal').classList.add('flex');
-    initColorPicker(); // カラーピッカーの初期化
+    initColorPicker();
+}
+
+// 🌟 【新規追加】一覧画面からノートをタップして編集画面を開く処理
+function editNoteFromList(noteId) {
+    const storedNotes = JSON.parse(localStorage.getItem('user_notebooks') || '{}');
+    const note = storedNotes[noteId];
+    if(!note) return;
+
+    // 一覧モーダルを閉じる
+    closeNotebookListModal();
+
+    currentNotebookId = note.id;
+    isFreeNoteMode = (note.type === "フリーノート");
+    currentNotebookImageBase64 = note.image || null;
+
+    if (isFreeNoteMode) {
+        document.getElementById('nb-free-select-area').classList.remove('hidden');
+        document.getElementById('nb-free-select-area').classList.add('flex');
+        document.getElementById('nb-question-info-area').classList.add('hidden');
+        document.getElementById('nb-question-info-area').classList.remove('flex');
+        document.getElementById('nb-modal-subtitle').textContent = "フリーノート";
+
+        activeFreeNoteMap = {};
+        if (typeof allDatabase !== "undefined" && allDatabase.length > 0) {
+            allDatabase.forEach(q => {
+                let baseSubj = q._subjectName.replace(/\(択一\)|\(選択\)/g, "");
+                if (!activeFreeNoteMap[baseSubj]) activeFreeNoteMap[baseSubj] = new Set();
+                activeFreeNoteMap[baseSubj].add(q.項目 || "分類なし");
+            });
+        }
+
+        const subjSelect = document.getElementById('nb-free-subject-select');
+        subjSelect.innerHTML = "";
+        const subjects = Object.keys(activeFreeNoteMap);
+        if (subjects.length > 0) {
+            subjects.forEach(subj => {
+                let opt = document.createElement('option');
+                opt.value = subj; opt.textContent = subj;
+                subjSelect.appendChild(opt);
+            });
+            subjSelect.value = note.subjectName;
+            updateFreeNoteChapterSelect();
+            document.getElementById('nb-free-chapter-select').value = note.chapterName;
+        }
+    } else {
+        document.getElementById('nb-free-select-area').classList.add('hidden');
+        document.getElementById('nb-free-select-area').classList.remove('flex');
+        document.getElementById('nb-question-info-area').classList.remove('hidden');
+        document.getElementById('nb-question-info-area').classList.add('flex');
+        document.getElementById('nb-modal-subtitle').textContent = "個別メモ";
+
+        document.getElementById('nb-badge-subject').textContent = note.subjectName || "不明";
+        document.getElementById('nb-badge-chapter').textContent = note.chapterName || "不明";
+        document.getElementById('nb-problem-text').innerHTML = (note.problemText || "").replace(/\n/g, '<br>');
+        
+        let q = (typeof allDatabase !== "undefined") ? allDatabase.find(q => q._id === note.id) : null;
+        if(q) {
+            if (q._type === '択一') {
+                document.getElementById('nb-answer-text').textContent = (q.正誤 || "").trim() === '〇' ? '〇 正しい' : '✖ 誤り';
+            } else {
+                document.getElementById('nb-answer-text').innerHTML = `A:${q.正解A} B:${q.正解B}<br>C:${q.正解C} D:${q.正解D} E:${q.正解E}`;
+            }
+            document.getElementById('nb-article-text').textContent = (q.根拠条文 || "").trim() || "条文なし";
+            document.getElementById('nb-explanation-text').innerHTML = (q.解説 || "").trim() || "解説なし";
+        } else {
+            document.getElementById('nb-answer-text').textContent = "（データ照合中）";
+            document.getElementById('nb-article-text').textContent = "";
+            document.getElementById('nb-explanation-text').innerHTML = (note.explanationText || "データベースから解説を取得できませんでした。");
+        }
+    }
+
+    const inputArea = document.getElementById('nb-note-input');
+    const deleteBtn = document.getElementById('btn-delete-nb');
+    
+    inputArea.innerHTML = note.text || "";
+    deleteBtn.classList.remove('hidden');
+    
+    if (note.image) {
+        document.getElementById('nb-image-preview').src = note.image;
+        document.getElementById('nb-image-preview-box').classList.remove('hidden');
+        document.getElementById('nb-image-preview-box').classList.add('flex');
+    } else {
+        document.getElementById('nb-image-preview-box').classList.add('hidden');
+        document.getElementById('nb-image-preview-box').classList.remove('flex');
+    }
+    
+    document.getElementById('nb-image-input').value = "";
+    document.getElementById('notebook-modal').classList.remove('hidden');
+    document.getElementById('notebook-modal').classList.add('flex');
+    initColorPicker();
 }
 
 // 🌟 リッチテキストの書式適用関数（選択範囲への文字色・マーカー機能復活）
@@ -181,7 +271,6 @@ function handleNotebookImageUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
 
-    // 🌟 容量制限を大幅緩和（2MB → 10MB）
     if (file.size > 10 * 1024 * 1024) { 
         alert("ファイルサイズが大きすぎます。10MB以下の画像を選択してください。");
         event.target.value = ""; return;
@@ -192,7 +281,6 @@ function handleNotebookImageUpload(event) {
         const img = new Image();
         img.onload = function() {
             const canvas = document.createElement('canvas');
-            // 高画質のまま縮小できるようサイズ上限を広げる（1600x1600）
             const MAX_WIDTH = 1600; const MAX_HEIGHT = 1600;
             let width = img.width; let height = img.height;
             if (width > height) { if (width > MAX_WIDTH) { height *= MAX_WIDTH / width; width = MAX_WIDTH; } } 
@@ -224,8 +312,8 @@ function removeNotebookImage() {
     document.getElementById('nb-image-preview').src = "";
 }
 
+// 🌟 一覧から編集した場合も安全に保存できるよう改修
 function saveNotebookEntry() {
-    // innerHTML で保存（色や太字を維持）
     const noteHtml = document.getElementById('nb-note-input').innerHTML.trim();
     if (!noteHtml && !currentNotebookImageBase64) {
         alert("メモを入力するか、画像を添付してください。");
@@ -233,12 +321,13 @@ function saveNotebookEntry() {
     }
 
     const storedNotes = JSON.parse(localStorage.getItem('user_notebooks') || '{}');
+    const existingNote = storedNotes[currentNotebookId] || {}; // 既存データを取得
     
-    // フリーノートモードか通常モードかで保存するメタデータを変える
     if (isFreeNoteMode) {
         const subj = document.getElementById('nb-free-subject-select').value;
         const chap = document.getElementById('nb-free-chapter-select').value;
         storedNotes[currentNotebookId] = {
+            ...existingNote,
             id: currentNotebookId,
             type: "フリーノート",
             subjectName: subj,
@@ -248,14 +337,33 @@ function saveNotebookEntry() {
             timestamp: new Date().toISOString()
         };
     } else {
-        const q = currentQuestions[currentIndex];
+        // 既存のメタデータ（問題文など）があればそれを優先
+        let subj = existingNote.subjectName;
+        let chap = existingNote.chapterName;
+        let qType = existingNote.type;
+        let pText = existingNote.problemText;
+        let eText = existingNote.explanationText;
+
+        // もし新規作成なら現在の問題（currentQuestions）から取得
+        if (!existingNote.id) {
+            const q = currentQuestions[currentIndex];
+            if (q) {
+                subj = q._subjectName;
+                chap = q.項目 || "分類なし";
+                qType = q._type;
+                pText = q.問題文;
+                eText = q.解説;
+            }
+        }
+
         storedNotes[currentNotebookId] = {
+            ...existingNote,
             id: currentNotebookId,
-            type: q._type,
-            subjectName: q._subjectName,
-            chapterName: q.項目 || "分類なし",
-            problemText: q.問題文,
-            explanationText: q.解説,
+            type: qType,
+            subjectName: subj,
+            chapterName: chap,
+            problemText: pText,
+            explanationText: eText,
             text: noteHtml,
             image: currentNotebookImageBase64,
             timestamp: new Date().toISOString()
@@ -317,6 +425,7 @@ function updateStartScreenNotebookBadge() {
     if(nbListCount) nbListCount.textContent = count + "件";
 }
 
+// 🌟 一覧の各カードに onClick イベントを追加し、タップで編集できるように改修
 function openNotebookListModal() {
     const container = document.getElementById('nb-list-container');
     container.innerHTML = "";
@@ -327,7 +436,6 @@ function openNotebookListModal() {
     if (notesArray.length === 0) {
         container.innerHTML = `<div class="text-center p-10 text-slate-400 font-bold">まだ保存されたノートはありません。<br>解説画面の「マイノートに追加」や「新規フリーノート作成」から作ってみましょう！</div>`;
     } else {
-        // 科目 > 項目 の順にグループ化して表示
         const grouped = {};
         notesArray.forEach(n => {
             const subj = n.subjectName || "その他";
@@ -352,22 +460,24 @@ function openNotebookListModal() {
                         `<span class="bg-pink-100 text-pink-800 text-[10px] md:text-xs font-bold px-2 py-0.5 rounded border border-pink-300">問題連携 (${note.type})</span>`;
                     
                     html += `
-                        <div class="bg-white p-3 md:p-5 rounded-2xl shadow-sm border border-slate-200 hover:shadow-md transition-shadow relative">
-                            <button onclick="deleteNoteFromList('${note.id}')" class="absolute top-3 right-3 text-slate-300 hover:text-red-500 font-bold p-1 transition-colors" title="削除">✕</button>
-                            <div class="flex items-center gap-2 mb-2">
+                        <div onclick="editNoteFromList('${note.id}')" class="bg-white p-3 md:p-5 rounded-2xl shadow-sm border border-slate-200 hover:border-indigo-400 hover:shadow-md transition-all relative cursor-pointer active:scale-[0.99]">
+                            <button onclick="event.stopPropagation(); deleteNoteFromList('${note.id}')" class="absolute top-3 right-3 text-slate-300 hover:text-red-500 font-bold p-1 transition-colors z-10 bg-white rounded-full w-8 h-8 flex items-center justify-center shadow-sm border border-slate-100" title="削除">✕</button>
+                            <div class="flex items-center gap-2 mb-2 pr-10">
                                 ${typeBadge}
                                 <span class="text-[10px] md:text-xs text-slate-400 font-bold">${date}</span>
+                                <span class="text-[10px] md:text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded border border-indigo-100 ml-auto font-black shadow-sm">✏️ 編集</span>
                             </div>`;
                             
                     if (!isFree && note.problemText) {
-                        html += `<p class="text-xs md:text-sm text-slate-500 font-medium mb-3 line-clamp-2 italic border-l-2 border-slate-200 pl-2">${note.problemText}</p>`;
+                        html += `<p class="text-xs md:text-sm text-slate-500 font-medium mb-3 line-clamp-2 italic border-l-2 border-slate-200 pl-2 pointer-events-none">${note.problemText}</p>`;
                     }
                     
                     if (note.text) {
-                        html += `<div class="text-sm md:text-base text-slate-800 font-medium leading-relaxed bg-amber-50/50 p-3 rounded-xl border border-amber-100 mb-3">${note.text}</div>`;
+                        html += `<div class="text-sm md:text-base text-slate-800 font-medium leading-relaxed bg-amber-50/50 p-3 rounded-xl border border-amber-100 mb-3 pointer-events-none">${note.text}</div>`;
                     }
                     if (note.image) {
-                        html += `<img src="${note.image}" class="max-h-48 md:max-h-64 rounded-lg object-contain shadow-sm border border-slate-200 cursor-pointer" onclick="window.open('${note.image}', '_blank')">`;
+                        // 画像クリック時は別タブで拡大するだけにして、編集画面は開かない（stopPropagation）
+                        html += `<img src="${note.image}" class="max-h-48 md:max-h-64 rounded-lg object-contain shadow-sm border border-slate-200 cursor-pointer relative z-10 mt-2" onclick="event.stopPropagation(); window.open('${note.image}', '_blank')">`;
                     }
                     html += `</div>`;
                 });
