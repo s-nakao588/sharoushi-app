@@ -48,8 +48,25 @@ async function callGeminiAPI(promptText, isJson = false) {
     }
 }
 
-// 🌟 Web Speech API バグ対策と自然な音声設定
+// 🌟 Web Speech API 高品質音声の優先探索 ＆ バグ対策
 let currentUtterance = null;
+let preferredVoice = null;
+
+// 高品質な日本語音声をあらかじめ探しておく関数
+function setPreferredVoice() {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length === 0) return;
+    
+    // Siri, Kyoko, Otoya, Google 日本語 などを優先的に探す
+    preferredVoice = voices.find(v => v.lang === 'ja-JP' && (v.name.includes('Siri') || v.name.includes('Kyoko') || v.name.includes('Otoya') || v.name.includes('Google'))) 
+                  || voices.find(v => v.lang === 'ja-JP');
+}
+
+// 音声リストが読み込まれたタイミングでセットする
+if ('speechSynthesis' in window) {
+    window.speechSynthesis.onvoiceschanged = setPreferredVoice;
+    setPreferredVoice();
+}
 
 function speakText(text) {
     if (isMuted || !text) return;
@@ -60,7 +77,11 @@ function speakText(text) {
         currentUtterance = new SpeechSynthesisUtterance(cleanText);
         currentUtterance.lang = 'ja-JP';
         
-        // 🌟 iPad/スマホで最も自然に聞こえる設定
+        // もし高品質な声が見つかっていればそれをセット
+        if (!preferredVoice) setPreferredVoice();
+        if (preferredVoice) currentUtterance.voice = preferredVoice;
+        
+        // 🌟 iPad/スマホで最も自然に聞こえる設定（加工なしの標準）
         currentUtterance.rate = 1.0; 
         currentUtterance.pitch = 1.0; 
         
@@ -245,10 +266,12 @@ function playCompletedArticle() {
         const u = new SpeechSynthesisUtterance(cleanText);
         u.lang = 'ja-JP';
         
+        // こちらも高品質な声を探してセット
+        if (!preferredVoice) setPreferredVoice();
+        if (preferredVoice) u.voice = preferredVoice;
+        
         const speedSlider = document.getElementById('tts-speed');
         u.rate = speedSlider ? parseFloat(speedSlider.value) : 1.0; 
-        
-        // 🌟 iPad/スマホで最も自然に聞こえる設定
         u.pitch = 1.0;
         
         window.speechSynthesis.speak(u);
