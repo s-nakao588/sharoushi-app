@@ -48,7 +48,7 @@ async function callGeminiAPI(promptText, isJson = false) {
     }
 }
 
-// 🌟 Web Speech API バグ対策とピッチ調整対応
+// 🌟 Web Speech API バグ対策（ピッチ調整なし）
 let currentUtterance = null;
 
 function speakText(text) {
@@ -60,9 +60,7 @@ function speakText(text) {
         currentUtterance = new SpeechSynthesisUtterance(cleanText);
         currentUtterance.lang = 'ja-JP';
         currentUtterance.rate = 1.1;
-        // スライダーがあればピッチを取得、なければ少し高めの 1.2
-        const pSlider = document.getElementById('tts-pitch');
-        currentUtterance.pitch = pSlider ? parseFloat(pSlider.value) : 1.2;
+        currentUtterance.pitch = 1.2;
         window.speechSynthesis.speak(currentUtterance);
     }, 50);
 }
@@ -245,9 +243,7 @@ function playCompletedArticle() {
         u.lang = 'ja-JP';
         const speed = document.getElementById('tts-speed') ? parseFloat(document.getElementById('tts-speed').value) : 1.0;
         u.rate = speed;
-        // こちらもスライダー対応
-        const pSlider = document.getElementById('tts-pitch');
-        u.pitch = pSlider ? parseFloat(pSlider.value) : 1.2;
+        u.pitch = 1.0;
         window.speechSynthesis.speak(u);
     }, 50);
 }
