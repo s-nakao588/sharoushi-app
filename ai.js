@@ -66,16 +66,25 @@ async function callGeminiAPI(promptText, isJson = false) {
     }
 }
 
+// グローバルにUtteranceを保持してガベージコレクションによる停止や二重再生バグを防ぐ
+let currentUtterance = null;
+
 // テキスト読み上げ (Web Speech API)
 function speakText(text) {
     if (isMuted || !text) return;
     const cleanText = text.replace(/[^\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FA5a-zA-Z0-9。、！？]/g, '');
-    const u = new SpeechSynthesisUtterance(cleanText);
-    u.lang = 'ja-JP';
-    u.rate = 1.1;
-    u.pitch = 1.2;
+    
+    // 発話キューを一度確実にリセットする
     window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+    
+    // ブラウザ（特にiOS/Safari）のバグ対策として、少し遅延させてから発話キューに入れる
+    setTimeout(() => {
+        currentUtterance = new SpeechSynthesisUtterance(cleanText);
+        currentUtterance.lang = 'ja-JP';
+        currentUtterance.rate = 1.1;
+        currentUtterance.pitch = 1.2;
+        window.speechSynthesis.speak(currentUtterance);
+    }, 50);
 }
 
 // 🌟 作戦会議チャット送信処理（本丸：コース料理の作成とターゲット指定）
@@ -332,12 +341,16 @@ function playCompletedArticle() {
     if (!textToSpeak) return;
     
     const cleanText = textToSpeak.replace(/[^\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FA5a-zA-Z0-9。、！？]/g, '');
-    const u = new SpeechSynthesisUtterance(cleanText);
-    u.lang = 'ja-JP';
-    const speed = document.getElementById('tts-speed') ? parseFloat(document.getElementById('tts-speed').value) : 1.0;
-    u.rate = speed;
-    u.pitch = 1.0;
     
+    // こちらも同様にリセット処理を挟む
     window.speechSynthesis.cancel();
-    window.speechSynthesis.speak(u);
+    
+    setTimeout(() => {
+        const u = new SpeechSynthesisUtterance(cleanText);
+        u.lang = 'ja-JP';
+        const speed = document.getElementById('tts-speed') ? parseFloat(document.getElementById('tts-speed').value) : 1.0;
+        u.rate = speed;
+        u.pitch = 1.0;
+        window.speechSynthesis.speak(u);
+    }, 50);
 }
