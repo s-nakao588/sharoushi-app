@@ -48,7 +48,7 @@ async function callGeminiAPI(promptText, isJson = false) {
     }
 }
 
-// 🌟 Web Speech API バグ対策とピッチ・スピードの微調整
+// 🌟 Web Speech API バグ対策と自然な音声設定
 let currentUtterance = null;
 
 function speakText(text) {
@@ -60,9 +60,9 @@ function speakText(text) {
         currentUtterance = new SpeechSynthesisUtterance(cleanText);
         currentUtterance.lang = 'ja-JP';
         
-        // 🌟 スピードとピッチの微調整
-        currentUtterance.rate = 1.0;  // 早口を改善（1.1 -> 1.0）
-        currentUtterance.pitch = 1.4; // 少し若々しい印象に（1.2 -> 1.4）
+        // 🌟 iPad/スマホで最も自然に聞こえる設定
+        currentUtterance.rate = 1.0; 
+        currentUtterance.pitch = 1.0; 
         
         window.speechSynthesis.speak(currentUtterance);
     }, 50);
@@ -245,12 +245,11 @@ function playCompletedArticle() {
         const u = new SpeechSynthesisUtterance(cleanText);
         u.lang = 'ja-JP';
         
-        // 🌟 再生速度を標準に戻す
         const speedSlider = document.getElementById('tts-speed');
         u.rate = speedSlider ? parseFloat(speedSlider.value) : 1.0; 
         
-        // 🌟 ピッチを少し高くする
-        u.pitch = 1.4;
+        // 🌟 iPad/スマホで最も自然に聞こえる設定
+        u.pitch = 1.0;
         
         window.speechSynthesis.speak(u);
     }, 50);
