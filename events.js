@@ -2,6 +2,9 @@
 // events.js: ラストスパート＆残業ルーレット管理モジュール
 // ==========================================
 
+// 🌟 グローバル変数を定義（未定義エラー回避）
+let isOvertimeTriggered = false;
+
 // 🌟 メニューにラストスパートボタンを動的に追加
 document.addEventListener("DOMContentLoaded", () => {
     const drillMenu = document.getElementById("infinite-drill-menu");
@@ -21,17 +24,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
 // 🌟 プレイリスト完走時の関数を自動で探してフック（上書き）する
 function hookPlaylistEnd() {
-    // 過去のバックアップで使われていた関数名
-    if (typeof window.showEndOfPlaylistOptions === 'function') {
-        const original = window.showEndOfPlaylistOptions;
-        window.showEndOfPlaylistOptions = function() {
-            checkAndTriggerEvents(original);
-        };
-    } 
-    // 現在の最新の main.js でメニューを表示する関数（推測されるもの）
-    else if (typeof window.showInfiniteDrillMenu === 'function') {
-        const original = window.showInfiniteDrillMenu;
-        window.showInfiniteDrillMenu = function() {
+    // 現在の main.js で終了処理を統括している finishAllPlaylists をフックする
+    if (typeof window.finishAllPlaylists === 'function') {
+        const original = window.finishAllPlaylists;
+        window.finishAllPlaylists = function() {
             checkAndTriggerEvents(original);
         };
     }
@@ -39,10 +35,10 @@ function hookPlaylistEnd() {
 
 function checkAndTriggerEvents(originalFunction) {
     // タイマーが0（isTimeUp）で、まだルーレットを回していない場合
-    if (typeof isTimeUp !== 'undefined' && isTimeUp && typeof isOvertimeTriggered !== 'undefined' && !isOvertimeTriggered) {
+    if (typeof isTimeUp !== 'undefined' && isTimeUp && !isOvertimeTriggered) {
         handleOvertimeRouletteEvent();
     } else {
-        // 通常のメニュー表示
+        // 通常のメニュー表示（元の finishAllPlaylists を実行）
         if (originalFunction) originalFunction();
         
         // 🌟 タイマーが15分(900秒)未満ならラストスパートボタンを光らせてアピール
