@@ -1,4 +1,4 @@
-const GAS_URL = "https://script.google.com/macros/s/AKfycbxNQUvUpps4yicC1i3DkbwCwBAwlHPcvbuX0Yhe33TccNtCGasr820HRNbEuLjJmZqs5Q/exec";
+const GAS_URL = "https://script.google.com/a/macros/sr-nakao.com/s/AKfycbyHu72D7p9XrmynRKYbt_4HOfhJ47D3xEdv-SgqTWS1iSrxWo6KuhZnzTbMvitQ7r0_Eg/exec";
 
 const SUBJECTS = [
     { id: "rouki", type: "択一", name: "労働基準法(択一)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?output=csv" },
@@ -11,6 +11,7 @@ const SUBJECTS = [
     { id: "kounen_s", type: "選択", name: "厚生年金保険法(選択)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?gid=268551140&single=true&output=csv" }
 ];
 
+// 🌟 項目の完全統合ルール
 const CATEGORY_MANUAL_MAP = {
     // 労基法
     "1 労働憲章、適用等": "1 労働基準法の基本理念", "労働者・使用者の定義等": "1 労働基準法の基本理念", "1 労働基準法の基本理念等": "1 労働基準法の基本理念", "労働基準法の基本理念等": "1 労働基準法の基本理念",
@@ -47,7 +48,7 @@ const CATEGORY_MANUAL_MAP = {
     "3 被保険者": "2 被保険者・被保険者期間等", "被保険者の資格の得喪の確認": "2 被保険者・被保険者期間等", "5 被保険者期間等": "2 被保険者・被保険者期間等", "6 届出等": "2 被保険者・被保険者期間等", "被保険者に関する原簿等": "2 被保険者・被保険者期間等", "1 被保険者等・標準報酬": "2 被保険者・被保険者期間等",
     "標準報酬月額及び標準賞与額（標準報酬）": "3 標準報酬等",
     "11 裁定等": "4 給付通則等", "5 給付通則等": "4 給付通則等",
-    "督促、滞納処分及び延滞金": "5 費用の負担・保険料等", "6 費用の負担・不服申立て等": "5 費用の負担・保険料等", "費用の負担・保険料等": "5 費用の負担・保険料等",
+    "督促、滞納処分及び延滞金": "5 費用の負担・保険料等", "6 費用の負担・不服申立て等": "5 費用の負担・保険料等", "費用の負担・保険料等": "5 費用の負担・保険料等", 
     "12 本来支給の老齢厚生年金の支給要件": "6 老齢厚生年金", "報酬比例部分の額": "6 老齢厚生年金", "14 経過的加算額": "6 老齢厚生年金", "15 加給年金額": "6 老齢厚生年金", "16 在職老齢年金 (高在老)": "6 老齢厚生年金", "老齢厚生年金の支給の繰上げ": "6 老齢厚生年金", "老齢厚生年金の支給の繰下げ": "6 老齢厚生年金", "特別支給の老齢厚生年金の支給要件・年金額": "6 老齢厚生年金", "特別支給の老齢厚生年金の支給開始年齢": "6 老齢厚生年金", "21 障害者・長期加入者等の特例": "6 老齢厚生年金", "22 雇用保険法の失業等給付との調整": "6 老齢厚生年金", "老齢厚生年金の支給繰上げの特例": "6 老齢厚生年金", "2 老齢厚生年金": "6 老齢厚生年金",
     "障害厚生年金の支給要件": "7 障害厚生年金・障害手当金", "25 障害厚生年金の併給の調整（併合認定）": "7 障害厚生年金・障害手当金", "障害厚生年金等の年金額": "7 障害厚生年金・障害手当金", "障害の程度が変わった場合の年金額の改定": "7 障害厚生年金・障害手当金", "障害厚生年金の支給停止": "7 障害厚生年金・障害手当金", "障害厚生年金の失権": "7 障害厚生年金・障害手当金", "障害手当金": "7 障害厚生年金・障害手当金", "3 障害厚生年金・障害手当金": "7 障害厚生年金・障害手当金", "Step-Up 3 障害厚生年金・障害手当金": "7 障害厚生年金・障害手当金",
     "遺族厚生年金の支給要件": "8 遺族厚生年金・脱退一時金", "遺族": "8 遺族厚生年金・脱退一時金", "4 遺族厚生年金・脱退一時金": "8 遺族厚生年金・脱退一時金", "遺族厚生年金の年金額": "8 遺族厚生年金・脱退一時金", "34 妻に支給する遺族厚生年金の加算額": "8 遺族厚生年金・脱退一時金", "遺族厚生年金の支給停止": "8 遺族厚生年金・脱退一時金", "遺族厚生年金の失権": "8 遺族厚生年金・脱退一時金", "37 脱退一時金": "8 遺族厚生年金・脱退一時金",
@@ -55,29 +56,41 @@ const CATEGORY_MANUAL_MAP = {
     "不服申立て・雑則等": "10 不服申立て・雑則等"
 };
 
+// 🌟 表示順の重み付け（数字が小さい順に上から並ぶ）
 const CATEGORY_SORT_WEIGHTS = {
+    // 労働基準法
     "1 労働基準法の基本理念": 10, "2 労働契約": 20, "3 賃金、賃金の支払の5原則": 30, "4 労働時間、休憩、休日": 40, "5 労働時間、変形労働時間制": 50, "6 時間外・休日労働、割増賃金": 60, "労働時間の計算等": 70, "8 年次有給休暇": 80, "9 年少者、妊産婦等": 90, "就業規則、監督等その他": 100,
-    "雑則等": 999,
+    "雑則等": 999, // 🌟 最下部
     
-    "1 総則等": 200,
+    // 安全衛生法
+    "1 総則等": 200, // 🌟 一番上
     "1 安全衛生管理体制等": 210, "2 機械等及び危険・有害物に関する規制": 220, "3 労働者の就業管理・健康管理等": 230,
     
+    // 健康保険法
     "目的等": 240, "1 保険者・適用事業所等": 250, "2 被保険者・被扶養者": 260, "3 報酬・標準報酬月額等": 270, "届出・通知等": 280, "保険医療機関等・療養担当者": 290, "費用の負担・保険料等": 300, "4 保険給付 1 (療養の給付等)": 310, "5 保険給付 2 (現金給付・資格喪失後の給付等)": 320, "日雇特例・保健福祉事業": 330, "時効・不服申立て・雑則等": 340,
     
+    // 厚生年金保険法
     "1 総則・適用事業所等": 350, "2 被保険者・被保険者期間等": 360, "3 標準報酬等": 370, "4 給付通則等": 380,
-    "5 費用の負担・保険料等": 390,
+    "5 費用の負担・保険料等": 390, // 🌟 給付通則等の後ろ
     "6 老齢厚生年金": 400, "7 障害厚生年金・障害手当金": 410, "8 遺族厚生年金・脱退一時金": 420, "9 年金分割の特例": 430, "10 不服申立て・雑則等": 440
 };
 
+// 🌟 データ読み込み時に項目名を強制的に整理する関数
 function normalizeCategory(cat) {
     if (!cat) return "分類なし";
     let c = cat.trim();
     if (c === "過去問" || c === "最新問題") return c;
     if (CATEGORY_MANUAL_MAP[c]) return CATEGORY_MANUAL_MAP[c];
+    
+    // 前方一致や部分一致のチェック
     for (let key in CATEGORY_MANUAL_MAP) {
-        if (c.startsWith(key) || key.startsWith(c)) { return CATEGORY_MANUAL_MAP[key]; }
+        if (c.startsWith(key) || key.startsWith(c)) {
+            return CATEGORY_MANUAL_MAP[key];
+        }
     }
+    // 厚生年金の「保険料」特例マッチ
     if (c === "保険料") return "5 費用の負担・保険料等";
+    
     return c;
 }
 
@@ -127,16 +140,24 @@ window.onload = function() {
         
         if(savedKey) { document.getElementById('api-key-input').value = savedKey; userApiKey = savedKey; }
         if(savedModel) { document.getElementById('api-model-input').value = savedModel; userModel = savedModel; }
-        if(savedMute !== null) { isMuted = (savedMute === 'true'); }
-        if(savedCond) { document.getElementById('condition-select').value = savedCond; }
+        if(savedMute !== null) { 
+            isMuted = (savedMute === 'true');
+        }
+        if(savedCond) {
+            document.getElementById('condition-select').value = savedCond;
+        }
         updateSoundButtons();
         
         document.getElementById('condition-select').addEventListener('change', function(e) {
             localStorage.setItem('sharoushi_condition', e.target.value);
         });
+        
     } catch(e) {}
     
-    sessionTimerInterval = setInterval(() => { sessionTotalTimeSec++; }, 1000);
+    sessionTimerInterval = setInterval(() => {
+        sessionTotalTimeSec++;
+    }, 1000);
+    
     flushStudyTimes(); 
     loadAllSubjects();
     fetchHistory(); 
@@ -153,13 +174,21 @@ function updateSoundButtons() {
 
 function unlockAudio() {
     try {
-        if(!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); }
-        if(audioCtx.state === 'suspended') { audioCtx.resume(); }
+        if(!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if(audioCtx.state === 'suspended') {
+            audioCtx.resume();
+        }
+        
         const player = document.getElementById('tts-player');
         if (player) {
             const isPlaying = player.currentTime > 0 && !player.paused && !player.ended && player.readyState > 2;
-            if (!isPlaying) { player.play().catch(e => {}); }
+            if (!isPlaying) {
+                player.play().catch(e => {}); 
+            }
         }
+        
         if ('speechSynthesis' in window) {
             window.speechSynthesis.getVoices(); 
             let u = new SpeechSynthesisUtterance("");
@@ -178,14 +207,16 @@ function stopAudio() {
 function toggleSound() {
     isMuted = !isMuted; 
     try { localStorage.setItem('sharoushi_is_muted', isMuted); } catch(e){}
-    if (isMuted) stopAudio(); else unlockAudio();
+    if (isMuted) stopAudio();
+    else unlockAudio();
     updateSoundButtons();
 }
 
 function toggleCustomTime() {
     const selectVal = document.getElementById('time-limit-select').value;
     const customInput = document.getElementById('custom-time-input');
-    if (selectVal === 'custom') customInput.classList.remove('hidden'); else customInput.classList.add('hidden');
+    if (selectVal === 'custom') customInput.classList.remove('hidden');
+    else customInput.classList.add('hidden');
 }
 function formatTime(sec) {
     if(!sec) return "0分";
@@ -1254,6 +1285,12 @@ function answerTakuitsu(userAnswer) {
     }
 }
 
+function showHintTakuitsu() {
+    currentQuestionHintCount++;
+    const q = currentQuestions[currentIndex];
+    if (typeof generateAiMessage === "function") generateAiMessage("hint_takuitsu", { questionText: q.問題文, explanation: q.解説 || "", textOnly: true });
+}
+
 function toggleStrike(word, el) {
     el.classList.toggle('line-through'); el.classList.toggle('text-slate-300');
     el.classList.toggle('bg-slate-100'); el.classList.toggle('opacity-50');
@@ -1267,7 +1304,14 @@ function toggleStrike(word, el) {
     });
 }
 function syncSelects(letter, value) { document.querySelectorAll(`.inline-select[data-letter="${letter}"]`).forEach(s => s.value = value); }
-
+function showHintSentaku() {
+    currentQuestionHintCount++;
+    const qArea = document.getElementById('question-text-sentaku');
+    let text = qArea.innerHTML;
+    text = text.replace(/(なければならない|努め|こと|また|ただし|において|ため)/g, '<span class="highlight-clue">$1</span>');
+    qArea.innerHTML = text;
+    if (typeof generateAiMessage === "function") generateAiMessage("hint_sentaku", { textOnly: true });
+}
 function fillRandomAnswers() {
     ['A','B','C','D','E'].forEach(letter => {
         let randomWord = currentWordBank[Math.floor(Math.random() * currentWordBank.length)];
