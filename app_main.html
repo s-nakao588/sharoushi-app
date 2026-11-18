@@ -184,6 +184,7 @@
         <div class="bg-white text-slate-800 p-4 md:p-12 rounded-[2rem] shadow-2xl max-w-7xl w-full mb-10">
             
             <div class="flex justify-end mb-2 gap-2 flex-wrap">
+                <!-- 🌟 新規フリーノート作成ボタン -->
                 <button onclick="openNewFreeNotebook()" class="text-sm md:text-base font-black text-indigo-900 bg-indigo-100 hover:bg-indigo-200 px-4 py-2 rounded-full transition-colors border-2 border-indigo-400 shadow-sm flex items-center gap-1.5 active:scale-95">
                     <span>📝</span><span>新規フリーノート作成</span>
                 </button>
@@ -211,6 +212,7 @@
                 </div>
             </div>
             
+            <!-- 🌟 ダッシュボード＆作戦会議エリア -->
             <div class="bg-slate-50 rounded-3xl p-4 md:p-8 mb-8 border-4 border-slate-200 shadow-inner">
                 <div class="flex justify-between items-center mb-2 flex-wrap gap-2">
                     <h2 class="text-xl md:text-3xl font-black flex items-center gap-2">
@@ -365,7 +367,8 @@
                 <div class="flex-1 overflow-y-auto pr-2 md:pr-3 pb-24 md:pb-32 lg:pb-36 takuitsu-q-container relative">
                     <h2 class="text-lg md:text-xl lg:text-2xl font-normal leading-relaxed md:leading-loose text-slate-800 tracking-wide" id="question-text-takuitsu">択一式の問題文</h2>
                 </div>
-                <!-- 🌟 履歴表示エリア (PC/iPad限定) -->
+                
+                <!-- 🌟 完全復元：履歴表示エリア (PC/iPad限定) -->
                 <div id="recent-history-area" class="absolute bottom-24 md:bottom-28 lg:bottom-32 w-full text-center pb-2 z-10 flex flex-col items-center gap-1 opacity-90 transition-opacity">
                     <div class="bg-slate-800 text-white px-3 py-1 md:px-4 md:py-1.5 rounded-full text-xs md:text-sm font-bold shadow-md inline-block">
                         過去5回: <span id="recent-history-text" class="tracking-widest text-yellow-300 ml-1">-----</span>
@@ -374,6 +377,7 @@
                         前回評価: <span id="last-eval-text" class="text-indigo-700 ml-1">なし</span>
                     </div>
                 </div>
+                
                 <div class="absolute bottom-0 left-0 w-full flex space-x-3 md:space-x-6 pb-2 md:pb-4 pt-2 bg-gradient-to-t from-white via-white to-transparent answer-btn-box-takuitsu h-20 md:h-24 lg:h-28 z-20">
                     <button id="btn-takuitsu-maru" onclick="answerTakuitsu('〇')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-blue-50 to-blue-100 text-blue-600 font-black rounded-2xl md:rounded-3xl border-4 md:border-8 border-blue-400 active:scale-95 text-4xl md:text-6xl shadow-md flex items-center justify-center transition-all py-1 md:py-2 leading-none">〇</button>
                     <button id="btn-takuitsu-batsu" onclick="answerTakuitsu('✖')" class="answer-btn-takuitsu flex-1 bg-gradient-to-b from-red-50 to-red-100 text-red-500 font-black rounded-2xl md:rounded-3xl border-4 md:border-8 border-red-400 active:scale-95 text-4xl md:text-6xl shadow-md flex items-center justify-center transition-all py-1 md:py-2 leading-none">✖</button>
@@ -454,6 +458,7 @@
                     </div>
                 </div>
                 
+                <!-- 🌟 完全復元：マイノート連携ボタン -->
                 <div class="flex gap-2">
                     <button id="btn-open-notebook" onclick="openNotebookForCurrentQuestion()" class="flex-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-amber-950 font-black py-2.5 md:py-3.5 px-4 rounded-xl md:rounded-2xl shadow-sm border-2 border-amber-300 text-sm md:text-lg flex items-center justify-center gap-2 active:scale-95 transition-all">
                         <span>📓</span><span id="btn-nb-text">マイノートにメモ・スクショを追加</span>
@@ -483,6 +488,7 @@
             </div>
         </div>
 
+        <!-- 🌟 完全復元：自己評価エリアの折りたたみ機能UI -->
         <div id="self-eval-area-takuitsu" class="hidden absolute bottom-0 left-0 w-full px-2 pb-2 md:px-4 md:pb-4 pt-0 bg-white/95 rounded-t-2xl md:rounded-3xl border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-50 transition-all">
             <div class="w-full flex justify-center mb-1">
                 <button id="takuitsu-eval-toggle" onclick="toggleEvalPanel('takuitsu')" class="hidden bg-slate-100 hover:bg-slate-200 border border-slate-300 shadow-sm rounded-b-xl px-4 py-1 text-[10px] md:text-xs font-bold text-slate-500 transition-colors">▼ 評価をたたむ</button>
@@ -508,7 +514,7 @@
                 <button onclick="location.reload()" class="w-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold py-2 md:py-3 rounded-xl border border-slate-300 shadow-sm active:scale-95 text-sm md:text-base">🏠 ホームに戻る</button>
             </div>
 
-            <!-- 🌟 復元：体調ヒアリングエリア -->
+            <!-- 🌟 完全復元：体調ヒアリングエリア -->
             <div id="health-hearing-area" class="hidden flex-col gap-2 w-full mt-1 md:mt-2 mb-1">
                 <p class="text-center text-[10px] md:text-sm font-bold text-slate-500 mb-1">今の体調はどう？（AIがメニューを調整します）</p>
                 <div class="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-3">
@@ -520,6 +526,7 @@
             </div>
         </div>
 
+        <!-- 🌟 完全復元：選択式自己評価エリアの折りたたみ機能UI -->
         <div id="self-eval-area-sentaku" class="hidden absolute bottom-0 left-0 w-full px-2 pb-2 md:px-3 md:pb-3 pt-0 bg-white/95 backdrop-blur-md border-t border-slate-200 shadow-[0_-10px_15px_-3px_rgba(0,0,0,0.05)] z-50 transition-all">
             <div class="w-full flex justify-center mb-1">
                 <button id="sentaku-eval-toggle" onclick="toggleEvalPanel('sentaku')" class="hidden bg-slate-100 hover:bg-slate-200 border border-slate-300 shadow-sm rounded-b-xl px-4 py-1 text-[10px] md:text-xs font-bold text-slate-500 transition-colors">▼ 評価をたたむ</button>
@@ -530,14 +537,14 @@
             </div>
             <div class="flex gap-2 md:gap-3" id="sentaku-eval-buttons">
                 <button id="btn-mark-sentaku" onclick="markEvalSentaku('迷った')" class="eval-btn flex-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border md:border-2 border-yellow-300 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm active:scale-95 transition-all text-sm md:text-base">🟡 迷ったと記録</button>
-                <button id="btn-next-sentaku" onclick="nextQuestion()" class="eval-btn flex-[1.5] bg-slate-800 text-white font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-md active:scale-95 transition-all text-sm md:text-base w-full">次の問題へ ➡</button>
+                <button id="btn-next-sentaku" onclick="nextQuestion()" class="eval-btn flex-[1.5] bg-slate-800 text-white font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-md active:scale-95 transition-all text-sm md:text-base">次の問題へ ➡</button>
             </div>
         </div>
     </aside>
 
     <audio id="tts-player" class="hidden"></audio>
 
-    <!-- 🌟 完全復元：4つのJSファイルすべてを読み込む -->
+    <!-- 🌟 完全復元：4つのスクリプトファイルを読み込む -->
     <script src="main.js"></script>
     <script src="ai.js"></script>
     <script src="notebook.js"></script>

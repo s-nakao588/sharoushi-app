@@ -47,7 +47,7 @@ const CATEGORY_MANUAL_MAP = {
     "3 被保険者": "2 被保険者・被保険者期間等", "被保険者の資格の得喪の確認": "2 被保険者・被保険者期間等", "5 被保険者期間等": "2 被保険者・被保険者期間等", "6 届出等": "2 被保険者・被保険者期間等", "被保険者に関する原簿等": "2 被保険者・被保険者期間等", "1 被保険者等・標準報酬": "2 被保険者・被保険者期間等",
     "標準報酬月額及び標準賞与額（標準報酬）": "3 標準報酬等",
     "11 裁定等": "4 給付通則等", "5 給付通則等": "4 給付通則等",
-    "督促、滞納処分及び延滞金": "5 費用の負担・保険料等", "6 費用の負担・不服申立て等": "5 費用の負担・保険料等", "費用の負担・保険料等": "5 費用の負担・保険料等", 
+    "督促、滞納処分及び延滞金": "5 費用の負担・保険料等", "6 費用の負担・不服申立て等": "5 費用の負担・保険料等", "費用の負担・保険料等": "5 費用の負担・保険料等",
     "12 本来支給の老齢厚生年金の支給要件": "6 老齢厚生年金", "報酬比例部分の額": "6 老齢厚生年金", "14 経過的加算額": "6 老齢厚生年金", "15 加給年金額": "6 老齢厚生年金", "16 在職老齢年金 (高在老)": "6 老齢厚生年金", "老齢厚生年金の支給の繰上げ": "6 老齢厚生年金", "老齢厚生年金の支給の繰下げ": "6 老齢厚生年金", "特別支給の老齢厚生年金の支給要件・年金額": "6 老齢厚生年金", "特別支給の老齢厚生年金の支給開始年齢": "6 老齢厚生年金", "21 障害者・長期加入者等の特例": "6 老齢厚生年金", "22 雇用保険法の失業等給付との調整": "6 老齢厚生年金", "老齢厚生年金の支給繰上げの特例": "6 老齢厚生年金", "2 老齢厚生年金": "6 老齢厚生年金",
     "障害厚生年金の支給要件": "7 障害厚生年金・障害手当金", "25 障害厚生年金の併給の調整（併合認定）": "7 障害厚生年金・障害手当金", "障害厚生年金等の年金額": "7 障害厚生年金・障害手当金", "障害の程度が変わった場合の年金額の改定": "7 障害厚生年金・障害手当金", "障害厚生年金の支給停止": "7 障害厚生年金・障害手当金", "障害厚生年金の失権": "7 障害厚生年金・障害手当金", "障害手当金": "7 障害厚生年金・障害手当金", "3 障害厚生年金・障害手当金": "7 障害厚生年金・障害手当金", "Step-Up 3 障害厚生年金・障害手当金": "7 障害厚生年金・障害手当金",
     "遺族厚生年金の支給要件": "8 遺族厚生年金・脱退一時金", "遺族": "8 遺族厚生年金・脱退一時金", "4 遺族厚生年金・脱退一時金": "8 遺族厚生年金・脱退一時金", "遺族厚生年金の年金額": "8 遺族厚生年金・脱退一時金", "34 妻に支給する遺族厚生年金の加算額": "8 遺族厚生年金・脱退一時金", "遺族厚生年金の支給停止": "8 遺族厚生年金・脱退一時金", "遺族厚生年金の失権": "8 遺族厚生年金・脱退一時金", "37 脱退一時金": "8 遺族厚生年金・脱退一時金",
@@ -886,50 +886,7 @@ function unlockHardcore(type) {
     sendKarteLog('hardcore_unlock', { type: type, q_id: q._id, question: q.問題文.substring(0, 20) });
 }
 
-function submitHealthHearing(statusStr) {
-    const hs = document.getElementById('health-select');
-    if (hs) hs.value = statusStr;
-    
-    sendKarteLog('health_update', { condition: statusStr, continuousTimeSec: continuousStudyTimeSec });
-    
-    lastHealthCheckTimeSec = continuousStudyTimeSec;
-    
-    const hha = document.getElementById('health-hearing-area');
-    if (hha) { hha.classList.add('hidden'); hha.classList.remove('flex'); }
-    
-    nextQuestion();
-}
-
-function startPause() {
-    stopStudyTimer();
-    clearIdleTimers();
-    pauseSeconds = 0;
-    const ptd = document.getElementById('pause-timer-display');
-    if(ptd) ptd.textContent = "00:00";
-    const po = document.getElementById('pause-overlay');
-    if (po) { po.classList.remove('hidden'); po.classList.add('flex'); }
-    pauseInterval = setInterval(() => {
-        pauseSeconds++;
-        if (ptd) {
-            let m = Math.floor(pauseSeconds / 60).toString().padStart(2, '0');
-            let s = (pauseSeconds % 60).toString().padStart(2, '0');
-            ptd.textContent = `${m}:${s}`;
-        }
-    }, 1000);
-}
-
-function startNapQuick(minutes) {
-    stopStudyTimer();
-    clearIdleTimers();
-    const no = document.getElementById('nap-overlay');
-    if(no) { no.classList.remove('hidden'); no.classList.add('flex'); }
-    napSecondsLeft = minutes * 60;
-    localStorage.setItem('last_nap_time', new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}));
-    sendKarteLog('nap_start', { time: new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}), durationMinutes: minutes }); 
-    runNapTimer();
-    if(typeof generateAiMessage === "function") generateAiMessage("nap_start", { textOnly: true });
-}
-
+// 🌟 復元：自己評価パネルの折りたたみ機能
 function toggleEvalPanel(type) {
     const target = document.getElementById(`${type}-eval-collapse-target`);
     const toggleBtn = document.getElementById(`${type}-eval-toggle`);
@@ -1049,7 +1006,7 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
         btnBatsu.disabled = false; btnBatsu.classList.remove('opacity-30', 'ring-4', 'ring-red-500', 'cursor-not-allowed');
     }
     
-    const evalBtns = ['eval-btn-kanpeki', 'eval-btn-kantan', 'eval-btn-mayotta', 'eval-btn-wakaran'];
+    const evalBtns = ['eval-btn-kanpeki', 'eval-btn-mayotta', 'eval-btn-wakaran'];
     evalBtns.forEach(id => {
         let el = document.getElementById(id);
         if(el) el.classList.remove('opacity-40', 'ring-2', 'ring-offset-2', 'ring-slate-400');
@@ -1258,10 +1215,10 @@ function answerTakuitsu(userAnswer) {
     const seat = document.getElementById('self-eval-area-takuitsu');
     if (seat) { seat.classList.remove('hidden'); seat.classList.add('block', '!block'); }
     
-    const tet = document.getElementById('takuitsu-eval-toggle');
-    if(tet) {
-        tet.classList.remove('hidden');
-        tet.innerHTML = '▼ 評価をたたむ';
+    const toggleBtn = document.getElementById('takuitsu-eval-toggle');
+    if(toggleBtn) {
+        toggleBtn.classList.remove('hidden');
+        toggleBtn.innerHTML = '▼ 評価をたたむ';
     }
     
     const badge = document.getElementById('score-badge');
@@ -1375,10 +1332,10 @@ function submitSentakuAnswers() {
     const seas = document.getElementById('self-eval-area-sentaku');
     if (seas) { seas.classList.remove('hidden'); seas.classList.add('block', '!block'); }
     
-    const set = document.getElementById('sentaku-eval-toggle');
-    if (set) {
-        set.classList.remove('hidden');
-        set.innerHTML = '▼ 評価をたたむ';
+    const toggleBtnSentaku = document.getElementById('sentaku-eval-toggle');
+    if(toggleBtnSentaku) {
+        toggleBtnSentaku.classList.remove('hidden');
+        toggleBtnSentaku.innerHTML = '▼ 評価をたたむ';
     }
     
     const sb = document.getElementById('score-badge');
@@ -1386,10 +1343,11 @@ function submitSentakuAnswers() {
         sb.textContent = `${score} / 5 点`;
         sb.className = score === 5 ? "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-green-500 shadow-md mb-2 animate-bounce" : "inline-block px-4 md:px-6 py-1.5 md:py-2 rounded-full text-lg md:text-2xl font-black text-white bg-red-500 shadow-md mb-2";
     }
-    const at = document.getElementById('article-text'); if(at) at.textContent = (currentQuestions[currentIndex].根拠条文 || "").trim() || "（条文データなし）";
-    const et = document.getElementById('explanation-text'); if(et) et.innerHTML = (currentQuestions[currentIndex].解説 || "").trim() || "（解説データなし）";
+    const q = currentQuestions[currentIndex];
+    const at = document.getElementById('article-text'); if(at) at.textContent = (q.根拠条文 || "").trim() || "（条文データなし）";
+    const et = document.getElementById('explanation-text'); if(et) et.innerHTML = (q.解説 || "").trim() || "（解説データなし）";
 
-    if (typeof updateNotebookButtonDisplay === "function") updateNotebookButtonDisplay(currentQuestions[currentIndex]._id);
+    if (typeof updateNotebookButtonDisplay === "function") updateNotebookButtonDisplay(q._id);
 
     const etb = document.getElementById('eval-target-buttons');
     if (etb) {
@@ -1502,6 +1460,7 @@ function markEvalSentaku(status) {
     nextQuestion();
 }
 
+// 🌟 復元：体調ヒアリングエリアの表示
 function showHealthHearingPanel() {
     const tec = document.getElementById('takuitsu-eval-content');
     if (tec) tec.classList.add('hidden');
@@ -1882,10 +1841,6 @@ async function judgeRestRecommendation() {
                 
                 const tCon = document.getElementById('takuitsu-eval-content');
                 if(tCon) tCon.classList.add('hidden');
-                
-                const hha = document.getElementById('health-hearing-area');
-                if (hha) { hha.classList.add('hidden'); hha.classList.remove('flex'); }
-                
                 const iMenu = document.getElementById('infinite-drill-menu');
                 if(iMenu) iMenu.classList.add('hidden');
                 
@@ -2096,8 +2051,16 @@ function updateNapDisplay() {
     const nc = document.getElementById('nap-countdown');
     if(nc) nc.textContent = `${m}:${s}`;
 }
+function playAlarmSound() {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+    osc.type = 'square'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+    osc.connect(gain); gain.connect(audioCtx.destination);
+    osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+}
 function stopNap() {
-    clearInterval(napInterval); if(beepInterval) clearInterval(beepInterval);
+    clearInterval(napInterval); 
     const nc = document.getElementById('nap-countdown'); if(nc) nc.classList.remove('animate-ping', 'text-red-500');
     const no = document.getElementById('nap-overlay'); if(no) { no.classList.add('hidden'); no.classList.remove('flex'); }
     
@@ -2106,14 +2069,121 @@ function stopNap() {
     if (typeof generateAiMessage === "function") generateAiMessage("nap_end", { textOnly: true }); 
 }
 
+// 🌟 完全復元：AI音声再生およびAPI連携機能
+async function speakText(text) {
+    if (isMuted || !text) return; 
+    let cleanText = text.replace(/<[^>]+>/g, '').trim(); if (!cleanText) return;
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash-tts:generateContent?key=${userApiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: cleanText }] }] })
+        });
+        if (!res.ok) throw new Error("TTS API Error");
+        const data = await res.json();
+        const p = document.getElementById('tts-player');
+        p.src = `data:audio/mp3;base64,${data.candidates[0].content.parts[0].inlineData.data}`; p.play();
+    } catch (err) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(cleanText); utterance.lang = 'ja-JP';
+            const voices = window.speechSynthesis.getVoices();
+            const femaleVoice = voices.find(v => v.lang === 'ja-JP' && (v.name.includes('Kyoko') || v.name.includes('Otoya') || v.name.includes('Siri') || v.name.includes('Google 日本語')));
+            if(femaleVoice) utterance.voice = femaleVoice;
+            
+            // 🌟 修正：無理な加工をせず、一番自然な音声の高さとスピード（1.0）に固定
+            utterance.pitch = 1.0; 
+            utterance.rate = 1.0;
+            
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+}
+
+async function generateAiMessage(situation, extraData = {}) {
+    const aiMessageEl = document.getElementById('ai-message');
+    if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
+    
+    const condSelect = document.getElementById('condition-select');
+    const cond = condSelect ? condSelect.value : '普通';
+    let prompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。受講生のモードは「${cond}」です。
+【絶対ルール】
+1. セリフ本文のみを1〜2文で出力すること。
+2. 定型文は一切使わず、毎回必ず状況に合わせて自分の言葉で考えて生成すること。
+3. 決して暴言や高圧的な説教はせず、親しみやすい現代の一般的な若い女性の自然な口語体で話すこと。
+4. モード（熱血や厳しめ等）による性格の違いは、不自然な言葉遣い（「～だ」「～しろ」「～だわ」「～よ」「～ぞ」などのアニメ口調）で表現するのではなく、あくまで「話す内容やアプローチの仕方」で表現すること。\n`;
+    
+    if (situation === "start_takuitsu") prompt += `択一式の特訓スタート。短く前向きに気合を入れて。`;
+    else if (situation === "start_sentaku") prompt += `選択式の特訓スタート。文脈を意識して埋めてみてと励まして。`;
+    else if (situation === "start_timeattack") prompt += `熱血タイムアタック開始！「15秒で直感で解こう！」と熱く鼓舞して。`;
+    else if (situation === "start_bonus") prompt += `ご褒美モード開始！「得意な問題を集めたから、自信つけていこう！」と優しく促して。`;
+    else if (situation === "start_suddendeath") prompt += `サドンデスモード発発動！「時間が余ってるから、サクッとこれやろう！1問でも間違えたら即終了だよ！」と煽って。`;
+    else if (situation === "start_relay") prompt += `カウントダウン・リレー発動！「時間が余ってるから、タイムアタックの進化版やろう！正解すると5秒回復するよ！」と楽しく挑発して。`;
+    else if (situation === "start_trap") prompt += `ひっかけ特化モード発動！「今まで間違えた問題や、正答率の低い問題を集めたよ！罠に引っかからないように注意して！」と警告して。`;
+    else if (situation === "start_hardcore") prompt += `ハードコア選択式発発動！「だいぶ知識がついてきたみたいだから、語群を没収するね！まずは自力で思い出してみて！」と挑戦的に。`;
+    else if (situation === "start_surprise") prompt += `不意打ちの1問発動！「油断大敵！気が抜けたところに苦手問題を1問だけ出題するよ！」と警告して。`;
+    else if (situation === "hint_takuitsu") prompt += `択一式のヒント。答えは言わず、見るべきポイントを1文で示して。問題:${extraData.questionText} 解説:${extraData.explanation}`;
+    else if (situation === "hint_sentaku") prompt += `選択式のヒント。「キーワードを黄色くしたから確認してみて」とアドバイスして。`;
+    else if (situation === "answer_takuitsu") prompt += `択一式解答。結果は【${extraData.isCorrect ? "正解" : "不正解"}】。解説から最重要ポイントを1文で要約して。解説:${extraData.explanation}`;
+    else if (situation === "result_sentaku") prompt += `選択式解答完了。5点中${extraData.score}点。点数に応じたコメントと、迷ったところは下のボタンで記録しておいてと促して。`;
+    else if (situation === "end_all") prompt += `全問題終了。頑張りを心から労い、次への励ましを。`;
+    else if (situation === "nap_start") prompt += `受講生が仮眠・休憩。しっかり休んでね。時間になったら起こすからねと優しく伝えて。`;
+    else if (situation === "nap_end") prompt += `休憩終了。すっきりした？さあ、もうひと頑張りいこうと明るく声かけして。`;
+    else if (situation === "idle_warn") prompt += `解説画面で受講生が止まっています。「大丈夫？次進めそう？」と優しく催促して。`;
+    else if (situation === "idle_penalty") prompt += `さらに放置されたので、目標時間を1分追加します。少しピシッと注意しつつも前向きに励まして。`;
+    else if (situation === "idle_care") prompt += `放置されていますが、1時間以上勉強しているので疲れているのかもしれません。「そろそろ集中力切れてきた？無理せず休憩しようか」と優しく注意・提案して。`;
+    else if (situation === "ignore_fix") prompt += `AIの修正提案を保留にしました。「印をつけておいたから、後で自分で調べてみてね」と伝えて。`;
+    else if (situation === "apply_fix") prompt += `AIの修正提案を採用して問題を修正しました。「修正しておいたよ！次から新しい内容で出題するね」と伝えて。`;
+    else if (situation === "end_event") {
+        let rate = extraData.qCount > 0 ? Math.round((extraData.correct / extraData.qCount) * 100) : 0;
+        if (extraData.eventType === "senbonKnock") {
+            prompt += `【千本ノック終了】解答数:${extraData.qCount}問、正答率:${rate}%。\n`;
+            if (extraData.qCount >= 50) prompt += `50問以上解き切った執念を凄く褒めてください。正答率が高ければ精度も称賛し、低ければ「最後はバテてたね」と労って。`;
+            else prompt += `白旗が早かったこと（10問未満なら特に）を軽くイジりつつ、1時間以上勉強した疲れを優しく労って。`;
+        } else if (extraData.eventType === "timeAttack") {
+            prompt += `【15秒タイムアタック終了】正答率:${rate}%。\n`;
+            if (rate >= 80) prompt += `プレッシャーの中で高正答率を出した直感力を絶賛して。`;
+            else if (rate >= 50) prompt += `スピードの中で駆け抜けたことを褒め、本番の練習になると励まして。`;
+            else prompt += `タイムプレッシャーで焦ったことを優しく指摘し、良い訓練になったと労って。`;
+        } else if (extraData.eventType === "bonus") {
+            prompt += `【ご褒美モード終了】正答率:${rate}%。\n`;
+            prompt += `得意な問題を集めたセットでした。サクサク解けたことで実力がついていることを実感させ、自己肯定感を高めて終わらせて。`;
+        } else if (extraData.eventType === "suddenDeath") {
+            prompt += `【サドンデス終了】解答数:${extraData.qCount}問。\n`;
+            if(extraData.qCount >= 10) prompt += `プレッシャーの中で二桁以上続いた集中力を大絶賛して！`;
+            else prompt += `「あっという間に終わっちゃったね」と軽くイジって、悔しさを煽って。`;
+        } else if (extraData.eventType === "countdownRelay") {
+            prompt += `【カウントダウン・リレー終了】解答数:${extraData.qCount}問。\n`;
+            prompt += `焦りの中で素早く判断し続けたスピードと決断力を称賛して！`;
+        } else if (extraData.eventType === "trapMode") {
+            prompt += `【ひっかけ特化終了】正答率:${rate}%。\n`;
+            prompt += `過去の苦手問題ばかりの罠セットでした。「引っかからなかったね！」か「また罠にハマっちゃったね」と結果に応じてコメントして。`;
+        } else if (extraData.eventType === "hardcore") {
+            prompt += `【ハードコア選択終了】\n`;
+            prompt += `自力で思い出せた割合や正答率を踏まえて、基礎知識の定着度について具体的に褒めるか、復習を促すコメントをして！`;
+        } else if (extraData.eventType === "surpriseAttack") {
+            prompt += `【不意打ちの1問終了】\n`;
+            prompt += `不意打ちで苦手問題を1問だけ出しました。正解していれば「油断してなかったね！」、間違えていれば「やっぱり気が抜けてた？」とイジって。`;
+        }
+    }
+
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        if (!res.ok) throw new Error("API Error");
+        const data = await res.json();
+        const text = data.candidates[0].content.parts[0].text;
+        if(aiMessageEl) { aiMessageEl.textContent = text; aiMessageEl.classList.remove('text-red-500'); }
+        if (!extraData.textOnly) speakText(text); 
+    } catch(e) {
+        if(aiMessageEl) { aiMessageEl.textContent = `今日も一緒に一問ずつ進めていこうね！`; aiMessageEl.classList.remove('text-red-500'); }
+    }
+}
+
 function showHintTakuitsu() {
-    currentQuestionHintCount++;
     const q = currentQuestions[currentIndex];
     if (typeof generateAiMessage === "function") generateAiMessage("hint_takuitsu", { questionText: q.問題文, explanation: q.解説 || "", textOnly: true });
 }
 
 function showHintSentaku() {
-    currentQuestionHintCount++;
     const qArea = document.getElementById('question-text-sentaku');
     let text = qArea.innerHTML;
     text = text.replace(/(なければならない|努め|こと|また|ただし|において|ため)/g, '<span class="highlight-clue">$1</span>');
