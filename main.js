@@ -196,25 +196,31 @@ function formatTime(sec) {
 }
 
 function playCorrectSound() {
-    if(!audioCtx || isMuted) return;
-    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-    osc.type = 'sine'; osc.frequency.setValueAtTime(800, audioCtx.currentTime); osc.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-    osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+    if(!audioCtx || isMuted || audioCtx.state !== 'running') return;
+    try {
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.type = 'sine'; osc.frequency.setValueAtTime(800, audioCtx.currentTime); osc.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+    } catch(e) {}
 }
 function playWrongSound() {
-    if(!audioCtx || isMuted) return;
-    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-    osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, audioCtx.currentTime); osc.frequency.setValueAtTime(250, audioCtx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
-    osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+    if(!audioCtx || isMuted || audioCtx.state !== 'running') return;
+    try {
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(300, audioCtx.currentTime); osc.frequency.setValueAtTime(250, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.4);
+    } catch(e) {}
 }
 function playWhistleSound() {
-    if(!audioCtx || isMuted) return;
-    const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
-    osc.type = 'square'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); osc.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.1);
-    gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
-    osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+    if(!audioCtx || isMuted || audioCtx.state !== 'running') return;
+    try {
+        const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
+        osc.type = 'square'; osc.frequency.setValueAtTime(1000, audioCtx.currentTime); osc.frequency.setValueAtTime(1200, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime); gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+        osc.connect(gain); gain.connect(audioCtx.destination); osc.start(); osc.stop(audioCtx.currentTime + 0.3);
+    } catch(e) {}
 }
 function playTickSound() {
     if(!audioCtx) return; 
@@ -599,7 +605,6 @@ function startStrategyPlaylist(config) {
     startNextPlaylistSet(true);
 }
 
-// 🌟 修正: AIからの target 指定を受け取り、問題をフィルタリング・ソートする処理
 function executeStrategyPlan() {
     if(!strategyPlan) return;
     const ap = document.getElementById('api-key-input');
@@ -614,16 +619,13 @@ function executeStrategyPlan() {
     
     let planList = strategyPlan.plan || [strategyPlan];
     planList.forEach(item => {
-        // AI指定の科目に完全一致するものをプール
         let pool = allDatabase.filter(q => q._subjectName === item.subject);
         if (item.chapter) pool = pool.filter(q => q.項目 === item.chapter);
         
         if(pool.length > 0) {
-            // 完璧な問題は除外
             let targetPool = pool.filter(q => !(userHistory[q._id] && userHistory[q._id].status === '完璧'));
-            if(targetPool.length === 0) targetPool = pool; // 全部完璧なら妥協
+            if(targetPool.length === 0) targetPool = pool; 
             
-            // 🌟 ターゲットに応じたソート
             if (item.target === "弱点") {
                 targetPool.sort((a, b) => {
                     let rA = userHistory[a._id] && userHistory[a._id].playCount > 0 ? (userHistory[a._id].correctCount / userHistory[a._id].playCount) : 1;
@@ -646,7 +648,6 @@ function executeStrategyPlan() {
             let qs = (chapterMap[pickedChapter] || targetPool).slice(0, item.count || 10);
             
             if (qs.length > 0) {
-                // chapterNameにターゲット情報を付与してわかりやすく
                 let displayChapter = pickedChapter;
                 if (item.target) displayChapter += ` (${item.target})`;
                 playlistQueue.push({ subjectName: item.subject, chapterName: displayChapter, type: qs[0]._type, questions: qs });
@@ -883,6 +884,20 @@ function unlockHardcore(type) {
     if (ns) { ns.classList.remove('hidden'); ns.classList.add('flex'); }
     const q = currentQuestions[currentIndex];
     sendKarteLog('hardcore_unlock', { type: type, q_id: q._id, question: q.問題文.substring(0, 20) });
+}
+
+function submitHealthHearing(statusStr) {
+    const hs = document.getElementById('health-select');
+    if (hs) hs.value = statusStr;
+    
+    sendKarteLog('health_update', { condition: statusStr, continuousTimeSec: continuousStudyTimeSec });
+    
+    lastHealthCheckTimeSec = continuousStudyTimeSec;
+    
+    const hha = document.getElementById('health-hearing-area');
+    if (hha) { hha.classList.add('hidden'); hha.classList.remove('flex'); }
+    
+    nextQuestion();
 }
 
 function startPause() {
@@ -2082,7 +2097,7 @@ function updateNapDisplay() {
     if(nc) nc.textContent = `${m}:${s}`;
 }
 function stopNap() {
-    clearInterval(napInterval); 
+    clearInterval(napInterval); if(beepInterval) clearInterval(beepInterval);
     const nc = document.getElementById('nap-countdown'); if(nc) nc.classList.remove('animate-ping', 'text-red-500');
     const no = document.getElementById('nap-overlay'); if(no) { no.classList.add('hidden'); no.classList.remove('flex'); }
     
