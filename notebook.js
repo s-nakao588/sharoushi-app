@@ -1,20 +1,84 @@
 /* =========================================================
-   📓 マイノート・フリーノート管理モジュール
+   📓 マイノート・フリーノート管理モジュール (GAS同期＆PDF連携版)
    ========================================================= */
 
-// モーダルや情報の初期化用変数
+// 🌟 新しく作成したマイノート用GASのウェブアプリURL
+const NOTEBOOK_GAS_URL = "https://script.google.com/macros/s/AKfycbyXgXlK8FpQZqqvvu7dxS4htbPlB9FJeJySls4GM0ZZlDrlvKCy4QXiXUV6OdrrveA5/exec";
+
+// 🌟 各科目のテキストPDFと、項目ごとの開始ページ設定辞書
+const TEXTBOOK_PDF_CONFIG = {
+    "労働基準法": {
+        "url": "https://drive.google.com/open?id=1dTgqAqxWKumJEK3QD2_GlrFAdeYxMsqY&usp=drive_fs",
+        "chapters": {
+            "1 労働基準法の基本理念": 8,
+            "2 労働契約": 20,
+            "3 賃金、賃金の支払の5原則": 37,
+            "4 労働時間、休憩、休日": 49,
+            "5 労働時間、変形労働時間制": 60,
+            "6 時間外・休日労働、割増賃金": 70,
+            "労働時間の計算等": 83, // 7 みなし労働時間制
+            "8 年次有給休暇": 89,
+            "9 年少者、妊産婦等": 97,
+            "就業規則、監督等その他": 108
+        }
+    }
+    // 今後、安衛法や健保法が追加されたらここに書き足すだけで自動連携されます
+};
+
 let currentNotebookId = null;
 let currentNotebookImageBase64 = null;
 let isFreeNoteMode = false;
-let activeFreeNoteMap = {}; // 確実に動的に取得するための変数
+let activeFreeNoteMap = {}; 
 
-// 🌟 メニュー画面からの「新規フリーノート作成」用
+// 🌟 アプリ起動時にGASからマイノートデータを一括同期する（裏で非同期実行）
+document.addEventListener('DOMContentLoaded', async () => {
+    if (!NOTEBOOK_GAS_URL || NOTEBOOK_GAS_URL.includes("ここに")) return;
+    try {
+        const res = await fetch(NOTEBOOK_GAS_URL, {
+            method: 'POST', body: JSON.stringify({ action: 'get_notebooks' })
+        });
+        const data = await res.json();
+        if (data.success) {
+            localStorage.setItem('user_notebooks', JSON.stringify(data.notebooks));
+            if (typeof updateStartScreenNotebookBadge === "function") updateStartScreenNotebookBadge();
+        }
+    } catch(e) {
+        console.warn("マイノートの同期に失敗しました（オフラインまたはURL未設定）");
+    }
+});
+
+// 🌟 PDFジャンプボタンを動的にHTMLへ挿入する関数
+function insertPdfJumpButton(subjectName, chapterName) {
+    const existingBtn = document.getElementById('dynamic-pdf-jump-btn');
+    if (existingBtn) existingBtn.remove(); // 過去のボタンをリセット
+
+    let baseSubj = subjectName.replace(/\(択一\)|\(選択\)/g, "").trim();
+    
+    if (TEXTBOOK_PDF_CONFIG[baseSubj] && TEXTBOOK_PDF_CONFIG[baseSubj].chapters[chapterName]) {
+        const page = TEXTBOOK_PDF_CONFIG[baseSubj].chapters[chapterName];
+        const pdfUrl = TEXTBOOK_PDF_CONFIG[baseSubj].url;
+        
+        if (pdfUrl.includes("ここに")) return; // URLが未設定の場合は出さない
+        
+        const btnHtml = `
+            <button id="dynamic-pdf-jump-btn" onclick="window.open('${pdfUrl}#page=${page}', '_blank')" class="mt-4 w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-black py-3 rounded-xl border-2 border-blue-200 shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2">
+                <span>📖</span><span>この項目のテキストを開く (P.${page}〜)</span>
+            </button>
+        `;
+        
+        const infoArea = document.getElementById('nb-question-info-area');
+        if (infoArea) {
+            infoArea.insertAdjacentHTML('beforeend', btnHtml);
+        }
+    }
+}
+
+// 🌟 新規フリーノート作成
 function openNewFreeNotebook() {
     isFreeNoteMode = true;
     currentNotebookId = "freenote_" + Date.now(); 
     currentNotebookImageBase64 = null;
 
-    // UIの表示切り替え（フリー用ドロップダウン表示、問題文エリア非表示）
     document.getElementById('nb-free-select-area').classList.remove('hidden');
     document.getElementById('nb-free-select-area').classList.add('flex');
     document.getElementById('nb-question-info-area').classList.add('hidden');
@@ -22,11 +86,10 @@ function openNewFreeNotebook() {
     document.getElementById('btn-delete-nb').classList.add('hidden');
     document.getElementById('nb-modal-subtitle').textContent = "フリーノート";
 
-    // 確実にするため、クリック時に毎回 allDatabase から動的生成する
     activeFreeNoteMap = {};
     if (typeof allDatabase !== "undefined" && allDatabase.length > 0) {
         allDatabase.forEach(q => {
-            let baseSubj = q._subjectName.replace(/\(択一\)|\(選択\)/g, ""); // "(択一)"等を除去
+            let baseSubj = q._subjectName.replace(/\(択一\)|\(選択\)/g, ""); 
             if (!activeFreeNoteMap[baseSubj]) activeFreeNoteMap[baseSubj] = new Set();
             activeFreeNoteMap[baseSubj].add(q.項目 || "分類なし");
         });
@@ -34,10 +97,8 @@ function openNewFreeNotebook() {
         activeFreeNoteMap = freeNoteSubjectMap;
     }
 
-    // 科目ドロップダウンの生成
     const subjSelect = document.getElementById('nb-free-subject-select');
     subjSelect.innerHTML = "";
-    
     const subjects = Object.keys(activeFreeNoteMap);
     if (subjects.length === 0) {
         subjSelect.innerHTML = '<option value="">(データ読み込み中またはデータなし)</option>';
@@ -49,9 +110,8 @@ function openNewFreeNotebook() {
         });
     }
     
-    updateFreeNoteChapterSelect(); // 連動して項目を更新
+    updateFreeNoteChapterSelect();
 
-    // リッチテキストエリアと画像エリアの初期化
     document.getElementById('nb-note-input').innerHTML = "";
     document.getElementById('nb-image-input').value = "";
     document.getElementById('nb-image-preview-box').classList.add('hidden');
@@ -59,10 +119,9 @@ function openNewFreeNotebook() {
 
     document.getElementById('notebook-modal').classList.remove('hidden');
     document.getElementById('notebook-modal').classList.add('flex');
-    initColorPicker(); // カラーピッカーの初期化
+    initColorPicker(); 
 }
 
-// 🌟 フリーノートの「科目」が変更された時に「項目」ドロップダウンを更新
 function updateFreeNoteChapterSelect() {
     const subj = document.getElementById('nb-free-subject-select').value;
     const chapSelect = document.getElementById('nb-free-chapter-select');
@@ -79,7 +138,7 @@ function updateFreeNoteChapterSelect() {
     }
 }
 
-// 🌟 通常の「問題に紐づくマイノート」を問題画面から開く処理
+// 🌟 問題に紐づくマイノートを開く
 function openNotebookForCurrentQuestion() {
     isFreeNoteMode = false;
     const q = currentQuestions[currentIndex];
@@ -88,7 +147,6 @@ function openNotebookForCurrentQuestion() {
     currentNotebookId = q._id;
     currentNotebookImageBase64 = null;
 
-    // UIの表示切り替え（問題文エリア表示、フリー用非表示）
     document.getElementById('nb-free-select-area').classList.add('hidden');
     document.getElementById('nb-free-select-area').classList.remove('flex');
     document.getElementById('nb-question-info-area').classList.remove('hidden');
@@ -108,7 +166,9 @@ function openNotebookForCurrentQuestion() {
     document.getElementById('nb-article-text').textContent = (q.根拠条文 || "").trim() || "条文なし";
     document.getElementById('nb-explanation-text').innerHTML = (q.解説 || "").trim() || "解説なし";
 
-    // 保存されているノートデータの復元
+    // 🌟 PDFジャンプボタンを生成
+    insertPdfJumpButton(q._subjectName, q.項目);
+
     const storedNotes = JSON.parse(localStorage.getItem('user_notebooks') || '{}');
     const existingNote = storedNotes[currentNotebookId];
 
@@ -140,13 +200,12 @@ function openNotebookForCurrentQuestion() {
     initColorPicker();
 }
 
-// 🌟 【新規追加】一覧画面からノートをタップして編集画面を開く処理
+// 🌟 一覧画面からノートを編集
 function editNoteFromList(noteId) {
     const storedNotes = JSON.parse(localStorage.getItem('user_notebooks') || '{}');
     const note = storedNotes[noteId];
     if(!note) return;
 
-    // 一覧モーダルを閉じる
     closeNotebookListModal();
 
     currentNotebookId = note.id;
@@ -207,6 +266,9 @@ function editNoteFromList(noteId) {
             document.getElementById('nb-article-text').textContent = "";
             document.getElementById('nb-explanation-text').innerHTML = (note.explanationText || "データベースから解説を取得できませんでした。");
         }
+        
+        // 🌟 PDFジャンプボタンを生成
+        insertPdfJumpButton(note.subjectName, note.chapterName);
     }
 
     const inputArea = document.getElementById('nb-note-input');
@@ -230,15 +292,13 @@ function editNoteFromList(noteId) {
     initColorPicker();
 }
 
-// 🌟 リッチテキストの書式適用関数（選択範囲への文字色・マーカー機能復活）
 function formatNotebookText(command) {
     if (command === 'removeFormat') {
         document.execCommand('removeFormat', false, null);
-        document.execCommand('hiliteColor', false, 'transparent'); // 背景色も同時にクリア
+        document.execCommand('hiliteColor', false, 'transparent'); 
         document.execCommand('backColor', false, 'transparent');
     } else if (command === 'highlight') {
         document.execCommand('styleWithCSS', false, true);
-        // マーカーとして背景色（黄色）を適用
         document.execCommand('hiliteColor', false, '#fef08a');
         document.execCommand('backColor', false, '#fef08a');
     } else if (command === 'foreColor') {
@@ -251,7 +311,6 @@ function formatNotebookText(command) {
     document.getElementById('nb-note-input').focus();
 }
 
-// 🌟 カラーピッカーの操作性改善
 function initColorPicker() {
     const colorPicker = document.getElementById('nb-color-picker');
     const noteInput = document.getElementById('nb-note-input');
@@ -260,7 +319,6 @@ function initColorPicker() {
     const newColorPicker = document.getElementById('nb-color-picker');
     
     newColorPicker.addEventListener('change', function(e) {
-        // 色を選んだ瞬間にフォーカスを戻して色を適用
         noteInput.focus();
         document.execCommand('styleWithCSS', false, true);
         document.execCommand('foreColor', false, e.target.value);
@@ -290,7 +348,6 @@ function handleNotebookImageUpload(event) {
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
             
-            // JPEG圧縮（ローカルストレージ圧迫を防ぐため品質は0.6を維持）
             currentNotebookImageBase64 = canvas.toDataURL('image/jpeg', 0.6);
             document.getElementById('nb-image-preview').src = currentNotebookImageBase64;
             document.getElementById('nb-image-preview-box').classList.remove('hidden');
@@ -312,21 +369,27 @@ function removeNotebookImage() {
     document.getElementById('nb-image-preview').src = "";
 }
 
-// 🌟 一覧から編集した場合も安全に保存できるよう改修
-function saveNotebookEntry() {
+// 🌟 保存処理（GASへ送信して容量限界を突破）
+async function saveNotebookEntry() {
     const noteHtml = document.getElementById('nb-note-input').innerHTML.trim();
     if (!noteHtml && !currentNotebookImageBase64) {
         alert("メモを入力するか、画像を添付してください。");
         return;
     }
 
+    const saveBtn = document.querySelector('button[onclick="saveNotebookEntry()"]');
+    const originalText = saveBtn.innerHTML;
+    saveBtn.innerHTML = "⏳ 保存・同期中...";
+    saveBtn.disabled = true;
+
     const storedNotes = JSON.parse(localStorage.getItem('user_notebooks') || '{}');
-    const existingNote = storedNotes[currentNotebookId] || {}; // 既存データを取得
+    const existingNote = storedNotes[currentNotebookId] || {};
     
+    let newNote = {};
     if (isFreeNoteMode) {
         const subj = document.getElementById('nb-free-subject-select').value;
         const chap = document.getElementById('nb-free-chapter-select').value;
-        storedNotes[currentNotebookId] = {
+        newNote = {
             ...existingNote,
             id: currentNotebookId,
             type: "フリーノート",
@@ -337,14 +400,12 @@ function saveNotebookEntry() {
             timestamp: new Date().toISOString()
         };
     } else {
-        // 既存のメタデータ（問題文など）があればそれを優先
         let subj = existingNote.subjectName;
         let chap = existingNote.chapterName;
         let qType = existingNote.type;
         let pText = existingNote.problemText;
         let eText = existingNote.explanationText;
 
-        // もし新規作成なら現在の問題（currentQuestions）から取得
         if (!existingNote.id) {
             const q = currentQuestions[currentIndex];
             if (q) {
@@ -356,7 +417,7 @@ function saveNotebookEntry() {
             }
         }
 
-        storedNotes[currentNotebookId] = {
+        newNote = {
             ...existingNote,
             id: currentNotebookId,
             type: qType,
@@ -371,23 +432,52 @@ function saveNotebookEntry() {
     }
 
     try {
+        // 🌟 GASへ送信してドライブに画像を保存
+        if (NOTEBOOK_GAS_URL && !NOTEBOOK_GAS_URL.includes("ここに")) {
+            const res = await fetch(NOTEBOOK_GAS_URL, {
+                method: 'POST',
+                body: JSON.stringify({ action: 'save_notebook', ...newNote })
+            });
+            const data = await res.json();
+            if (data.success && data.data.imageUrl) {
+                newNote.image = data.data.imageUrl; // 返ってきたドライブURLに差し替え
+                currentNotebookImageBase64 = data.data.imageUrl;
+            }
+        }
+
+        // ローカルを更新
+        storedNotes[currentNotebookId] = newNote;
         localStorage.setItem('user_notebooks', JSON.stringify(storedNotes));
+        
         closeNotebookModal();
         if (typeof updateNotebookButtonDisplay === "function" && !isFreeNoteMode) updateNotebookButtonDisplay(currentNotebookId);
         if (typeof updateStartScreenNotebookBadge === "function") updateStartScreenNotebookBadge();
         if (typeof generateAiMessage === "function") generateAiMessage("notebook_saved", { textOnly: true });
+
     } catch (e) {
-        alert("保存容量の上限に達しました。不要な画像付きのノートを削除してください。");
+        alert("保存に失敗しました。通信環境を確認してください。");
+    } finally {
+        saveBtn.innerHTML = originalText;
+        saveBtn.disabled = false;
     }
 }
 
-function deleteCurrentNotebookEntry() {
+async function deleteCurrentNotebookEntry() {
     if(!confirm("このノートを完全に削除しますか？")) return;
+    
     const storedNotes = JSON.parse(localStorage.getItem('user_notebooks') || '{}');
     if(storedNotes[currentNotebookId]) {
         delete storedNotes[currentNotebookId];
         localStorage.setItem('user_notebooks', JSON.stringify(storedNotes));
     }
+    
+    // GAS側にも削除を通知
+    if (NOTEBOOK_GAS_URL && !NOTEBOOK_GAS_URL.includes("ここに")) {
+        try {
+            fetch(NOTEBOOK_GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'delete_notebook', id: currentNotebookId }) });
+        } catch(e) {}
+    }
+
     closeNotebookModal();
     if (typeof updateNotebookButtonDisplay === "function" && !isFreeNoteMode) updateNotebookButtonDisplay(currentNotebookId);
     if (typeof updateStartScreenNotebookBadge === "function") updateStartScreenNotebookBadge();
@@ -425,7 +515,6 @@ function updateStartScreenNotebookBadge() {
     if(nbListCount) nbListCount.textContent = count + "件";
 }
 
-// 🌟 一覧の各カードに onClick イベントを追加し、タップで編集できるように改修
 function openNotebookListModal() {
     const container = document.getElementById('nb-list-container');
     container.innerHTML = "";
@@ -476,7 +565,6 @@ function openNotebookListModal() {
                         html += `<div class="text-sm md:text-base text-slate-800 font-medium leading-relaxed bg-amber-50/50 p-3 rounded-xl border border-amber-100 mb-3 pointer-events-none">${note.text}</div>`;
                     }
                     if (note.image) {
-                        // 画像クリック時は別タブで拡大するだけにして、編集画面は開かない（stopPropagation）
                         html += `<img src="${note.image}" class="max-h-48 md:max-h-64 rounded-lg object-contain shadow-sm border border-slate-200 cursor-pointer relative z-10 mt-2" onclick="event.stopPropagation(); window.open('${note.image}', '_blank')">`;
                     }
                     html += `</div>`;
@@ -498,11 +586,19 @@ function closeNotebookListModal() {
 
 function deleteNoteFromList(noteId) {
     if(!confirm("このノートを削除しますか？")) return;
+    
     const storedNotes = JSON.parse(localStorage.getItem('user_notebooks') || '{}');
     if(storedNotes[noteId]) {
         delete storedNotes[noteId];
         localStorage.setItem('user_notebooks', JSON.stringify(storedNotes));
     }
+    
+    if (NOTEBOOK_GAS_URL && !NOTEBOOK_GAS_URL.includes("ここに")) {
+        try {
+            fetch(NOTEBOOK_GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'delete_notebook', id: noteId }) });
+        } catch(e) {}
+    }
+    
     updateStartScreenNotebookBadge();
     openNotebookListModal(); 
 }
