@@ -886,7 +886,6 @@ function unlockHardcore(type) {
     sendKarteLog('hardcore_unlock', { type: type, q_id: q._id, question: q.問題文.substring(0, 20) });
 }
 
-// 🌟 復元：自己評価パネルの折りたたみ機能（JS側）
 function toggleEvalPanel(type) {
     const target = document.getElementById(`${type}-eval-collapse-target`);
     const toggleBtn = document.getElementById(`${type}-eval-toggle`);
@@ -1006,7 +1005,7 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
         btnBatsu.disabled = false; btnBatsu.classList.remove('opacity-30', 'ring-4', 'ring-red-500', 'cursor-not-allowed');
     }
     
-    const evalBtns = ['eval-btn-kanpeki', 'eval-btn-mayotta', 'eval-btn-wakaran'];
+    const evalBtns = ['eval-btn-kanpeki', 'eval-btn-kantan', 'eval-btn-mayotta', 'eval-btn-wakaran'];
     evalBtns.forEach(id => {
         let el = document.getElementById(id);
         if(el) el.classList.remove('opacity-40', 'ring-2', 'ring-offset-2', 'ring-slate-400');
@@ -1460,7 +1459,6 @@ function markEvalSentaku(status) {
     nextQuestion();
 }
 
-// 🌟 復元：体調ヒアリングエリアの表示
 function showHealthHearingPanel() {
     const tec = document.getElementById('takuitsu-eval-content');
     if (tec) tec.classList.add('hidden');
@@ -1968,6 +1966,7 @@ function startInfiniteDrill(mode) {
     const teCon = document.getElementById('takuitsu-eval-content');
     if(teCon) teCon.classList.remove('hidden');
     
+    // 🌟 修正：「簡単」ボタンのIDをリセット配列に確実に含める
     const btns = ['eval-btn-kanpeki', 'eval-btn-kantan', 'eval-btn-mayotta', 'eval-btn-wakaran'];
     btns.forEach(id => {
         let el = document.getElementById(id);
@@ -2073,7 +2072,6 @@ function stopNap() {
     if (typeof generateAiMessage === "function") generateAiMessage("nap_end", { textOnly: true }); 
 }
 
-// 🌟 ヒント系の連携処理（ai.jsへイベント送信）
 function showHintTakuitsu() {
     const q = currentQuestions[currentIndex];
     if (typeof generateAiMessage === "function") generateAiMessage("hint_takuitsu", { questionText: q.問題文, explanation: q.解説 || "", textOnly: true });
@@ -2091,7 +2089,6 @@ function executeAlchemyStart() {
     if(typeof generateAiMessage === "function") generateAiMessage("alchemy_prep", { textOnly: true });
 }
 
-// 🌟 専属講師への作戦リクエストをまとめる連携
 function triggerAnalysisStrategy() {
     const si = document.getElementById('strategy-input');
     if (si) si.value = '弱点を分析して特訓プランを作って！';
