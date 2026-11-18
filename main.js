@@ -1966,7 +1966,6 @@ function startInfiniteDrill(mode) {
     const teCon = document.getElementById('takuitsu-eval-content');
     if(teCon) teCon.classList.remove('hidden');
     
-    // 🌟 修正：「簡単」ボタンのIDをリセット配列に確実に含める
     const btns = ['eval-btn-kanpeki', 'eval-btn-kantan', 'eval-btn-mayotta', 'eval-btn-wakaran'];
     btns.forEach(id => {
         let el = document.getElementById(id);
