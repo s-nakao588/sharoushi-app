@@ -8,9 +8,10 @@ async function generateAiMessage(promptType, data = {}, isFirstLoad = false, for
     const healthSelect = document.getElementById('health-select');
     const health = healthSelect ? healthSelect.value : '普通';
     
-    // 🌟 無音発話による音声アンロック（iOS/Safari対応）
+    // 🌟 無音発話による音声アンロックとVoiceリストの強制読み込み（iOS/Safari対応）
     if (isFirstLoad && !isMuted) {
         if ('speechSynthesis' in window) {
+            window.speechSynthesis.getVoices(); 
             let u = new SpeechSynthesisUtterance("");
             u.volume = 0;
             window.speechSynthesis.speak(u);
@@ -19,10 +20,10 @@ async function generateAiMessage(promptType, data = {}, isFirstLoad = false, for
 
     aiMessageEl.innerHTML = '<span class="typing">💬 考え中...</span>';
 
-    let prompt = `あなたは社労士試験の専属講師（若い女性）です。受講生をサポートします。
+    let prompt = `あなたは社労士試験の専属講師（18歳前後の若い女性）です。受講生をサポートします。
     現在のモード（性格）は「${cond}」、受講生の体調は「${health}」です。
     【重要】受講生は「労働基準法」「安全衛生法」「健康保険法」「厚生年金保険法」の4科目以外は免除されています。この4科目以外について学習を促す発言や提案は絶対にしないでください。
-    性格に合わせてセリフの厳しさやテンションを変えてください（アニメ口調は絶対禁止。1〜2文の自然な口語で）。\n`;
+    【厳守事項】セリフ本文は常に1〜2文の自然な現代の口語で出力し、「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」等の不自然な役割語やアニメ口調は絶対に使用しないでください。\n`;
 
     if (forceNight) {
         prompt += "現在深夜です。厳しく寝るように促すか、優しく休むように促してください。\n";
@@ -60,14 +61,22 @@ async function generateAiMessage(promptType, data = {}, isFirstLoad = false, for
         aiMessageEl.textContent = text;
         
         if (isFirstLoad && typeof onAiGreetingStarted === 'function') onAiGreetingStarted();
-        speakText(text);
+        
+        // 🌟 過去の指示通り、textOnlyフラグがtrueの時（解答後の解説等）は音読しない
+        if (!data.textOnly) {
+            speakText(text);
+        }
     } catch (e) {
         aiMessageEl.textContent = "一緒にがんばろう！";
         if (isFirstLoad && typeof onAiGreetingStarted === 'function') onAiGreetingStarted();
+        
+        if (!data.textOnly) {
+            speakText("一緒にがんばろう！");
+        }
     }
 }
 
-// 🌟 音声読み上げ（iPad対応：ピッチ・レート完全無加工）
+// 🌟 音声読み上げ（iPad対応：ピッチ・レート完全無加工 ＋ 日本語強制）
 function speakText(text) {
     if (isMuted || !text) return;
     if (!('speechSynthesis' in window)) return;
@@ -75,15 +84,19 @@ function speakText(text) {
     window.speechSynthesis.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     
+    utterance.lang = 'ja-JP'; 
+    
     const voices = window.speechSynthesis.getVoices();
     const bestVoice = voices.find(v => 
         v.name.includes('Kyoko') || 
         v.name.includes('Otoya') || 
         v.name.includes('Siri') || 
-        v.name.includes('Google 日本語') || 
-        v.lang === 'ja-JP'
-    );
-    if (bestVoice) utterance.voice = bestVoice;
+        v.name.includes('Google 日本語')
+    ) || voices.find(v => v.lang === 'ja-JP');
+    
+    if (bestVoice) {
+        utterance.voice = bestVoice;
+    }
     
     // ※絶対ルール遵守：iPad等の機械音化バグを防ぐため、pitchとrateは一切指定しない（完全無加工）
     window.speechSynthesis.speak(utterance);
@@ -127,8 +140,9 @@ async function generateDashboardAdvice(stats) {
     if (!commentEl) return;
     commentEl.innerHTML = '<span class="typing">データ分析中...</span>';
     
-    let prompt = `受講生のダッシュボードデータです。最も進捗が遅れている科目や、正答率が低い科目を1つ見つけ、1〜2文で激励のアドバイスをしてください。アニメ口調は禁止です。
+    let prompt = `受講生のダッシュボードデータです。最も進捗が遅れている科目や、正答率が低い科目を1つ見つけ、1〜2文で激励のアドバイスをしてください。
     【重要】受講生は「労働基準法」「安全衛生法」「健康保険法」「厚生年金保険法」の4科目以外は免除されています。これら4科目以外についての言及は避けてください。
+    【厳守事項】セリフ本文は自然な現代の口語とし、「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」等の不自然な役割語やアニメ口調は絶対に使用しないでください。
     データ：${JSON.stringify(stats).substring(0, 1000)}`;
     
     try {
@@ -227,6 +241,7 @@ async function sendStrategyMessage() {
 【重要ルール】
 1. 受講生は「労働基準法」「安全衛生法」「健康保険法」「厚生年金保険法」の4科目以外は免除されています。出力するプランの科目は必ずこの4科目のみで構成し、他の科目は含めないでください。
 2. ユーザーの発言が単なる質問や雑談（「あと何日？」など）であり、プランの作成や変更を求めていないと判断した場合は、"plan"の配列を空（[]）にして、会話の返事のみを返してください。
+3. 【厳守事項】セリフは常に1〜2文の自然な現代の口語で出力し、「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」等の不自然な役割語やアニメ口調は絶対に使用しないでください。
 
 ユーザーの発言に対する返答と、学習プラン（フェーズごとの時間割）をJSONで出力してください。
 時間は指定された目標時間の枠内で配分してください。
@@ -246,7 +261,7 @@ async function sendStrategyMessage() {
         });
         const data = await res.json();
         let text = data.candidates[0].content.parts[0].text;
-        text = text.replace(/```json/g, '').replace(/ কলকাতায়/g, '').replace(/```/g, '').trim();
+        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const aiRes = JSON.parse(text);
 
         const indicator = document.getElementById('typing-indicator');
@@ -256,7 +271,6 @@ async function sendStrategyMessage() {
         
         const btn = document.getElementById('btn-strategy-start');
         
-        // プランが存在する場合のみスケジュールを表示し、スタートボタンを出す
         if (aiRes.plan && aiRes.plan.length > 0) {
             strategyPlan = { plan: aiRes.plan };
             
@@ -279,7 +293,6 @@ async function sendStrategyMessage() {
                 btn.textContent = "🔥 このプランで特訓スタート！";
             }
         } else {
-            // 単なる雑談の場合はスタートボタンを隠す
             if (btn) btn.classList.add('hidden');
         }
         
