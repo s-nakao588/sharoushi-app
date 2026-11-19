@@ -129,6 +129,8 @@ let currentQuestionStartTime = 0;
 let currentQuestionHintCount = 0;
 let isSleepyMode = false; 
 
+// 🌟 幽霊変数だった usedQuestionIds をここで安全に宣言
+let usedQuestionIds = new Set(); 
 let lastHealthCheckTimeSec = 0;
 
 window.onload = function() {
@@ -1075,7 +1077,6 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
         const sUi = document.getElementById('sentaku-ui'); if(sUi) sUi.classList.add('hidden');
         const aTak = document.getElementById('action-takuitsu'); if(aTak) aTak.classList.remove('hidden');
         const aSen = document.getElementById('action-sentaku'); if(aSen) aSen.classList.add('hidden');
-        const tts = document.getElementById('tts-area'); if(tts) tts.classList.add('hidden');
         const alc = document.getElementById('alchemy-btn'); if(alc) alc.classList.add('hidden');
         const qtt = document.getElementById('question-text-takuitsu'); if(qtt) qtt.innerHTML = (q.問題文 || "").replace(/\n/g, '<br>');
         
@@ -1115,7 +1116,6 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
         const sUi = document.getElementById('sentaku-ui'); if(sUi) sUi.classList.remove('hidden');
         const aTak = document.getElementById('action-takuitsu'); if(aTak) aTak.classList.add('hidden');
         const aSen = document.getElementById('action-sentaku'); if(aSen) aSen.classList.remove('hidden');
-        const tts = document.getElementById('tts-area'); if(tts) { tts.classList.remove('hidden'); tts.classList.add('flex'); }
         const alc = document.getElementById('alchemy-btn'); if(alc) alc.classList.remove('hidden');
         
         clearInterval(timerInterval);
