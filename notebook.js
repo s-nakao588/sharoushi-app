@@ -1,28 +1,63 @@
 /* =========================================================
-   📓 マイノート・フリーノート管理モジュール (GAS同期＆PDF連携版)
+   📓 マイノート・フリーノート管理モジュール (GAS同期＆GitHub PDF連携版)
    ========================================================= */
 
-// 🌟 新しく作成したマイノート用GASのウェブアプリURL
+// 🌟 マイノート用GASのウェブアプリURL
 const NOTEBOOK_GAS_URL = "https://script.google.com/macros/s/AKfycbyXgXlK8FpQZqqvvu7dxS4htbPlB9FJeJySls4GM0ZZlDrlvKCy4QXiXUV6OdrrveA5/exec";
 
-// 🌟 各科目のテキストPDFと、項目ごとの開始ページ設定辞書
+// 🌟 各科目のテキストPDFと、項目ごとの「ファイル名」および「開始ページ」の自動振り分け辞書
 const TEXTBOOK_PDF_CONFIG = {
     "労働基準法": {
-        "url": "https://drive.google.com/open?id=1dTgqAqxWKumJEK3QD2_GlrFAdeYxMsqY&usp=drive_fs",
         "chapters": {
-            "1 労働基準法の基本理念": 8,
-            "2 労働契約": 20,
-            "3 賃金、賃金の支払の5原則": 37,
-            "4 労働時間、休憩、休日": 49,
-            "5 労働時間、変形労働時間制": 60,
-            "6 時間外・休日労働、割増賃金": 70,
-            "労働時間の計算等": 83, // 7 みなし労働時間制
-            "8 年次有給休暇": 89,
-            "9 年少者、妊産婦等": 97,
-            "就業規則、監督等その他": 108
+            "1 労働基準法の基本理念": { page: 8, file: "rouki.pdf" },
+            "2 労働契約": { page: 20, file: "rouki.pdf" },
+            "3 賃金、賃金の支払の5原則": { page: 37, file: "rouki.pdf" },
+            "4 労働時間、休憩、休日": { page: 49, file: "rouki.pdf" },
+            "5 労働時間、変形労働時間制": { page: 60, file: "rouki.pdf" },
+            "6 時間外・休日労働、割増賃金": { page: 70, file: "rouki.pdf" },
+            "労働時間の計算等": { page: 83, file: "rouki.pdf" },
+            "8 年次有給休暇": { page: 89, file: "rouki.pdf" },
+            "9 年少者、妊産婦等": { page: 97, file: "rouki.pdf" },
+            "就業規則、監督等その他": { page: 108, file: "rouki.pdf" },
+            "雑則等": { page: 112, file: "rouki.pdf" }
+        }
+    },
+    "安全衛生法": {
+        "chapters": {
+            "1 総則等": { page: 128, file: "anei.pdf" },
+            "1 安全衛生管理体制等": { page: 131, file: "anei.pdf" },
+            "2 機械等及び危険・有害物に関する規制": { page: 159, file: "anei.pdf" },
+            "3 労働者の就業管理・健康管理等": { page: 178, file: "anei.pdf" }
+        }
+    },
+    "健康保険法": {
+        "chapters": {
+            "1 保険者・適用事業所等": { page: 8, file: "kennkou1.pdf" },
+            "2 被保険者・被扶養者": { page: 20, file: "kennkou1.pdf" },
+            "3 報酬・標準報酬月額等": { page: 47, file: "kennkou1.pdf" },
+            "届出・通知等": { page: 22, file: "kennkou1.pdf" },
+            "保険医療機関等・療養担当者": { page: 41, file: "kennkou1.pdf" },
+            "4 保険給付 1 (療養の給付等)": { page: 62, file: "kennkou1.pdf" },
+            "5 保険給付 2 (現金給付・資格喪失後の給付等)": { page: 87, file: "kennkou1.pdf" },
+            "費用の負担・保険料等": { page: 103, file: "kennkou2.pdf" },
+            "日雇特例・保健福祉事業": { page: 122, file: "kennkou2.pdf" },
+            "時効・不服申立て・雑則等": { page: 137, file: "kennkou2.pdf" }
+        }
+    },
+    "厚生年金保険法": {
+        "chapters": {
+            "1 総則・適用事業所等": { page: 284, file: "kousei1.pdf" },
+            "2 被保険者・被保険者期間等": { page: 289, file: "kousei1.pdf" },
+            "3 標準報酬等": { page: 307, file: "kousei1.pdf" },
+            "6 老齢厚生年金": { page: 314, file: "kousei1.pdf" },
+            "7 障害厚生年金・障害手当金": { page: 345, file: "kousei1.pdf" },
+            "8 遺族厚生年金・脱退一時金": { page: 357, file: "kousei1.pdf" },
+            "9 年金分割の特例": { page: 372, file: "kousei2.pdf" },
+            "4 給付通則等": { page: 379, file: "kousei2.pdf" },
+            "5 費用の負担・保険料等": { page: 390, file: "kousei2.pdf" },
+            "10 不服申立て・雑則等": { page: 390, file: "kousei2.pdf" }
         }
     }
-    // 今後、安衛法や健保法が追加されたらここに書き足すだけで自動連携されます
 };
 
 let currentNotebookId = null;
@@ -47,30 +82,70 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
-// 🌟 PDFジャンプボタンを動的にHTMLへ挿入する関数
-function insertPdfJumpButton(subjectName, chapterName) {
-    const existingBtn = document.getElementById('dynamic-pdf-jump-btn');
-    if (existingBtn) existingBtn.remove(); // 過去のボタンをリセット
+// 🌟 PDFジャンプボタンとページ数入力欄を動的にHTMLへ挿入する関数
+function insertPdfJumpButton(subjectName, chapterName, savedPage = null) {
+    const existingArea = document.getElementById('dynamic-pdf-area');
+    if (existingArea) existingArea.remove(); // 過去のものをリセット
 
     let baseSubj = subjectName.replace(/\(択一\)|\(選択\)/g, "").trim();
     
-    if (TEXTBOOK_PDF_CONFIG[baseSubj] && TEXTBOOK_PDF_CONFIG[baseSubj].chapters[chapterName]) {
-        const page = TEXTBOOK_PDF_CONFIG[baseSubj].chapters[chapterName];
-        const pdfUrl = TEXTBOOK_PDF_CONFIG[baseSubj].url;
-        
-        if (pdfUrl.includes("ここに")) return; // URLが未設定の場合は出さない
-        
-        const btnHtml = `
-            <button id="dynamic-pdf-jump-btn" onclick="window.open('${pdfUrl}#page=${page}', '_blank')" class="mt-4 w-full bg-blue-50 hover:bg-blue-100 text-blue-700 font-black py-3 rounded-xl border-2 border-blue-200 shadow-sm active:scale-95 transition-all flex items-center justify-center gap-2">
-                <span>📖</span><span>この項目のテキストを開く (P.${page}〜)</span>
+    // 設定がない場合は表示しない
+    if (!TEXTBOOK_PDF_CONFIG[baseSubj]) return;
+    
+    const chapConfig = TEXTBOOK_PDF_CONFIG[baseSubj].chapters[chapterName];
+    if (!chapConfig) return; // 項目設定がない場合は表示しない
+    
+    let defaultPage = chapConfig.page;
+    const pdfUrl = `https://s-nakao588.github.io/sharoushi-app/${chapConfig.file}`;
+    
+    // 保存済みのページ指定があれば優先、なければデフォルトの章開始ページ
+    let displayPage = savedPage || defaultPage;
+    
+    const html = `
+        <div id="dynamic-pdf-area" class="mt-4 p-3 bg-blue-50 rounded-xl border border-blue-200 shadow-sm flex flex-col gap-2">
+            <div class="flex items-center gap-2">
+                <label class="text-xs md:text-sm font-black text-blue-800">📖 参照ページ:</label>
+                <input type="number" id="nb-page-input" value="${displayPage}" class="w-16 md:w-20 p-1 border-2 border-blue-300 rounded text-center font-bold text-blue-900 focus:outline-none focus:border-blue-500">
+                <span class="text-[10px] md:text-xs text-blue-600 font-bold">※好きな数字に変更して保存できます</span>
+            </div>
+            <button onclick="openPdfPage('${pdfUrl}')" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-2.5 md:py-3 rounded-lg shadow active:scale-95 transition-all flex items-center justify-center gap-2 text-sm md:text-base">
+                <span>テキストの該当ページを開く</span>
             </button>
-        `;
-        
-        const infoArea = document.getElementById('nb-question-info-area');
-        if (infoArea) {
-            infoArea.insertAdjacentHTML('beforeend', btnHtml);
-        }
+        </div>
+    `;
+    
+    const infoArea = document.getElementById('nb-question-info-area');
+    if (infoArea) {
+        infoArea.insertAdjacentHTML('beforeend', html);
     }
+}
+
+// 🌟 PDFを別タブで開く（ページ指定つき）
+function openPdfPage(baseUrl) {
+    const pageInput = document.getElementById('nb-page-input');
+    let page = pageInput ? pageInput.value : "";
+    let finalUrl = baseUrl;
+    if (page) {
+        finalUrl += `#page=${page}`; // PDFビューア用のページ指定パラメータ
+    }
+    window.open(finalUrl, '_blank');
+}
+
+// 🌟 隠しタグからページ番号を抽出して本文から消す処理
+function extractSavedPageAndCleanHtml(rawHtml) {
+    let savedPage = null;
+    let cleanHtml = rawHtml;
+    
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = rawHtml;
+    const hiddenTag = tempDiv.querySelector('#hidden-page-data');
+    
+    if (hiddenTag) {
+        savedPage = hiddenTag.getAttribute('data-page');
+        hiddenTag.remove();
+        cleanHtml = tempDiv.innerHTML.trim();
+    }
+    return { savedPage, cleanHtml };
 }
 
 // 🌟 新規フリーノート作成
@@ -166,17 +241,19 @@ function openNotebookForCurrentQuestion() {
     document.getElementById('nb-article-text').textContent = (q.根拠条文 || "").trim() || "条文なし";
     document.getElementById('nb-explanation-text').innerHTML = (q.解説 || "").trim() || "解説なし";
 
-    // 🌟 PDFジャンプボタンを生成
-    insertPdfJumpButton(q._subjectName, q.項目);
-
     const storedNotes = JSON.parse(localStorage.getItem('user_notebooks') || '{}');
     const existingNote = storedNotes[currentNotebookId];
 
     const inputArea = document.getElementById('nb-note-input');
     const deleteBtn = document.getElementById('btn-delete-nb');
     
+    let savedPage = null;
     if (existingNote) {
-        inputArea.innerHTML = existingNote.text || ""; 
+        // 🌟 隠しタグからページ番号を抽出
+        const extracted = extractSavedPageAndCleanHtml(existingNote.text || "");
+        savedPage = extracted.savedPage;
+        inputArea.innerHTML = extracted.cleanHtml; 
+        
         deleteBtn.classList.remove('hidden');
         if (existingNote.image) {
             currentNotebookImageBase64 = existingNote.image;
@@ -194,6 +271,9 @@ function openNotebookForCurrentQuestion() {
         document.getElementById('nb-image-preview-box').classList.remove('flex');
     }
     
+    // 🌟 PDFジャンプボタンとページ数入力欄を生成（抽出したページ番号を渡す）
+    insertPdfJumpButton(q._subjectName, q.項目, savedPage);
+
     document.getElementById('nb-image-input').value = "";
     document.getElementById('notebook-modal').classList.remove('hidden');
     document.getElementById('notebook-modal').classList.add('flex');
@@ -266,15 +346,16 @@ function editNoteFromList(noteId) {
             document.getElementById('nb-article-text').textContent = "";
             document.getElementById('nb-explanation-text').innerHTML = (note.explanationText || "データベースから解説を取得できませんでした。");
         }
-        
-        // 🌟 PDFジャンプボタンを生成
-        insertPdfJumpButton(note.subjectName, note.chapterName);
     }
 
     const inputArea = document.getElementById('nb-note-input');
     const deleteBtn = document.getElementById('btn-delete-nb');
     
-    inputArea.innerHTML = note.text || "";
+    // 🌟 隠しタグからページ番号を抽出
+    const extracted = extractSavedPageAndCleanHtml(note.text || "");
+    const savedPage = extracted.savedPage;
+    inputArea.innerHTML = extracted.cleanHtml; 
+    
     deleteBtn.classList.remove('hidden');
     
     if (note.image) {
@@ -284,6 +365,11 @@ function editNoteFromList(noteId) {
     } else {
         document.getElementById('nb-image-preview-box').classList.add('hidden');
         document.getElementById('nb-image-preview-box').classList.remove('flex');
+    }
+    
+    // 🌟 PDFジャンプボタンを生成（抽出したページ番号を渡す）
+    if (!isFreeNoteMode) {
+        insertPdfJumpButton(note.subjectName, note.chapterName, savedPage);
     }
     
     document.getElementById('nb-image-input').value = "";
@@ -369,12 +455,24 @@ function removeNotebookImage() {
     document.getElementById('nb-image-preview').src = "";
 }
 
-// 🌟 保存処理（GASへ送信して容量限界を突破）
+// 🌟 保存処理（ページ番号を隠しタグとして埋め込み、GASへ送信）
 async function saveNotebookEntry() {
-    const noteHtml = document.getElementById('nb-note-input').innerHTML.trim();
+    let noteHtml = document.getElementById('nb-note-input').innerHTML.trim();
     if (!noteHtml && !currentNotebookImageBase64) {
         alert("メモを入力するか、画像を添付してください。");
         return;
+    }
+
+    // 🌟 入力されたページ番号を取得して隠しタグとして結合
+    let pageNum = "";
+    const pageInput = document.getElementById('nb-page-input');
+    if (pageInput) {
+        pageNum = pageInput.value;
+    }
+    // 古い隠しタグがあれば除去しておく
+    noteHtml = noteHtml.replace(/<div id="hidden-page-data".*?<\/div>/g, '');
+    if (pageNum) {
+        noteHtml += `<div id="hidden-page-data" data-page="${pageNum}" style="display:none;"></div>`;
     }
 
     const saveBtn = document.querySelector('button[onclick="saveNotebookEntry()"]');
@@ -562,7 +660,9 @@ function openNotebookListModal() {
                     }
                     
                     if (note.text) {
-                        html += `<div class="text-sm md:text-base text-slate-800 font-medium leading-relaxed bg-amber-50/50 p-3 rounded-xl border border-amber-100 mb-3 pointer-events-none">${note.text}</div>`;
+                        // 🌟 一覧画面では隠しタグを取り除いて表示
+                        const cleanHtml = extractSavedPageAndCleanHtml(note.text).cleanHtml;
+                        html += `<div class="text-sm md:text-base text-slate-800 font-medium leading-relaxed bg-amber-50/50 p-3 rounded-xl border border-amber-100 mb-3 pointer-events-none">${cleanHtml}</div>`;
                     }
                     if (note.image) {
                         html += `<img src="${note.image}" class="max-h-48 md:max-h-64 rounded-lg object-contain shadow-sm border border-slate-200 cursor-pointer relative z-10 mt-2" onclick="event.stopPropagation(); window.open('${note.image}', '_blank')">`;
