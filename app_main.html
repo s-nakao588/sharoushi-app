@@ -289,7 +289,8 @@
 
                 <div class="bg-indigo-50 border-2 border-indigo-200 rounded-2xl p-4 md:p-6 shadow-md flex flex-col">
                     <h3 class="text-lg md:text-2xl font-black text-indigo-800 mb-2">💬 専属講師と今日の作戦会議</h3>
-                    <div id="strategy-chat-log" class="mb-4 overflow-y-auto flex flex-col gap-2 p-2 bg-white/50 rounded-xl border border-indigo-100" style="max-height: 12rem;">
+                    <!-- 🌟 PC版（lg）の縦幅のみmax-h-[32rem]に拡張（スマホはそのまま） -->
+                    <div id="strategy-chat-log" class="mb-4 overflow-y-auto flex flex-col gap-2 p-2 bg-white/50 rounded-xl border border-indigo-100 max-h-[12rem] lg:max-h-[32rem]">
                         <div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-xl">
                             今日は「択一」と「選択」どっちをやる？スキマ時間でサクッとでも、両方混ぜる「ミックス特訓」でも合わせるよ！
                         </div>
@@ -410,7 +411,7 @@
                             <p class="text-xs font-black text-red-600 mb-1">🚨 AIが矛盾・法改正を発見！</p>
                             <p id="ai-fix-reason" class="text-xs text-slate-700 font-bold mb-2"></p>
                             <div class="flex gap-2">
-                                <button onclick="applyFixToGAS()" class="flex-1 bg-green-500 text-white font-bold py-1.5 rounded text-xs shadow">✅ 修正</button>
+                                <button onclick="applyFixToGAS()" class="flex-1 bg-green-50 text-white font-bold py-1.5 rounded text-xs shadow">✅ 修正</button>
                                 <button onclick="ignoreFix()" class="bg-slate-300 text-slate-700 font-bold px-3 py-1.5 rounded text-xs">❌ 無視</button>
                             </div>
                         </div>

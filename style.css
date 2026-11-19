@@ -73,7 +73,7 @@ option.hidden-option { display: none !important; }
     #dash-master-bars [id^="dash-chap-"] .flex.justify-between span { width: 100% !important; text-align: left !important; font-size: 1.6rem !important; white-space: normal !important; overflow: visible !important; }
     
     /* 🌟 作戦会議コメント・入力欄の文字サイズ確実な拡大 ＆ 枠の縦幅拡大 */
-    #strategy-chat-log { max-height: 35rem !important; }
+    #strategy-chat-log { max-height: 50rem !important; }
     #strategy-chat-log > div { font-size: 1.8rem !important; padding: 1.5rem 2.0rem !important; line-height: 1.6 !important; }
     #strategy-input { font-size: 1.8rem !important; padding: 1.5rem !important; }
     button[onclick="sendStrategyMessage()"] { font-size: 1.8rem !important; padding: 1.5rem 2.5rem !important; }
