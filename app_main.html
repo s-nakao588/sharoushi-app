@@ -489,6 +489,7 @@
                     </div>
                 </div>
                 <button id="btn-next-takuitsu" onclick="submitEvalAndNext()" class="w-full bg-slate-800 text-white font-black py-2.5 md:py-4 rounded-xl md:rounded-2xl shadow-md text-lg transition-all opacity-50 cursor-not-allowed">評価を選択してください</button>
+                <button id="btn-interim-strategy-takuitsu" onclick="openInterimStrategy()" class="hidden w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black py-2.5 md:py-3.5 rounded-xl md:rounded-2xl shadow-sm mt-2 md:mt-3 active:scale-95 transition-all text-sm md:text-lg border-2 border-indigo-200">💬 今の進捗で作戦を練り直す (一時停止)</button>
             </div>
             
             <div id="rest-proposal-menu-takuitsu" class="hidden w-full flex-col gap-2"></div>
@@ -523,6 +524,7 @@
                 <button id="btn-mark-sentaku" onclick="markEvalSentaku('迷った')" class="eval-btn flex-1 bg-yellow-100 hover:bg-yellow-200 text-yellow-800 border md:border-2 border-yellow-300 font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-sm active:scale-95 transition-all text-sm md:text-base">🟡 迷ったと記録</button>
                 <button id="btn-next-sentaku" onclick="nextQuestion()" class="eval-btn flex-[1.5] bg-slate-800 text-white font-black py-2 md:py-3 rounded-lg md:rounded-xl shadow-md active:scale-95 transition-all text-sm md:text-base w-full">次の問題へ ➡</button>
             </div>
+            <button id="btn-interim-strategy-sentaku" onclick="openInterimStrategy()" class="hidden w-full bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-black py-2.5 md:py-3.5 rounded-xl md:rounded-2xl shadow-sm mt-2 md:mt-3 active:scale-95 transition-all text-sm md:text-lg border-2 border-indigo-200">💬 今の進捗で作戦を練り直す (一時停止)</button>
         </div>
     </aside>
 

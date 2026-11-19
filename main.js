@@ -133,6 +133,9 @@ let isSleepyMode = false;
 let usedQuestionIds = new Set(); 
 let lastHealthCheckTimeSec = 0;
 
+// 🌟 途中の作戦変更（一時停止）フラグ
+let isInterimStrategy = false;
+
 window.onload = function() {
     try {
         const savedKey = localStorage.getItem('gemini_api_key');
@@ -583,6 +586,45 @@ function resetGameFlags() {
     if (tb) { tb.style.width = '100%'; tb.style.backgroundColor = '#10b981'; }
 }
 
+// 🌟 途中の作戦会議を開く関数
+function openInterimStrategy() {
+    // 択一の評価選択済みなら保存
+    if (currentQuestions[currentIndex] && currentQuestions[currentIndex]._type === '択一' && currentTakuitsuEval) {
+        const q = currentQuestions[currentIndex];
+        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_status', q_id: q._id, status: currentTakuitsuEval }) }).catch(e=>{});
+        if(!userHistory[q._id]) userHistory[q._id] = {};
+        userHistory[q._id].status = currentTakuitsuEval;
+    }
+
+    // タイマーと学習の停止
+    if (globalTimerInterval) { clearInterval(globalTimerInterval); globalTimerInterval = null; }
+    stopStudyTimer();
+    clearIdleTimers();
+    stopAudio();
+
+    isInterimStrategy = true;
+
+    // UIリセット＆切り替え
+    const ma = document.getElementById('main-area'); if(ma) { ma.classList.add('hidden'); ma.classList.remove('flex'); }
+    const aa = document.getElementById('aside-area'); if(aa) { aa.classList.add('hidden'); aa.classList.remove('flex'); }
+    const sc = document.getElementById('start-screen'); if(sc) { sc.classList.remove('hidden'); sc.classList.add('flex'); }
+
+    // 作戦会議チャットへ誘導
+    const si = document.getElementById('strategy-input');
+    if (si) {
+        let m = globalTimeLeftSeconds ? Math.floor(globalTimeLeftSeconds / 60) : 0;
+        let timeTxt = m > 0 ? `残り約${m}分あるけど、次はどの科目をやる？` : `次はどの科目をやる？`;
+        si.value = `残り時間で別の科目をやりたいです！`;
+        
+        const log = document.getElementById('strategy-chat-log');
+        if (log) {
+            log.innerHTML += `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-xl mt-2">特訓お疲れ様！タイマーは一時停止してるよ。${timeTxt}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+        if(typeof speakText === "function") speakText(`特訓お疲れ様！タイマーは一時停止してるよ。${timeTxt}`);
+    }
+}
+
 function startStrategyPlaylist(config) {
     if (allDatabase.length === 0) { return; }
     
@@ -612,6 +654,8 @@ function startStrategyPlaylist(config) {
     let qs = pool.slice(0, count);
     if (qs.length === 0) qs = allDatabase.sort(()=>Math.random()-0.5).slice(0, 10);
     
+    qs.forEach(q => usedQuestionIds.add(q._id));
+    
     playlistQueue = [{
         subjectName: config.subject || "AIセレクト",
         chapterName: `[作戦決行] ${config.target}`,
@@ -621,17 +665,22 @@ function startStrategyPlaylist(config) {
     
     resetGameFlags();
     currentPlaylistIndex = 0;
-    cumulativeQuestions = 0; setCorrectCount = 0; todayMistakes = [];
+    
+    if (!isInterimStrategy) {
+        cumulativeQuestions = 0; setCorrectCount = 0; todayMistakes = [];
+        const tl = document.getElementById('time-limit-select');
+        const timeLimitVal = tl ? tl.value : '無制限';
+        sendKarteLog('session_start', { mode: 'strategy_auto', target: config.target, count: count, timeLimit: timeLimitVal });
+    } else {
+        isInterimStrategy = false; 
+    }
+    
     isReviewAdded = false; isExtensionAdded = false; hasRestRecommended = false;
     initialPlaylistConfig = playlistQueue.map(q => ({ subjectName: q.subjectName, chapterName: q.chapterName, type: q.type }));
     
     const sc = document.getElementById('start-screen'); if (sc) sc.classList.add('hidden');
     const ma = document.getElementById('main-area'); if (ma) { ma.classList.remove('hidden'); ma.classList.add('flex'); }
     const aa = document.getElementById('aside-area'); if (aa) { aa.classList.remove('hidden'); aa.classList.add('flex'); }
-    
-    const tl = document.getElementById('time-limit-select');
-    const timeLimitVal = tl ? tl.value : '無制限';
-    sendKarteLog('session_start', { mode: 'strategy_auto', target: config.target, count: count, timeLimit: timeLimitVal });
     
     lastHealthCheckTimeSec = continuousStudyTimeSec; 
     
@@ -647,7 +696,30 @@ function executeStrategyPlan() {
     if (!userApiKey) { alert("APIキーを入力してください！"); return; }
     unlockAudio();
     
-    cumulativeQuestions = 0; setCorrectCount = 0; todayMistakes = []; usedQuestionIds = new Set();
+    if (!isInterimStrategy) {
+        cumulativeQuestions = 0; setCorrectCount = 0; todayMistakes = []; usedQuestionIds = new Set();
+        
+        const tl = document.getElementById('time-limit-select');
+        const timeLimitVal = tl ? tl.value : '無制限';
+        if (timeLimitVal === '無制限') globalTimeLeftSeconds = null;
+        else if (timeLimitVal === 'custom') {
+            const cti = document.getElementById('custom-time-input');
+            const customTimeStr = cti ? cti.value : '';
+            if (customTimeStr) {
+                const [h, m] = customTimeStr.split(':');
+                const target = new Date(); target.setHours(parseInt(h), parseInt(m), 0);
+                if (target <= new Date()) target.setDate(target.getDate() + 1);
+                globalTimeLeftSeconds = Math.floor((target - new Date()) / 1000);
+            } else globalTimeLeftSeconds = null;
+        } else if (timeLimitVal === '1分') globalTimeLeftSeconds = 60;
+        else globalTimeLeftSeconds = parseInt(timeLimitVal.replace('分','')) * 60;
+        
+        initialGlobalTime = globalTimeLeftSeconds;
+        sendKarteLog('session_start', { mode: 'strategy', plan: strategyPlan, timeLimit: timeLimitVal });
+    } else {
+        isInterimStrategy = false; // インターバル作戦会議時はリセットしない
+    }
+
     playlistQueue = []; totalQuestionsToPlay = 0;
     
     let planList = strategyPlan.plan || [strategyPlan];
@@ -681,6 +753,7 @@ function executeStrategyPlan() {
             let qs = (chapterMap[pickedChapter] || targetPool).slice(0, item.count || 10);
             
             if (qs.length > 0) {
+                qs.forEach(q => usedQuestionIds.add(q._id)); 
                 let displayChapter = pickedChapter;
                 if (item.target) displayChapter += ` (${item.target})`;
                 playlistQueue.push({ subjectName: item.subject, chapterName: displayChapter, type: qs[0]._type, questions: qs });
@@ -699,7 +772,6 @@ function executeStrategyPlan() {
     const ma = document.getElementById('main-area'); if (ma) { ma.classList.remove('hidden'); ma.classList.add('flex'); }
     const aa = document.getElementById('aside-area'); if (aa) { aa.classList.remove('hidden'); aa.classList.add('flex'); }
     
-    initialGlobalTime = null;
     eventTriggeredThisSession = false;
     let todayStr = new Date().toDateString();
     if (localStorage.getItem('last_play_date') !== todayStr) {
@@ -707,10 +779,6 @@ function executeStrategyPlan() {
         localStorage.setItem('trap_done_date', '');
         localStorage.setItem('today_sentaku_count', '0');
     }
-    
-    const tl = document.getElementById('time-limit-select');
-    const timeLimitVal = tl ? tl.value : '無制限';
-    sendKarteLog('session_start', { mode: 'strategy', plan: strategyPlan, timeLimit: timeLimitVal });
     
     lastHealthCheckTimeSec = continuousStudyTimeSec;
     
@@ -728,22 +796,30 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
     
     unlockAudio();
     
-    cumulativeQuestions = 0; setCorrectCount = 0; todayMistakes = []; usedQuestionIds = new Set();
+    if (!isInterimStrategy) {
+        cumulativeQuestions = 0; setCorrectCount = 0; todayMistakes = []; usedQuestionIds = new Set();
+        
+        const tl = document.getElementById('time-limit-select');
+        const timeLimitVal = tl ? tl.value : '無制限';
+        if (timeLimitVal === '無制限') globalTimeLeftSeconds = null;
+        else if (timeLimitVal === 'custom') {
+            const cti = document.getElementById('custom-time-input');
+            const customTimeStr = cti ? cti.value : '';
+            if (!customTimeStr) { alert("終了時刻を入力してください！"); return; }
+            const [h, m] = customTimeStr.split(':');
+            const target = new Date(); target.setHours(parseInt(h), parseInt(m), 0);
+            if (target <= new Date()) target.setDate(target.getDate() + 1);
+            globalTimeLeftSeconds = Math.floor((target - new Date()) / 1000);
+        } else if (timeLimitVal === '1分') globalTimeLeftSeconds = 60;
+        else globalTimeLeftSeconds = parseInt(timeLimitVal.replace('分','')) * 60;
+        
+        initialGlobalTime = globalTimeLeftSeconds;
+        sendKarteLog('session_start', { mode: mode, targetSubject: targetSubject, excludePerfect: excludePerfect, count: count, timeLimit: timeLimitVal });
+    } else {
+        isInterimStrategy = false; // インターバル作戦会議時はリセットしない
+    }
+
     playlistQueue = []; totalQuestionsToPlay = 0;
-    
-    const tl = document.getElementById('time-limit-select');
-    const timeLimitVal = tl ? tl.value : '無制限';
-    if (timeLimitVal === '無制限') globalTimeLeftSeconds = null;
-    else if (timeLimitVal === 'custom') {
-        const cti = document.getElementById('custom-time-input');
-        const customTimeStr = cti ? cti.value : '';
-        if (!customTimeStr) { alert("終了時刻を入力してください！"); return; }
-        const [h, m] = customTimeStr.split(':');
-        const target = new Date(); target.setHours(parseInt(h), parseInt(m), 0);
-        if (target <= new Date()) target.setDate(target.getDate() + 1);
-        globalTimeLeftSeconds = Math.floor((target - new Date()) / 1000);
-    } else if (timeLimitVal === '1分') globalTimeLeftSeconds = 60;
-    else globalTimeLeftSeconds = parseInt(timeLimitVal.replace('分','')) * 60;
 
     const td = document.getElementById('time-display');
     if (globalTimeLeftSeconds !== null) {
@@ -764,6 +840,7 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
                 if(excludePerfect) p = p.filter(q => !(userHistory[q._id] && userHistory[q._id].status === '完璧'));
                 if(p.length > 0) {
                     let qs = p.sort(()=>Math.random()-0.5).slice(0, 10);
+                    qs.forEach(q => usedQuestionIds.add(q._id)); 
                     playlistQueue.push({ subjectName: subj, chapterName: chap, type: qs[0]._type, questions: qs });
                     totalQuestionsToPlay += qs.length;
                 }
@@ -779,6 +856,7 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
         if (excludePerfect) pool = pool.filter(q => !(userHistory[q._id] && userHistory[q._id].status === '完璧'));
         let qs = pool.sort(()=>Math.random()-0.5).slice(0, count);
         if(qs.length === 0) { alert("条件に合う問題がありません。"); return; }
+        qs.forEach(q => usedQuestionIds.add(q._id)); 
         playlistQueue = [{ subjectName: targetSubject, chapterName: "ミックス", type: qs[0]._type, questions: qs }];
         totalQuestionsToPlay = qs.length;
     }
@@ -793,7 +871,6 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
     const ma = document.getElementById('main-area'); if (ma) { ma.classList.remove('hidden'); ma.classList.add('flex'); }
     const aa = document.getElementById('aside-area'); if (aa) { aa.classList.remove('hidden'); aa.classList.add('flex'); }
     
-    initialGlobalTime = globalTimeLeftSeconds;
     eventTriggeredThisSession = false;
     let todayStr = new Date().toDateString();
     if (localStorage.getItem('last_play_date') !== todayStr) {
@@ -802,8 +879,6 @@ function startTraining(mode, targetSubject = null, excludePerfect = false, count
         localStorage.setItem('today_sentaku_count', '0');
     }
 
-    sendKarteLog('session_start', { mode: mode, targetSubject: targetSubject, excludePerfect: excludePerfect, count: count, timeLimit: timeLimitVal });
-    
     lastHealthCheckTimeSec = continuousStudyTimeSec;
 
     if (!isMuted) {
@@ -1045,13 +1120,20 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
     });
     
     const nextBtnTak = document.getElementById('btn-next-takuitsu');
+    const interimBtnTak = document.getElementById('btn-interim-strategy-takuitsu');
     if(nextBtnTak) {
         if(!isSenbonKnock && !isTimeAttack && !isBonusMode && !isSuddenDeath && !isCountdownRelay && !isTrapMode && !isSurpriseAttack) {
             nextBtnTak.classList.add('opacity-50', 'cursor-not-allowed');
             nextBtnTak.textContent = "評価を選択してください";
+            if (interimBtnTak && currentIndex >= currentQuestions.length - 1) {
+                interimBtnTak.classList.remove('hidden');
+            } else if (interimBtnTak) {
+                interimBtnTak.classList.add('hidden');
+            }
         } else {
             nextBtnTak.classList.remove('opacity-50', 'cursor-not-allowed');
             nextBtnTak.textContent = "次の問題へ ➡";
+            if (interimBtnTak) interimBtnTak.classList.add('hidden');
         }
     }
 
@@ -1265,7 +1347,8 @@ function answerTakuitsu(userAnswer) {
     if (egt) {
         if (!isSenbonKnock && !isTimeAttack && !isBonusMode && !isSuddenDeath && !isCountdownRelay && !isTrapMode && !isSurpriseAttack) {
             if (currentIndex >= currentQuestions.length - 1) {
-                egt.textContent = "自己評価を選んでセットを完了してね！";
+                let hasNext = (currentPlaylistIndex < playlistQueue.length - 1) || (globalTimeLeftSeconds !== null && globalTimeLeftSeconds > 0);
+                egt.textContent = hasNext ? "自己評価を選んで次のセットへ進んでね！" : "自己評価を選んで特訓を完了してね！";
             } else {
                 egt.textContent = "自己評価を選んで次へ進んでね！";
             }
@@ -1376,6 +1459,7 @@ function submitSentakuAnswers() {
     if (seas) { seas.classList.remove('hidden'); seas.classList.add('block', '!block'); }
     
     const toggleBtnSentaku = document.getElementById('sentaku-eval-toggle');
+    const interimBtnSen = document.getElementById('btn-interim-strategy-sentaku');
     if(toggleBtnSentaku) {
         toggleBtnSentaku.classList.remove('hidden');
         toggleBtnSentaku.innerHTML = '▼ 評価をたたむ';
@@ -1402,7 +1486,15 @@ function submitSentakuAnswers() {
     const bns = document.getElementById('btn-next-sentaku');
     if (bns) {
         if (currentIndex >= currentQuestions.length - 1) {
-            bns.textContent = (currentPlaylistIndex < playlistQueue.length - 1) ? "🟢 次の科目セットへ" : "🟢 特訓終了！判定へ";
+            let hasNext = (currentPlaylistIndex < playlistQueue.length - 1) || (globalTimeLeftSeconds !== null && globalTimeLeftSeconds > 0 && !isSenbonKnock && !isTimeAttack && !isBonusMode && !isSuddenDeath && !isCountdownRelay && !isTrapMode && !isHardcore && !isSurpriseAttack);
+            bns.textContent = hasNext ? "🟢 次の科目セットへ" : "🟢 特訓終了！判定へ";
+            if (interimBtnSen && hasNext && !isSenbonKnock && !isTimeAttack && !isBonusMode && !isSuddenDeath && !isCountdownRelay && !isTrapMode && !isHardcore && !isSurpriseAttack) {
+                interimBtnSen.classList.remove('hidden');
+            } else if (interimBtnSen) {
+                interimBtnSen.classList.add('hidden');
+            }
+        } else {
+            if (interimBtnSen) interimBtnSen.classList.add('hidden');
         }
     }
     
@@ -1467,7 +1559,7 @@ function submitEvalAndNext() {
         userHistory[q._id].status = currentTakuitsuEval;
     }
     
-    if (currentIndex >= currentQuestions.length - 1 && currentPlaylistIndex >= playlistQueue.length - 1) {
+    if (currentIndex >= currentQuestions.length - 1 && currentPlaylistIndex >= playlistQueue.length - 1 && (!globalTimeLeftSeconds || globalTimeLeftSeconds <= 0)) {
         if (continuousStudyTimeSec - lastHealthCheckTimeSec >= 1200) {
             showHealthHearingPanel();
             return;
@@ -1493,7 +1585,7 @@ function markEvalSentaku(status) {
         }
     });
     
-    if (currentIndex >= currentQuestions.length - 1 && currentPlaylistIndex >= playlistQueue.length - 1) {
+    if (currentIndex >= currentQuestions.length - 1 && currentPlaylistIndex >= playlistQueue.length - 1 && (!globalTimeLeftSeconds || globalTimeLeftSeconds <= 0)) {
         if (continuousStudyTimeSec - lastHealthCheckTimeSec >= 1200) {
             showHealthHearingPanel();
             return;
@@ -1719,6 +1811,33 @@ function nextQuestion() {
             startNextPlaylistSet();
         } else {
             if (checkSpecialEvents()) return;
+            
+            // 🌟時間が残っていれば自動補充
+            if (globalTimeLeftSeconds !== null && globalTimeLeftSeconds > 0 && !isSenbonKnock && !isTimeAttack && !isBonusMode && !isSuddenDeath && !isCountdownRelay && !isTrapMode && !isHardcore && !isSurpriseAttack) {
+                let configIndex = currentPlaylistIndex % initialPlaylistConfig.length;
+                let config = initialPlaylistConfig[configIndex];
+                let pool = allDatabase.filter(q => q._subjectName === config.subjectName && q._type === config.type);
+                
+                let baseChap = config.chapterName.replace(" (自動継続)", "");
+                if (baseChap !== "ミックス" && !baseChap.includes("作戦決行")) {
+                    pool = pool.filter(q => q.項目 === baseChap);
+                }
+                
+                let unusedPool = pool.filter(q => !usedQuestionIds.has(q._id));
+                if (unusedPool.length < 10) {
+                    unusedPool = pool; 
+                    usedQuestionIds.clear();
+                }
+                
+                let qs = unusedPool.sort(() => Math.random() - 0.5).slice(0, 10);
+                if (qs.length > 0) {
+                    qs.forEach(q => usedQuestionIds.add(q._id)); // 🌟 既出リストに登録
+                    let newChap = baseChap + " (自動継続)";
+                    playlistQueue.push({ subjectName: config.subjectName, chapterName: newChap, type: config.type, questions: qs });
+                    startNextPlaylistSet();
+                    return;
+                }
+            }
             
             if (isTimeUp && continuousStudyTimeSec >= 3600 && !isExtensionAdded) {
                 if (typeof judgeTimeUpExtension === "function") judgeTimeUpExtension();
