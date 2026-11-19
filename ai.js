@@ -21,6 +21,7 @@ async function generateAiMessage(promptType, data = {}, isFirstLoad = false, for
 
     let prompt = `あなたは社労士試験の専属講師（若い女性）です。受講生をサポートします。
     現在のモード（性格）は「${cond}」、受講生の体調は「${health}」です。
+    【重要】受講生は「労働基準法」「安全衛生法」「健康保険法」「厚生年金保険法」の4科目以外は免除されています。この4科目以外について学習を促す発言や提案は絶対にしないでください。
     性格に合わせてセリフの厳しさやテンションを変えてください（アニメ口調は絶対禁止。1〜2文の自然な口語で）。\n`;
 
     if (forceNight) {
@@ -126,7 +127,9 @@ async function generateDashboardAdvice(stats) {
     if (!commentEl) return;
     commentEl.innerHTML = '<span class="typing">データ分析中...</span>';
     
-    let prompt = `受講生のダッシュボードデータです。最も進捗が遅れている科目や、正答率が低い科目を1つ見つけ、1〜2文で激励のアドバイスをしてください。アニメ口調は禁止です。データ：${JSON.stringify(stats).substring(0, 1000)}`;
+    let prompt = `受講生のダッシュボードデータです。最も進捗が遅れている科目や、正答率が低い科目を1つ見つけ、1〜2文で激励のアドバイスをしてください。アニメ口調は禁止です。
+    【重要】受講生は「労働基準法」「安全衛生法」「健康保険法」「厚生年金保険法」の4科目以外は免除されています。これら4科目以外についての言及は避けてください。
+    データ：${JSON.stringify(stats).substring(0, 1000)}`;
     
     try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
@@ -221,13 +224,17 @@ async function sendStrategyMessage() {
 ・スケジュール状況: ${scheduleInfo}
 ・ユーザーの発言: 「${userText}」
 
+【重要ルール】
+受講生は「労働基準法」「安全衛生法」「健康保険法」「厚生年金保険法」の4科目以外は免除されています。
+したがって、出力するプラン（時間割）の科目は必ずこの4科目（択一式または選択式）のみで構成し、絶対に他の科目を含めないでください。
+
 ユーザーの発言に対する返答と、学習プラン（フェーズごとの時間割）をJSONで出力してください。
 時間は指定された目標時間の枠内で配分してください（無制限の場合は合計60〜120分程度で仮組み）。
 必ず以下のJSON形式でのみ出力し、バッククォート等の装飾はしないでください。
 {
   "message": "ユーザーへの返答セリフ（1〜2文で自然な口語。アニメ口調は絶対禁止。残り稼働日数や提案内容に触れること）",
   "plan": [
-    { "phase": "導入/メイン/総仕上げ等", "subject": "労働基準法(択一)、安全衛生法(択一)等の正確な科目名、または全科目", "target": "復習/弱点/未着手/ランダム", "minutes": 30 },
+    { "phase": "導入/メイン/総仕上げ等", "subject": "労働基準法(択一)、安全衛生法(択一)等の正確な科目名", "target": "復習/弱点/未着手/ランダム", "minutes": 30 },
     { "phase": "...", "subject": "...", "target": "...", "minutes": 60 }
   ]
 }`;
