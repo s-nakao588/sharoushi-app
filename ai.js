@@ -225,11 +225,11 @@ async function sendStrategyMessage() {
 ・ユーザーの発言: 「${userText}」
 
 【重要ルール】
-受講生は「労働基準法」「安全衛生法」「健康保険法」「厚生年金保険法」の4科目以外は免除されています。
-したがって、出力するプラン（時間割）の科目は必ずこの4科目（択一式または選択式）のみで構成し、絶対に他の科目を含めないでください。
+1. 受講生は「労働基準法」「安全衛生法」「健康保険法」「厚生年金保険法」の4科目以外は免除されています。出力するプランの科目は必ずこの4科目のみで構成し、他の科目は含めないでください。
+2. ユーザーの発言が単なる質問や雑談（「あと何日？」など）であり、プランの作成や変更を求めていないと判断した場合は、"plan"の配列を空（[]）にして、会話の返事のみを返してください。
 
 ユーザーの発言に対する返答と、学習プラン（フェーズごとの時間割）をJSONで出力してください。
-時間は指定された目標時間の枠内で配分してください（無制限の場合は合計60〜120分程度で仮組み）。
+時間は指定された目標時間の枠内で配分してください。
 必ず以下のJSON形式でのみ出力し、バッククォート等の装飾はしないでください。
 {
   "message": "ユーザーへの返答セリフ（1〜2文で自然な口語。アニメ口調は絶対禁止。残り稼働日数や提案内容に触れること）",
@@ -246,7 +246,7 @@ async function sendStrategyMessage() {
         });
         const data = await res.json();
         let text = data.candidates[0].content.parts[0].text;
-        text = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        text = text.replace(/```json/g, '').replace(/ কলকাতায়/g, '').replace(/```/g, '').trim();
         const aiRes = JSON.parse(text);
 
         const indicator = document.getElementById('typing-indicator');
@@ -254,6 +254,9 @@ async function sendStrategyMessage() {
 
         log.innerHTML += `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 rounded-2xl rounded-tl-none max-w-[80%] shadow-sm font-bold text-sm md:text-xl mt-2">${aiRes.message}</div>`;
         
+        const btn = document.getElementById('btn-strategy-start');
+        
+        // プランが存在する場合のみスケジュールを表示し、スタートボタンを出す
         if (aiRes.plan && aiRes.plan.length > 0) {
             strategyPlan = { plan: aiRes.plan };
             
@@ -271,12 +274,15 @@ async function sendStrategyMessage() {
             planHtml += `</div></div>`;
             log.innerHTML += planHtml;
             
-            const btn = document.getElementById('btn-strategy-start');
             if (btn) {
                 btn.classList.remove('hidden');
                 btn.textContent = "🔥 このプランで特訓スタート！";
             }
+        } else {
+            // 単なる雑談の場合はスタートボタンを隠す
+            if (btn) btn.classList.add('hidden');
         }
+        
         log.scrollTop = log.scrollHeight;
         if(typeof speakText === "function") speakText(aiRes.message);
 
