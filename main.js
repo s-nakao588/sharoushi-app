@@ -2091,8 +2091,29 @@ function resumeTimer() {
         startIdleTimers(); 
     }
 }
-function openNapMenu() { stopStudyTimer(); clearIdleTimers(); const n = document.getElementById('nap-overlay'); if(n) { n.classList.remove('hidden'); n.classList.add('flex'); } if(typeof generateAiMessage === "function") generateAiMessage("nap_start", { textOnly: true });}
-function cancelNapMenu() { const n = document.getElementById('nap-overlay'); if(n) { n.classList.add('hidden'); n.classList.remove('flex'); } resumeTimer(); }
+
+function openNapMenu() {
+    stopStudyTimer();
+    clearIdleTimers();
+    const n = document.getElementById('nap-overlay');
+    if (n) { n.classList.remove('hidden'); n.classList.add('flex'); }
+    const ns = document.getElementById('nap-setup');
+    if (ns) ns.classList.remove('hidden');
+    const nr = document.getElementById('nap-running');
+    if (nr) { nr.classList.add('hidden'); nr.classList.remove('flex'); }
+    if (typeof generateAiMessage === "function") generateAiMessage("nap_start", { textOnly: true });
+}
+
+function cancelNapMenu() {
+    const n = document.getElementById('nap-overlay');
+    if (n) { n.classList.add('hidden'); n.classList.remove('flex'); }
+    const ns = document.getElementById('nap-setup');
+    if (ns) ns.classList.remove('hidden');
+    const nr = document.getElementById('nap-running');
+    if (nr) { nr.classList.add('hidden'); nr.classList.remove('flex'); }
+    resumeTimer();
+}
+
 function startNap(minutes) { napSecondsLeft = minutes * 60; localStorage.setItem('last_nap_time', new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'})); sendKarteLog('nap_start', { time: new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}), durationMinutes: minutes }); runNapTimer(); }
 function startNapCustom() {
     const ti = document.getElementById('nap-time-input'); if(!ti) return;
@@ -2133,10 +2154,13 @@ function playAlarmSound() {
     osc.connect(gain); gain.connect(audioCtx.destination);
     osc.start(); osc.stop(audioCtx.currentTime + 0.3);
 }
+
 function stopNap() {
-    clearInterval(napInterval); 
+    clearInterval(napInterval);
     const nc = document.getElementById('nap-countdown'); if(nc) nc.classList.remove('animate-ping', 'text-red-500');
     const no = document.getElementById('nap-overlay'); if(no) { no.classList.add('hidden'); no.classList.remove('flex'); }
+    const ns = document.getElementById('nap-setup'); if(ns) ns.classList.remove('hidden');
+    const nr = document.getElementById('nap-running'); if(nr) { nr.classList.add('hidden'); nr.classList.remove('flex'); }
     
     continuousStudyTimeSec = 0;
     finishAllPlaylists();
