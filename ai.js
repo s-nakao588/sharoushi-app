@@ -171,10 +171,13 @@ async function sendStrategyMessage() {
     if(typeof sendKarteLog === "function") sendKarteLog('strategy_chat', { message: input });
     if(typeof saveRequestHabit === "function") saveRequestHabit(input);
     const logEl = document.getElementById('strategy-chat-log');
-    logEl.innerHTML += `<div class="self-end bg-indigo-100 text-indigo-900 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tr-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-xs md:text-base">${input}</div>`;
+    
+    // 🌟 修正：作戦会議の文字サイズを md:text-xl (現在の挨拶文字サイズ) に強制拡大
+    logEl.innerHTML += `<div class="self-end bg-indigo-100 text-indigo-900 p-3 md:p-4 rounded-xl md:rounded-2xl rounded-tr-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl mt-2">${input}</div>`;
     logEl.scrollTop = logEl.scrollHeight; inputEl.value = "";
+    
     const typingId = "typing-" + Date.now();
-    logEl.innerHTML += `<div id="${typingId}" class="self-start bg-white border-2 border-pink-200 text-slate-700 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-xs md:text-base"><span class="typing">💬 考えてるよ...</span></div>`;
+    logEl.innerHTML += `<div id="${typingId}" class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 md:p-4 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl mt-2"><span class="typing">💬 考えてるよ...</span></div>`;
     logEl.scrollTop = logEl.scrollHeight;
     
     const cond = document.getElementById('condition-select').value; 
@@ -231,19 +234,21 @@ async function sendStrategyMessage() {
         text = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const aiRes = JSON.parse(text);
 
-        document.getElementById(typingId).outerHTML = `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-2 md:p-3 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-xs md:text-base">${aiRes.message}</div>`;
+        // 🌟 文字サイズ拡大
+        document.getElementById(typingId).outerHTML = `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 md:p-4 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl mt-2">${aiRes.message}</div>`;
         
         const btn = document.getElementById('btn-strategy-start');
         
         if (aiRes.plan && aiRes.plan.length > 0) {
             strategyPlan = { plan: aiRes.plan };
-            let planHtml = `<div class="w-full bg-indigo-50 border-2 border-indigo-200 rounded-xl p-3 md:p-4 mt-2 shadow-sm text-left">
-                <h4 class="text-indigo-800 font-black text-xs md:text-sm mb-2 border-b border-indigo-200 pb-1">📋 AI提案スケジュール</h4>
-                <div class="flex flex-col gap-2">`;
+            // 🌟 スケジュール表示枠も文字サイズを拡大して見やすく
+            let planHtml = `<div class="w-full bg-indigo-50 border-2 border-indigo-200 rounded-xl p-3 md:p-5 mt-3 shadow-sm text-left">
+                <h4 class="text-indigo-800 font-black text-sm md:text-lg mb-3 border-b border-indigo-200 pb-2">📋 AI提案スケジュール</h4>
+                <div class="flex flex-col gap-3">`;
             
             aiRes.plan.forEach((p, i) => {
-                planHtml += `<div class="bg-white p-2 rounded-lg border border-indigo-100 shadow-sm text-xs md:text-sm">
-                    <div class="font-black text-indigo-600 mb-1">フェーズ${i+1} <span class="bg-indigo-100 text-indigo-800 px-1.5 py-0.5 rounded text-[10px] md:text-xs ml-1">⏱️ ${p.minutes}分</span></div> 
+                planHtml += `<div class="bg-white p-3 rounded-lg border border-indigo-100 shadow-sm text-sm md:text-lg">
+                    <div class="font-black text-indigo-600 mb-1">フェーズ${i+1} <span class="bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded text-xs md:text-sm ml-2">⏱️ ${p.minutes}分</span></div> 
                     <div class="font-bold text-slate-700">📚 ${p.subject} - ${p.target}</div>
                 </div>`;
             });
@@ -256,10 +261,11 @@ async function sendStrategyMessage() {
         }
         
         logEl.scrollTop = logEl.scrollHeight;
-        if(typeof speakText === "function") speakText(aiRes.message);
+        
+        // 🌟 修正：作戦会議での音声読み上げ(speakText)を削除（サクッと始められるように）
         
     } catch(e) {
-        document.getElementById(typingId).outerHTML = `<div class="self-start bg-red-50 text-red-600 p-2 md:p-3 rounded-xl md:rounded-2xl max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-xs md:text-base border border-red-200">⚠️ 通信エラーが発生したみたい。もう一度話しかけてみて！</div>`;
+        document.getElementById(typingId).outerHTML = `<div class="self-start bg-red-50 text-red-600 p-3 md:p-4 rounded-xl md:rounded-2xl max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl mt-2 border border-red-200">⚠️ 通信エラーが発生したみたい。もう一度話しかけてみて！</div>`;
         logEl.scrollTop = logEl.scrollHeight;
     }
 }

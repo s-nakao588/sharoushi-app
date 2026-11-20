@@ -78,40 +78,72 @@ option.hidden-option { display: none !important; }
     #strategy-input { font-size: 1.8rem !important; padding: 1.5rem !important; }
     button[onclick="sendStrategyMessage()"] { font-size: 1.8rem !important; padding: 1.5rem 2.5rem !important; }
 
-    /* 🌟 iPad用：各種ボタンの縦幅1.5倍 ＆ アクションボタンの幅統一 🌟 */
+    /* 🌟 iPad用：各種ボタンの強制名指し拡張（HTMLのクラス上書きに負けない絶対指定） 🌟 */
     
-    /* 1. 特訓系ボタン（AI分析、忘却曲線、全科目択一・選択・ミックス、カスタム特訓）の縦幅1.5倍 */
-    .btn-training-ipad { 
-        padding-top: 3.5rem !important; 
-        padding-bottom: 3.5rem !important; 
-        font-size: 2.2rem !important; 
-        border-radius: 2rem !important; 
+    /* 1. 特訓系ボタン（AI分析、忘却曲線、全科目択一・選択・ミックス）の縦幅1.5倍 */
+    button[onclick="triggerAnalysisStrategy()"],
+    button[onclick="triggerEbbinghausStrategy()"],
+    button[onclick="startTraining('quick', '択一')"],
+    button[onclick="startTraining('quick', '選択')"],
+    button[onclick="startTraining('quick', 'ミックス')"] {
+        padding-top: 3.5rem !important;
+        padding-bottom: 3.5rem !important;
+        min-height: 130px !important;
+        border-radius: 2rem !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
     }
     
-    /* カスタム特訓のみさらに大きく */
+    /* 内部の文字サイズも強制拡大（Tailwindの指定を破壊して適用） */
+    button[onclick="triggerAnalysisStrategy()"] h3,
+    button[onclick="triggerEbbinghausStrategy()"] h3 {
+        font-size: 2.2rem !important;
+        margin-bottom: 0.8rem !important;
+    }
+    button[onclick="triggerAnalysisStrategy()"] p,
+    button[onclick="triggerEbbinghausStrategy()"] p {
+        font-size: 1.6rem !important;
+    }
+    button[onclick="startTraining('quick', '択一')"],
+    button[onclick="startTraining('quick', '選択')"],
+    button[onclick="startTraining('quick', 'ミックス')"] {
+        font-size: 2.4rem !important;
+    }
+    
+    /* カスタム特訓スタートのみさらに巨大化 */
     button[onclick="startTraining('normal')"] { 
-        padding-top: 3.8rem !important; 
-        padding-bottom: 3.8rem !important; 
+        padding-top: 4.5rem !important; 
+        padding-bottom: 4.5rem !important; 
         font-size: 3.2rem !important; 
         border-radius: 2.5rem !important; 
+        min-height: 150px !important;
     }
 
     /* 2. ノート系ボタン（フリーノート、マイノート集、API設定等）の縦幅1.5倍 */
-    .btn-note-ipad { 
+    button[onclick="openNewFreeNotebook()"],
+    button[onclick="openNotebookListModal()"],
+    button[onclick="document.getElementById('api-settings-wrapper').classList.toggle('hidden')"] { 
         padding-top: 1.5rem !important; 
         padding-bottom: 1.5rem !important; 
         font-size: 1.6rem !important; 
     }
 
     /* 3. アクション系ボタン（離席、5分休み、仮眠、終了、音声など）の縦横拡大＆統一 */
-    .action-btn-ipad { 
+    button[onclick="startPause()"],
+    button[onclick="startNapQuick(5)"],
+    button[onclick="openNapMenu()"],
+    button[onclick="location.reload()"],
+    button[onclick="toggleSound()"],
+    button[onclick="surrenderSenbonKnock()"] { 
         padding-top: 1.2rem !important; 
         padding-bottom: 1.2rem !important; 
         padding-left: 2.5rem !important; 
         padding-right: 2.5rem !important; 
         font-size: 1.6rem !important; 
-        min-width: 140px !important; /* 🌟 5分休みの幅に合わせて全体を統一 */
+        min-width: 140px !important; /* 5分休みの幅に合わせて全体を統一 */
         text-align: center !important;
+        justify-content: center !important;
     }
 
     /* その他既存のiPad用調整 */
@@ -218,7 +250,7 @@ option.hidden-option { display: none !important; }
     #eval-guide-text, #eval-guide-text-takuitsu { font-size: 0.85rem !important; margin-bottom: 0.5rem !important; }
     .btn-mistake-action { font-size: 0.9rem !important; padding: 0.5rem 1rem !important; }
 
-    /* 🌟 スマホ版での履歴表示エリア完全非表示 🌟 */
+    /* 🌟 スマ版での履歴表示エリア完全非表示 🌟 */
     #recent-history-area { display: none !important; }
 
     /* 🌟 スマホ版の下部固定フロート＆順序入れ替え 🌟 */
