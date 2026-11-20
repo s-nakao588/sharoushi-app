@@ -81,11 +81,11 @@ option.hidden-option { display: none !important; }
     /* 🌟 iPad用：各種ボタンの強制名指し拡張（HTMLのクラス上書きに負けない絶対指定） 🌟 */
     
     /* 1. 特訓系ボタン（AI分析、忘却曲線、全科目択一・選択・ミックス）の縦幅1.5倍 */
-    button[onclick="triggerAnalysisStrategy()"],
-    button[onclick="triggerEbbinghausStrategy()"],
-    button[onclick="startTraining('quick', '択一')"],
-    button[onclick="startTraining('quick', '選択')"],
-    button[onclick="startTraining('quick', 'ミックス')"] {
+    button[onclick*="triggerAnalysisStrategy"],
+    button[onclick*="triggerEbbinghausStrategy"],
+    button[onclick*="startTraining('quick', '択一')"],
+    button[onclick*="startTraining('quick', '選択')"],
+    button[onclick*="startTraining('quick', 'ミックス')"] {
         padding-top: 3.5rem !important;
         padding-bottom: 3.5rem !important;
         min-height: 130px !important;
@@ -95,27 +95,29 @@ option.hidden-option { display: none !important; }
         justify-content: center !important;
     }
     
-    /* 内部の文字サイズも強制拡大（Tailwindの指定を破壊して適用） */
-    button[onclick="triggerAnalysisStrategy()"] h3,
-    button[onclick="triggerEbbinghausStrategy()"] h3 {
-        font-size: 2.2rem !important;
+    /* 内部の文字サイズも強制拡大（部分一致セレクタで確実に適用） */
+    button[onclick*="triggerAnalysisStrategy"] h3,
+    button[onclick*="triggerEbbinghausStrategy"] h3 {
+        font-size: 2.8rem !important;
         margin-bottom: 0.8rem !important;
     }
-    button[onclick="triggerAnalysisStrategy()"] p,
-    button[onclick="triggerEbbinghausStrategy()"] p {
-        font-size: 1.6rem !important;
+    button[onclick*="triggerAnalysisStrategy"] p,
+    button[onclick*="triggerEbbinghausStrategy"] p {
+        font-size: 1.8rem !important;
     }
-    button[onclick="startTraining('quick', '択一')"],
-    button[onclick="startTraining('quick', '選択')"],
-    button[onclick="startTraining('quick', 'ミックス')"] {
-        font-size: 2.4rem !important;
+    button[onclick*="startTraining('quick', '択一')"],
+    button[onclick*="startTraining('quick', '選択')"],
+    button[onclick*="startTraining('quick', 'ミックス')"] {
+        font-size: 2.8rem !important;
     }
     
-    /* カスタム特訓スタートのみさらに巨大化 */
-    button[onclick="startTraining('normal')"] { 
+    /* カスタム特訓スタートのみさらに巨大化・極太・目立たせ */
+    button[onclick*="startTraining('normal')"] { 
         padding-top: 4.5rem !important; 
         padding-bottom: 4.5rem !important; 
-        font-size: 3.2rem !important; 
+        font-size: 4.5rem !important; 
+        font-weight: 900 !important;
+        letter-spacing: 0.1em !important;
         border-radius: 2.5rem !important; 
         min-height: 150px !important;
     }
@@ -250,7 +252,7 @@ option.hidden-option { display: none !important; }
     #eval-guide-text, #eval-guide-text-takuitsu { font-size: 0.85rem !important; margin-bottom: 0.5rem !important; }
     .btn-mistake-action { font-size: 0.9rem !important; padding: 0.5rem 1rem !important; }
 
-    /* 🌟 スマ版での履歴表示エリア完全非表示 🌟 */
+    /* 🌟 スマホ版での履歴表示エリア完全非表示 🌟 */
     #recent-history-area { display: none !important; }
 
     /* 🌟 スマホ版の下部固定フロート＆順序入れ替え 🌟 */
