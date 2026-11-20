@@ -255,6 +255,17 @@ option.hidden-option { display: none !important; }
     /* 🌟 スマホ版での履歴表示エリア完全非表示 🌟 */
     #recent-history-area { display: none !important; }
 
+    /* 🌟 スマホ版特訓ヘッダーを2段にして「進捗(X問目)」と時間を確実に見せる */
+    #main-header-inner {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 0.5rem !important;
+    }
+    #main-header-inner > div:last-child {
+        width: 100% !important;
+        justify-content: space-between !important;
+    }
+
     /* 🌟 スマホ版の下部固定フロート＆順序入れ替え 🌟 */
     body { display: block !important; overflow: hidden !important; }
     
