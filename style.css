@@ -78,8 +78,41 @@ option.hidden-option { display: none !important; }
     #strategy-input { font-size: 1.8rem !important; padding: 1.5rem !important; }
     button[onclick="sendStrategyMessage()"] { font-size: 1.8rem !important; padding: 1.5rem 2.5rem !important; }
 
-    /* 🌟 カスタム特訓スタートボタンの高さ・文字サイズ拡大 */
-    button[onclick="startTraining('normal')"] { padding-top: 2.5rem !important; padding-bottom: 2.5rem !important; font-size: 2.8rem !important; border-radius: 2rem !important; }
+    /* 🌟 iPad用：各種ボタンの縦幅1.5倍 ＆ アクションボタンの幅統一 🌟 */
+    
+    /* 1. 特訓系ボタン（AI分析、忘却曲線、全科目択一・選択・ミックス、カスタム特訓）の縦幅1.5倍 */
+    .btn-training-ipad { 
+        padding-top: 3.5rem !important; 
+        padding-bottom: 3.5rem !important; 
+        font-size: 2.2rem !important; 
+        border-radius: 2rem !important; 
+    }
+    
+    /* カスタム特訓のみさらに大きく */
+    button[onclick="startTraining('normal')"] { 
+        padding-top: 3.8rem !important; 
+        padding-bottom: 3.8rem !important; 
+        font-size: 3.2rem !important; 
+        border-radius: 2.5rem !important; 
+    }
+
+    /* 2. ノート系ボタン（フリーノート、マイノート集、API設定等）の縦幅1.5倍 */
+    .btn-note-ipad { 
+        padding-top: 1.5rem !important; 
+        padding-bottom: 1.5rem !important; 
+        font-size: 1.6rem !important; 
+    }
+
+    /* 3. アクション系ボタン（離席、5分休み、仮眠、終了、音声など）の縦横拡大＆統一 */
+    .action-btn-ipad { 
+        padding-top: 1.2rem !important; 
+        padding-bottom: 1.2rem !important; 
+        padding-left: 2.5rem !important; 
+        padding-right: 2.5rem !important; 
+        font-size: 1.6rem !important; 
+        min-width: 140px !important; /* 🌟 5分休みの幅に合わせて全体を統一 */
+        text-align: center !important;
+    }
 
     /* その他既存のiPad用調整 */
     #ai-message { font-size: 2.0rem !important; line-height: 1.6 !important; }
