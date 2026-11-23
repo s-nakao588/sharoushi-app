@@ -185,8 +185,6 @@ function unlockAudio() {
         
         const player = document.getElementById('tts-player');
         if (player) {
-            // 🌟 修正：解答のたびに最初のコメントが再生されるバグの防止
-            // 毎回play()を呼ぶと前回の音声が流れてしまうため、アンロック実行は初回のみに制限
             if (!player.hasAttribute('data-unlocked')) {
                 player.play().catch(e => {}); 
                 player.setAttribute('data-unlocked', 'true');
@@ -400,6 +398,7 @@ function checkAllLoaded() {
     }
 }
 
+// 🌟 修正：進捗率計算の際に名前の揺れ（play_count等）を吸収して未プレイ化を防ぐ
 function getStatsSummary() {
     let stats = {};
     allDatabase.forEach(q => {
@@ -412,15 +411,17 @@ function getStatsSummary() {
         let pCount = 0;
         let isPerf = false;
         
-        if (hist && hist.playCount > 0) {
-            pCount = hist.playCount;
+        if (hist) {
+            pCount = hist.playCount !== undefined ? hist.playCount : (hist.play_count !== undefined ? hist.play_count : 0);
+            let hStr = hist.historyStr || hist.history_str || "";
             isPerf = (hist.status === '完璧');
-            if (hist.historyStr) {
+            
+            if (pCount > 0 && hStr) {
                 stats[subj].played++; stats[subj].chapters[chap].played++;
-                let hArr = String(hist.historyStr).split(',');
+                let hArr = String(hStr).split(',');
                 let latest = hArr[hArr.length - 1];
                 let lScore = 0; let mScore = q._type === '選択' ? 5 : 1;
-                if (q._type === '択一') { if (latest === '〇') lScore = 1; } 
+                if (q._type === '択一') { if (latest === '〇' || latest === '○') lScore = 1; } 
                 else { let match = latest.match(/(\d+)点/); if (match) lScore = parseInt(match[1], 10); }
                 stats[subj].latestScore += lScore; stats[subj].latestMax += mScore;
                 stats[subj].chapters[chap].latestScore += lScore; stats[subj].chapters[chap].latestMax += mScore;
@@ -949,6 +950,7 @@ function toggleEvalPanel(type) {
     }
 }
 
+// 🌟 修正：loadQuestion内の進捗履歴取得時に、名前の揺れ（play_count等）を吸収する処理を追加
 function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = false) {
     const q = currentQuestions[currentIndex];
     if (!q) return;
@@ -973,13 +975,19 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
     if(qct) qct.textContent = q.項目 || (isAlchemy ? "Pro AI 錬金問題" : "条文");
     
     const hist = userHistory[q._id] || { playCount: 0, correctCount: 0, historyStr: "", status: "" };
-    let maxScore = q._type === '選択' ? (hist.playCount * 5) : hist.playCount;
-    const rate = hist.playCount > 0 ? Math.round((hist.correctCount / maxScore) * 100) : 0;
+    
+    // 🌟 バグ修正: GASから play_count, correct_count で返ってきた場合もカバーして NaN%化 を防ぐ
+    let pCount = hist.playCount !== undefined ? hist.playCount : (hist.play_count !== undefined ? hist.play_count : 0);
+    let cCount = hist.correctCount !== undefined ? hist.correctCount : (hist.correct_count !== undefined ? hist.correct_count : 0);
+    let hStr = hist.historyStr || hist.history_str || "";
+    
+    let maxScore = q._type === '選択' ? (pCount * 5) : pCount;
+    const rate = pCount > 0 ? Math.round((cCount / maxScore) * 100) : 0;
     const qhs = document.getElementById('q-history-stats');
-    if(qhs) qhs.textContent = `挑戦:${hist.playCount} 過去正答:${rate}%`;
+    if(qhs) qhs.textContent = `挑戦:${pCount} 過去正答:${rate}%`;
     
     const rht = document.getElementById('recent-history-text');
-    if(rht) rht.textContent = hist.historyStr || "-----";
+    if(rht) rht.textContent = hStr || "-----";
     const letxt = document.getElementById('last-eval-text');
     if(letxt) letxt.textContent = hist.status || "なし";
 
@@ -1287,27 +1295,29 @@ function answerTakuitsu(userAnswer) {
     }
 }
 
-function showHintTakuitsu() {
-    currentQuestionHintCount++;
-    const q = currentQuestions[currentIndex];
-    if (typeof generateAiMessage === "function") generateAiMessage("hint_takuitsu", { questionText: q.問題文, explanation: q.解説 || "", textOnly: true });
+// 🌟 修正：GAS保存時に、まだuserHistoryがない「初めて解く問題」を弾かずに初期化する
+async function saveToGAS(q_id, actionStr, isCorrect, score, traps, timeSec = 0, hintCount = 0) {
+    try {
+        let payload = { action: actionStr, q_id: q_id, time_sec: timeSec, hint_count: hintCount };
+        if (actionStr === 'save_answer') payload.is_correct = isCorrect;
+        if (actionStr === 'save_sentaku') { payload.score = score; payload.traps = traps; }
+        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
+        const data = await res.json();
+        if(data.success) {
+            // バグ修正: 初めての問題はローカルに履歴が存在しないため作成してあげる
+            if (!userHistory[q_id]) userHistory[q_id] = { playCount: 0, correctCount: 0, historyStr: "", status: "" };
+            
+            // バグ修正: GASから play_count など名前が揺れて返ってきても確実に取り込む
+            userHistory[q_id].playCount = data.playCount !== undefined ? data.playCount : (data.play_count !== undefined ? data.play_count : userHistory[q_id].playCount + 1);
+            userHistory[q_id].correctCount = data.correctCount !== undefined ? data.correctCount : (data.correct_count !== undefined ? data.correct_count : userHistory[q_id].correctCount + (isCorrect ? 1 : (score||0)));
+            if (data.histStr || data.history_str || data.historyStr) {
+                userHistory[q_id].historyStr = data.histStr || data.history_str || data.historyStr;
+            }
+        }
+    } catch(e) {}
 }
 
-function toggleStrike(word, el) {
-    el.classList.toggle('line-through'); el.classList.toggle('text-slate-300');
-    el.classList.toggle('bg-slate-100'); el.classList.toggle('opacity-50');
-    if (eliminatedWords.has(word)) eliminatedWords.delete(word); else eliminatedWords.add(word);
-    document.querySelectorAll('.inline-select').forEach(select => {
-        if (select.value === word) select.value = ""; 
-        Array.from(select.options).forEach(opt => {
-            if (opt.value && eliminatedWords.has(opt.value)) opt.classList.add('hidden-option');
-            else opt.classList.remove('hidden-option');
-        });
-    });
-}
-function syncSelects(letter, value) { document.querySelectorAll(`.inline-select[data-letter="${letter}"]`).forEach(s => s.value = value); }
 function showHintSentaku() {
-    currentQuestionHintCount++;
     const qArea = document.getElementById('question-text-sentaku');
     let text = qArea.innerHTML;
     text = text.replace(/(なければならない|努め|こと|また|ただし|において|ため)/g, '<span class="highlight-clue">$1</span>');
@@ -1415,21 +1425,6 @@ function submitSentakuAnswers() {
 function closeWarningModal() { 
     const wm = document.getElementById('warning-modal'); 
     if (wm) { wm.classList.add('hidden'); wm.classList.remove('flex'); } 
-}
-
-async function saveToGAS(q_id, actionStr, isCorrect, score, traps, timeSec = 0, hintCount = 0) {
-    try {
-        let payload = { action: actionStr, q_id: q_id, time_sec: timeSec, hint_count: hintCount };
-        if (actionStr === 'save_answer') payload.is_correct = isCorrect;
-        if (actionStr === 'save_sentaku') { payload.score = score; payload.traps = traps; }
-        const res = await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
-        const data = await res.json();
-        if(data.success && userHistory[q_id]) {
-            userHistory[q_id].playCount = data.playCount;
-            userHistory[q_id].correctCount = data.correctCount;
-            if (data.histStr) userHistory[q_id].historyStr = data.histStr;
-        }
-    } catch(e) {}
 }
 
 function selectEvalTakuitsu(status) {
