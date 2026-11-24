@@ -1,4 +1,5 @@
 const GAS_URL = "https://script.google.com/macros/s/AKfycbxNQUvUpps4yicC1i3DkbwCwBAwlHPcvbuX0Yhe33TccNtCGasr820HRNbEuLjJmZqs5Q/exec";
+const GOAL_GAS_URL = "https://script.google.com/macros/s/AKfycbyXgXlK8FpQZqqvvu7dxS4htbPlB9FJeJySls4GM0ZZlDrlvKCy4QXiXUV6OdrrveA5/exec";
 
 const SUBJECTS = [
     { id: "rouki", type: "択一", name: "労働基準法(択一)", url: "https://docs.google.com/spreadsheets/d/e/2PACX-1vT9QYS2xT-fFDtl0VuvMW2djCXMtU0CvANyXjvwY7ucm1HKEse511OH1uIn6QoKlQdcWXSWR_DFufgc/pub?output=csv" },
@@ -94,7 +95,7 @@ function normalizeCategory(cat) {
     return c;
 }
 
-let allDatabase = [], userHistory = {}, userTimes = {}, playlistQueue = [], currentQuestions = [];
+let allDatabase = [], userHistory = {}, userTimes = {}, userGoals = [], playlistQueue = [], currentQuestions = [];
 let parsedSubjectsCount = 0, currentPlaylistIndex = 0, currentIndex = 0;
 let userApiKey = '', userModel = 'gemini-2.5-flash';
 let audioCtx = null, isMuted = false;
@@ -163,8 +164,34 @@ window.onload = function() {
     flushStudyTimes(); 
     loadAllSubjects();
     fetchHistory(); 
+    fetchGoals();
     if (typeof updateStartScreenNotebookBadge === "function") updateStartScreenNotebookBadge();
 };
+
+// 🌟 学習目標（方針）の取得・追加保存処理
+async function fetchGoals() {
+    try {
+        const res = await fetch(GOAL_GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'get_goals' }) });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.goals)) {
+            userGoals = data.goals;
+            if (typeof initStrategyGreeting === "function") initStrategyGreeting();
+            if (allDatabase.length > 0 && userApiKey && typeof generateDashboardAdvice === "function") {
+                generateDashboardAdvice(getStatsSummary());
+            }
+        }
+    } catch(e) {}
+}
+
+async function saveGoalToGAS(goalText) {
+    if (!goalText) return;
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+    userGoals.push({ date: dateStr, goal: goalText });
+    try {
+        await fetch(GOAL_GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_goal', date: dateStr, goal: goalText }) });
+    } catch(e) {}
+}
 
 function updateSoundButtons() {
     const txt = isMuted ? "🔇 音声オフ" : "🔊 音声オン";

@@ -163,6 +163,49 @@ async function verifyDataWithPro(q) {
     } catch(e) {}
 }
 
+// 🌟 作戦会議の最初の挨拶を「現在の目標」に合わせて動的に生成する
+async function initStrategyGreeting() {
+    if (!userApiKey || typeof userGoals === 'undefined' || userGoals.length === 0) return;
+    const logEl = document.getElementById('strategy-chat-log');
+    if (!logEl || !logEl.firstElementChild) return;
+
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+    const goalsText = userGoals.map(g => `${g.date}: ${g.goal}`).join('\n');
+
+    const prompt = `あなたは社労士試験の専属講師（18歳前後の若い女性）です。
+今日の日付は ${todayStr} です。
+以下は受講生がこれまでに記録した学習目標（方針）の履歴です（下にいくほど新しい）。
+${goalsText}
+
+【判定ルール】
+・今日の日付（${todayStr}）時点で有効な目標だけを抽出してください。
+・過ぎた月や週の目標、後から「変更」「中止」された古い目標は自動で無視してください。
+・今月の目標と今週の目標など、同じ期間で両立する目標は両方とも適用してください。
+・受講生は「労働基準法」「安全衛生法」「健康保険法」「厚生年金保険法」の4科目以外は免除されています。
+
+有効な目標がある場合、以下の形式で出力してください（1行目に目標、改行して2行目に目標に沿った作戦会議の最初の呼びかけを1〜2文で）。
+「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」等の不自然な役割語やアニメ口調は絶対禁止です。
+有効な目標が1つもない場合のみ「NONE」とだけ出力してください。
+
+出力例：
+🎯 現在の目標：労働基準法をマスターする / 今週は労基の弱点克服
+今日は労働基準法のどの項目をやる？それとも弱点克服からサクッと始める？`;
+
+    try {
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const text = data.candidates[0].content.parts[0].text.trim();
+        if (text && text !== "NONE") {
+            logEl.firstElementChild.innerHTML = text.replace(/\n/g, '<br>');
+        }
+    } catch(e) {}
+}
+
 async function sendStrategyMessage() {
     userApiKey = document.getElementById('api-key-input').value.trim();
     if(!userApiKey) { alert("APIキーが必要です"); document.getElementById('api-settings-wrapper').classList.remove('hidden'); return; }
@@ -185,6 +228,12 @@ async function sendStrategyMessage() {
     const timeLimit = document.getElementById('time-limit-select').value;
     const habits = localStorage.getItem('strategy_habits') || '[]';
     
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+    const goalsText = (typeof userGoals !== 'undefined' && userGoals.length > 0)
+        ? userGoals.map(g => `${g.date}: ${g.goal}`).join(' / ')
+        : "まだ設定なし";
+    
     let scheduleInfo = "予定データなし";
     if (typeof userSchedule !== 'undefined' && userSchedule.length > 0) {
         let now = new Date();
@@ -203,7 +252,9 @@ async function sendStrategyMessage() {
     
     let systemPrompt = `あなたは社労士試験の専属個別指導講師（18歳前後の若い女性）です。受講生の要望を最優先で聞き入れ、的確に特訓プランをまとめてください。
 【現在のコンディション】
+・今日の日付: ${todayStr}
 ・現在時刻: ${new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'})}
+・記録されている学習目標（方針）の履歴: ${goalsText}
 ・過去の依頼傾向: ${habits}
 ・目標時間設定: ${timeLimit}
 ・スケジュール状況: ${scheduleInfo}
@@ -212,13 +263,16 @@ async function sendStrategyMessage() {
 
 【最重要ルール】
 1. 受講生は「労働基準法」「安全衛生法」「健康保険法」「厚生年金保険法」の4科目以外は免除されています。出力するプランの科目は必ずこの4科目のみで構成し、他の科目は含めないでください。
-2. ユーザーの発言が単なる質問や雑談であり、プランの作成や変更を求めていないと判断した場合は、"plan"の配列を空（[]）にして、会話の返事のみを返してください。
-3. セリフ本文は常に1〜2文の自然な現代の口語で出力し、「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」等の不自然な役割語やアニメ口調は絶対に使用しないでください。
+2. ユーザーの発言が単なる質問や雑談、あるいは目標の登録・変更・中止のみであり、今すぐの特訓プランの作成を求めていないと判断した場合は、"plan"の配列を空（[]）にして、会話の返事のみを返してください。
+3. ユーザーの発言に「今月は〜をやる」「今週は〜を目標にする」「今月の目標を〜に変更して」「今週の目標は中止」などの【中長期の学習目標・方針の設定・変更・中止】が含まれていた場合は、その内容を短くまとめて "newGoal" に出力してください。含まれていない場合は "newGoal" を空文字（""）にしてください。
+4. プランを提案する際は、今日時点で有効な学習目標（過ぎた期間や中止・変更前のものは除外）を最優先で反映してください。
+5. セリフ本文は常に1〜2文の自然な現代の口語で出力し、「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」等の不自然な役割語やアニメ口調は絶対に使用しないでください。
 
 ユーザーの発言に対する返答と、学習プラン（フェーズごとの時間割）をJSONで出力してください。
 必ず以下のJSON形式でのみ出力し、バッククォート等の装飾はしないでください。
 {
   "message": "ユーザーへの返答セリフ",
+  "newGoal": "目標の設定・変更・中止があった場合のみ記載（なければ空文字）",
   "plan": [
     { "phase": "目的", "subject": "労働基準法(択一)等の正確な科目名", "target": "弱点など", "minutes": 30 }
   ]
@@ -234,8 +288,14 @@ async function sendStrategyMessage() {
         text = text.replace(/```json/g, '').replace(/```/g, '').trim();
         const aiRes = JSON.parse(text);
 
+        let goalBadgeHtml = "";
+        if (aiRes.newGoal && aiRes.newGoal.trim() !== "") {
+            if (typeof saveGoalToGAS === "function") saveGoalToGAS(aiRes.newGoal.trim());
+            goalBadgeHtml = `<div class="mt-2 inline-block bg-amber-100 border border-amber-300 text-amber-900 text-xs md:text-sm font-black px-2.5 py-1 rounded-full">🎯 目標を記録しました: ${aiRes.newGoal.trim()}</div>`;
+        }
+
         // 🌟 文字サイズ拡大
-        document.getElementById(typingId).outerHTML = `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 md:p-4 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl mt-2">${aiRes.message}</div>`;
+        document.getElementById(typingId).outerHTML = `<div class="self-start bg-white border-2 border-pink-200 text-slate-700 p-3 md:p-4 rounded-xl md:rounded-2xl rounded-tl-none max-w-[85%] md:max-w-[80%] shadow-sm font-bold text-sm md:text-xl mt-2">${aiRes.message}${goalBadgeHtml}</div>`;
         
         const btn = document.getElementById('btn-strategy-start');
         
@@ -271,10 +331,22 @@ async function sendStrategyMessage() {
 }
 
 function generateDashboardAdvice(stats) {
-    let prompt = `受講生のダッシュボードデータです。最も進捗が遅れている科目や正答率が低い科目を1つ見つけ、1〜2文で激励のアドバイスをしてください。
-    【重要】受講生は「労働基準法」「安全衛生法」「健康保険法」「厚生年金保険法」の4科目以外は免除されています。これら以外についての言及は避けてください。
-    【厳守事項】セリフ本文は自然な現代の口語とし、「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」等の不自然な役割語やアニメ口調は絶対に使用しないでください。
-    データ: ${JSON.stringify(stats).substring(0, 1000)}`;
+    const today = new Date();
+    const todayStr = `${today.getFullYear()}/${String(today.getMonth()+1).padStart(2,'0')}/${String(today.getDate()).padStart(2,'0')}`;
+    const goalsText = (typeof userGoals !== 'undefined' && userGoals.length > 0)
+        ? userGoals.map(g => `${g.date}: ${g.goal}`).join(' / ')
+        : "特になし";
+
+    let prompt = `受講生のダッシュボードデータです。今日の日付は ${todayStr} です。
+【記録されている学習目標（方針）の履歴】
+${goalsText}
+
+【指示】
+1. まず今日の日付（${todayStr}）時点で有効な学習目標（過ぎた月や週、変更・中止前の古いものは無視）を確認してください。
+2. 有効な目標がある場合は、必ずその目標（例：労基マスターなど）を最優先にして、その科目やテーマに沿った1〜2文の激励アドバイスをしてください。目標がない場合のみ、進捗が遅れている科目や正答率が低い科目を1つ見つけてアドバイスしてください。
+3. 【重要】受講生は「労働基準法」「安全衛生法」「健康保険法」「厚生年金保険法」の4科目以外は免除されています。これら以外についての言及は避けてください。
+4. 【厳守事項】セリフ本文は自然な現代の口語とし、「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」等の不自然な役割語やアニメ口調は絶対に使用しないでください。
+データ: ${JSON.stringify(stats).substring(0, 1000)}`;
     fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
     }).then(res => res.json()).then(data => {
