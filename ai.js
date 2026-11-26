@@ -4,6 +4,17 @@
 
 // main.js の変数を参照するため外部スコープを利用します。
 
+// 🌟 AIコメントの思考レベル（thinkingBudget）制御ヘルパー（gemini-2.5-flash用）
+function buildGeminiPayload(contentsData, thinkingBudget) {
+    const payload = { contents: contentsData };
+    if (typeof userModel === 'string' && userModel.includes('2.5-flash')) {
+        payload.generationConfig = {
+            thinkingConfig: { thinkingBudget: thinkingBudget }
+        };
+    }
+    return JSON.stringify(payload);
+}
+
 async function speakText(text, isStartScreen = false) {
     if (isMuted || !text) return; 
     let cleanText = text.replace(/<[^>]+>/g, '').trim(); if (!cleanText) return;
@@ -122,8 +133,9 @@ async function generateAiMessage(situation, extraData = {}, isStartScreen = fals
     }
 
     try {
+        // 🌟 特訓中のコメント全般（スタート挨拶・終了・ヒント・解説要約等）は思考ゼロ（0）で即答・最安化
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: buildGeminiPayload([{ parts: [{ text: prompt }] }], 0)
         });
         if (!res.ok) throw new Error("API Error");
         const data = await res.json();
@@ -163,7 +175,7 @@ async function verifyDataWithPro(q) {
     } catch(e) {}
 }
 
-// 🌟 作戦会議の最初の挨拶を「現在の目標」に合わせて動的に生成する
+// 🌟 作戦会議の最初の挨拶を「現在の目標」に合わせて動的に生成する（思考上限 1024）
 async function initStrategyGreeting() {
     if (!userApiKey || typeof userGoals === 'undefined' || userGoals.length === 0) return;
     const logEl = document.getElementById('strategy-chat-log');
@@ -195,7 +207,7 @@ ${goalsText}
     try {
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            body: buildGeminiPayload([{ parts: [{ text: prompt }] }], 1024)
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -279,8 +291,9 @@ async function sendStrategyMessage() {
 }`;
     let apiMessages = [{ role: "user", parts: [{ text: systemPrompt + " 受講生の要望: " + input }] }];
     try {
+        // 🌟 作戦会議は質を担保しつつ長考・高額化を防ぐため思考上限 1024 を設定
         const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: apiMessages })
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: buildGeminiPayload(apiMessages, 1024)
         });
         if (!res.ok) throw new Error("通信エラー");
         const data = await res.json(); 
@@ -347,8 +360,9 @@ ${goalsText}
 3. 【重要】受講生は「労働基準法」「安全衛生法」「健康保険法」「厚生年金保険法」の4科目以外は免除されています。これら以外についての言及は避けてください。
 4. 【厳守事項】セリフ本文は自然な現代の口語とし、「〜だぞ」「〜だろ」「〜わ」「〜よ」「ふふっ」等の不自然な役割語やアニメ口調は絶対に使用しないでください。
 データ: ${JSON.stringify(stats).substring(0, 1000)}`;
+    // 🌟 メイン画面の専属講師アドバイスも質重視＋高額化防止のため思考上限 1024 を設定
     fetch(`https://generativelanguage.googleapis.com/v1beta/models/${userModel}:generateContent?key=${userApiKey}`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: buildGeminiPayload([{ parts: [{ text: prompt }] }], 1024)
     }).then(res => res.json()).then(data => {
         if (data.candidates && data.candidates[0]) { document.getElementById('dash-ai-comment').textContent = data.candidates[0].content.parts[0].text; }
     }).catch(e => {});
