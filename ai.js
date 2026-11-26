@@ -58,6 +58,9 @@ async function speakText(text, isStartScreen = false) {
 }
 
 async function generateAiMessage(situation, extraData = {}, isStartScreen = false) {
+    // 🌟 A案：AIが発言する際は必ず吹き出し枠ごと再表示する
+    if (typeof setAiBubbleVisible === "function") setAiBubbleVisible(true);
+
     const aiMessageEl = document.getElementById('ai-message');
     if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 ...</span>';
     

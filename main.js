@@ -134,6 +134,20 @@ let isSleepyMode = false;
 let usedQuestionIds = new Set(); 
 let lastHealthCheckTimeSec = 0;
 
+// 🌟 AI吹き出し枠（#ai-messageの親ボックス）の表示・非表示制御（A案・全端末共通）
+function setAiBubbleVisible(visible) {
+    const aiEl = document.getElementById('ai-message');
+    if (!aiEl) return;
+    const bubbleWrapper = aiEl.parentElement;
+    if (!bubbleWrapper) return;
+    if (visible) {
+        bubbleWrapper.classList.remove('hidden');
+    } else {
+        bubbleWrapper.classList.add('hidden');
+        aiEl.textContent = '';
+    }
+}
+
 window.onload = function() {
     try {
         const savedKey = localStorage.getItem('gemini_api_key');
@@ -982,6 +996,11 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
     const q = currentQuestions[currentIndex];
     if (!q) return;
     
+    // 🌟 A案：最初のスタート挨拶時以外は、次の問題に進んだ際に前問のAI吹き出し枠ごと一旦非表示にする
+    if (!isFirstOfAll) {
+        setAiBubbleVisible(false);
+    }
+
     const condSelect = document.getElementById('condition-select');
     const cond = condSelect ? condSelect.value : '';
     let isBadCondition = cond.includes('眠い') || cond.includes('疲れ');
@@ -1312,6 +1331,7 @@ function answerTakuitsu(userAnswer) {
     clearIdleTimers(); 
     
     if (isSenbonKnock || isSuddenDeath || isCountdownRelay || isSurpriseAttack) {
+        setAiBubbleVisible(true);
         const aiEl = document.getElementById('ai-message');
         if(aiEl) {
             aiEl.textContent = isCorrect ? "はい、次！" : "遅い！次！";
@@ -1580,6 +1600,7 @@ async function cancelMistake() {
             }
             cumulativeQuestions--; 
             if (isSenbonKnock || isTimeAttack || isBonusMode || isSuddenDeath || isCountdownRelay || isTrapMode || isHardcore || isSurpriseAttack) eventQuestionsAnswered--;
+            setAiBubbleVisible(true);
             const aim = document.getElementById('ai-message');
             if (aim) aim.textContent = "記録を取り消したよ！次から気をつけてね！";
         } catch(e) { alert("取り消しに失敗しました"); }
@@ -1761,6 +1782,7 @@ function nextQuestion() {
 
 async function judgeTimeUpExtension() {
     isExtensionAdded = true; 
+    setAiBubbleVisible(true);
     const aiMessageEl = document.getElementById('ai-message');
     if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 延長戦するか考えてるよ...</span>';
     
@@ -1857,6 +1879,7 @@ async function judgeRestRecommendation() {
     }
     
     hasRestRecommended = true;
+    setAiBubbleVisible(true);
     const aiMessageEl = document.getElementById('ai-message');
     if(aiMessageEl) aiMessageEl.innerHTML = '<span class="typing">💬 休憩について考えてるよ...</span>';
     

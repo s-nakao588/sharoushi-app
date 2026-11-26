@@ -311,8 +311,11 @@ option.hidden-option { display: none !important; }
         border-top: 1px solid #e2e8f0 !important;
     }
     
+    /* 🌟 スマホ版択一式のみ：問題文スライド有効化＆下部余白を多めに確保 */
     .takuitsu-q-container {
-        padding-bottom: 250px !important; 
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding-bottom: 460px !important; 
     }
     
     #sentaku-ui > div:nth-child(2) {
