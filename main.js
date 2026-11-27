@@ -95,7 +95,8 @@ function normalizeCategory(cat) {
     return c;
 }
 
-let allDatabase = [], userHistory = {}, userTimes = {}, userGoals = [], playlistQueue = [], currentQuestions = [];
+let allDatabase = [], userHistory = {}, userTimes = {}, userGoals = [], userPersonalKarte = [], playlistQueue = [], currentQuestions = [];
+if (typeof window.userSchedule === 'undefined') window.userSchedule = [];
 let parsedSubjectsCount = 0, currentPlaylistIndex = 0, currentIndex = 0;
 let userApiKey = '', userModel = 'gemini-2.5-flash';
 let audioCtx = null, isMuted = false;
@@ -104,6 +105,15 @@ let timerInterval = null, timeLeft = 60, currentLimit = 60;
 let globalTimerInterval = null, globalTimeLeftSeconds = null, isTimeUp = false;
 let napInterval = null, napSecondsLeft = 0;
 let pauseSeconds = 0, pauseInterval = null;
+
+// 🌟 休憩雑談・仮眠切り分け用変数
+let isChatBreakMode = false;
+let isRestFromProposal = false;
+let hasPlayedBreakEndVoice = false;
+let lastBreakEndMessage = "";
+let breakChatHistory = [];
+let napAlarmRepeatInterval = null;
+let suppressNextEndAllMessage = false;
 
 let setCorrectCount = 0, cumulativeQuestions = 0, todayMistakes = [];
 let eliminatedWords = new Set(), currentWordBank = [], currentAnswers = {}, currentFullText = "";
@@ -179,6 +189,8 @@ window.onload = function() {
     loadAllSubjects();
     fetchHistory(); 
     fetchGoals();
+    fetchPersonalKarte();
+    fetchScheduleData();
     if (typeof updateStartScreenNotebookBadge === "function") updateStartScreenNotebookBadge();
 };
 
@@ -204,6 +216,55 @@ async function saveGoalToGAS(goalText) {
     userGoals.push({ date: dateStr, goal: goalText });
     try {
         await fetch(GOAL_GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_goal', date: dateStr, goal: goalText }) });
+    } catch(e) {}
+}
+
+// 🌟 パーソナルカルテ（雑談から抽出した記憶・特性・習慣）の取得・追加保存処理
+async function fetchPersonalKarte() {
+    try {
+        const res = await fetch(GOAL_GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'get_personal_karte' }) });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.karte)) {
+            userPersonalKarte = data.karte;
+        }
+    } catch(e) {}
+}
+
+async function savePersonalKarteToGAS(items) {
+    if (!items || !Array.isArray(items) || items.length === 0) return;
+    const now = new Date();
+    const dateStr = `${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
+    const validItems = items.filter(it => it && it.info && String(it.info).trim() !== "");
+    if (validItems.length === 0) return;
+    validItems.forEach(it => {
+        userPersonalKarte.push({ date: dateStr, category: it.category || "メモ", info: String(it.info).trim() });
+    });
+    try {
+        await fetch(GOAL_GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_personal_karte', date: dateStr, items: validItems }) });
+    } catch(e) {}
+}
+
+// 🌟 スケジュール（試験日・遊びや美容院などの休み予定）の取得・追加保存処理
+async function fetchScheduleData() {
+    try {
+        const res = await fetch(GOAL_GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'get_schedule' }) });
+        const data = await res.json();
+        if (data.success && Array.isArray(data.schedules)) {
+            window.userSchedule = data.schedules;
+        }
+    } catch(e) {}
+}
+
+async function saveScheduleFromChatToGAS(items) {
+    if (!items || !Array.isArray(items) || items.length === 0) return;
+    const validItems = items.filter(it => it && it.date && String(it.date).trim() !== "");
+    if (validItems.length === 0) return;
+    if (!Array.isArray(window.userSchedule)) window.userSchedule = [];
+    validItems.forEach(it => {
+        window.userSchedule.push({ date: String(it.date).trim(), type: it.type || "休み", memo: it.memo || "" });
+    });
+    try {
+        await fetch(GOAL_GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'save_schedule', items: validItems }) });
     } catch(e) {}
 }
 
@@ -1024,7 +1085,7 @@ function loadQuestion(isAlchemy = false, isFirstOfSet = false, isFirstOfAll = fa
     
     // 🌟 バグ修正: GASから play_count, correct_count で返ってきた場合もカバーして NaN%化 を防ぐ
     let pCount = hist.playCount !== undefined ? hist.playCount : (hist.play_count !== undefined ? hist.play_count : 0);
-    let cCount = hist.correctCount !== undefined ? hist.correctCount : (hist.correct_count !== undefined ? hist.correct_count : 0);
+    let cCount = hist.correctCount !== undefined ? hist.correctCount : (hist.correct_count !== undefined ? hist.correct_count : userHistory[q._id]?.correctCount || 0);
     let hStr = hist.historyStr || hist.history_str || "";
     
     let maxScore = q._type === '選択' ? (pCount * 5) : pCount;
@@ -1845,8 +1906,16 @@ async function judgeTimeUpExtension() {
     else finishAllPlaylists();
 }
 
+// 🌟 AIからの休憩提案を受けた場合も「雑談チャット付きの休憩モード」で開始する
 function acceptRestProposal(minutes) {
     saveRestDecision(`連続${Math.floor(continuousStudyTimeSec/60)}分での${minutes}分休憩提案を受容`);
+    stopStudyTimer();
+    clearIdleTimers();
+    isRestFromProposal = true;
+    isChatBreakMode = true;
+    breakChatHistory = [];
+    const n = document.getElementById('nap-overlay');
+    if (n) { n.classList.remove('hidden'); n.classList.add('flex'); }
     startNap(minutes);
 }
 
@@ -1984,6 +2053,11 @@ function finishAllPlaylists() {
     
     sendKarteLog('session_end', { totalAnswered: cumulativeQuestions, mistakes: todayMistakes.length, continuousStudyTimeSec: continuousStudyTimeSec });
     
+    if (suppressNextEndAllMessage) {
+        suppressNextEndAllMessage = false;
+        return;
+    }
+
     if (isSenbonKnock || isTimeAttack || isBonusMode || isSuddenDeath || isCountdownRelay || isTrapMode || isHardcore || isSurpriseAttack) {
         let evType = isSenbonKnock ? "senbonKnock" : (isTimeAttack ? "timeAttack" : (isSuddenDeath ? "suddenDeath" : (isCountdownRelay ? "countdownRelay" : (isTrapMode ? "trapMode" : (isHardcore ? "hardcore" : (isSurpriseAttack ? "surpriseAttack" : "bonus"))))));
         if (typeof generateAiMessage === "function") generateAiMessage("end_event", { eventType: evType, qCount: eventQuestionsAnswered, correct: eventCorrectCount, textOnly: false });
@@ -2092,16 +2166,19 @@ function startPause() {
     }, 1000);
 }
 
+// 🌟 「☕ 5分」休憩は雑談チャット対象として開始する
 function startNapQuick(minutes) {
     stopStudyTimer();
     clearIdleTimers();
+    isRestFromProposal = false;
+    isChatBreakMode = true;
+    breakChatHistory = [];
     const n = document.getElementById('nap-overlay');
     if (n) { n.classList.remove('hidden'); n.classList.add('flex'); }
     napSecondsLeft = minutes * 60;
     localStorage.setItem('last_nap_time', new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}));
     if(typeof sendKarteLog === "function") sendKarteLog('nap_start', { time: new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}), durationMinutes: minutes });
     runNapTimer();
-    if(typeof generateAiMessage === "function") generateAiMessage("nap_start", { textOnly: true });
 }
 
 function resumeTimer() { 
@@ -2115,7 +2192,11 @@ function resumeTimer() {
         
     } else if(currentQuestions[currentIndex] && ea && ea.classList.contains('hidden')) {
         if (currentQuestions[currentIndex]._type === '択一' && !isCountdownRelay) {
+            if (timerInterval) clearInterval(timerInterval);
+            const tb = document.getElementById('timer-bar');
+            if (tb) tb.style.animationPlayState = 'running';
             timerInterval = setInterval(() => { 
+                if (isAnsweredTakuitsu) return;
                 timeLeft--; 
                 if (isSleepyMode && timeLeft <= 10 && timeLeft > 0) playTickSound();
                 if (timeLeft <= 0) { 
@@ -2139,9 +2220,12 @@ function resumeTimer() {
     }
 }
 
+// 🌟 「💤 仮眠」メニューから入る場合はチャットなしの仮眠専用モードにする
 function openNapMenu() {
     stopStudyTimer();
     clearIdleTimers();
+    isRestFromProposal = false;
+    isChatBreakMode = false;
     const n = document.getElementById('nap-overlay');
     if (n) { n.classList.remove('hidden'); n.classList.add('flex'); }
     const ns = document.getElementById('nap-setup');
@@ -2173,18 +2257,99 @@ function startNapCustom() {
     sendKarteLog('nap_start', { time: new Date().toLocaleTimeString('ja-JP', {hour:'2-digit', minute:'2-digit'}), durationMinutes: durationMinutes }); 
     runNapTimer();
 }
+
+// 🌟 休憩画面（#nap-running）内に雑談チャットUIを安全に動的生成・表示切り替えする
+function ensureBreakChatUI() {
+    const nr = document.getElementById('nap-running');
+    if (!nr) return;
+
+    let chatBox = document.getElementById('break-chat-container');
+    if (!chatBox) {
+        chatBox = document.createElement('div');
+        chatBox.id = 'break-chat-container';
+        chatBox.className = 'w-full max-w-xl mx-auto my-3 bg-slate-50 text-slate-800 rounded-2xl p-3 md:p-5 border-2 border-indigo-200 shadow-lg flex flex-col gap-2 text-left';
+        chatBox.innerHTML = `
+            <div class="flex items-center justify-between border-b border-slate-200 pb-1.5">
+                <span class="text-xs md:text-base font-black text-indigo-700">☕ 休憩タイム・気晴らしトーク</span>
+                <span class="text-[10px] md:text-xs font-bold text-slate-400">※「何か話題ある？」で気分転換もOK</span>
+            </div>
+            <div id="break-chat-log" class="flex flex-col gap-2 overflow-y-auto max-h-[34dvh] md:max-h-[38dvh] pr-1 py-1"></div>
+            <div class="flex gap-2 pt-1">
+                <input id="break-chat-input" type="text" placeholder="自由に雑談してね（予定・愚痴・話題ふり何でもOK）" class="flex-1 bg-white text-slate-800 border-2 border-slate-300 rounded-xl px-3 py-2 text-sm md:text-lg font-bold focus:outline-none focus:border-indigo-500" onkeydown="if(event.key==='Enter' && !event.isComposing){ event.preventDefault(); if(typeof sendBreakChatMessage==='function') sendBreakChatMessage(); }">
+                <button type="button" onclick="if(typeof sendBreakChatMessage==='function') sendBreakChatMessage()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-black px-4 md:px-6 py-2 rounded-xl shadow active:scale-95 text-sm md:text-lg shrink-0">送信</button>
+            </div>
+        `;
+        const stopBtn = nr.querySelector('button[onclick="stopNap()"]');
+        if (stopBtn) {
+            nr.insertBefore(chatBox, stopBtn);
+        } else {
+            nr.appendChild(chatBox);
+        }
+    }
+
+    const stopBtn = nr.querySelector('button[onclick="stopNap()"]');
+    if (stopBtn) {
+        if (!stopBtn.hasAttribute('data-orig-label')) {
+            stopBtn.setAttribute('data-orig-label', stopBtn.innerHTML);
+        }
+        if (isChatBreakMode) {
+            stopBtn.innerHTML = '☕ 勉強に戻る';
+        } else {
+            stopBtn.innerHTML = stopBtn.getAttribute('data-orig-label');
+        }
+    }
+
+    if (isChatBreakMode) {
+        chatBox.classList.remove('hidden');
+        chatBox.classList.add('flex');
+        const logEl = document.getElementById('break-chat-log');
+        if (logEl) logEl.innerHTML = '';
+        if (typeof initBreakChatGreeting === 'function') {
+            initBreakChatGreeting(Math.max(1, Math.round(napSecondsLeft / 60)));
+        }
+    } else {
+        chatBox.classList.add('hidden');
+        chatBox.classList.remove('flex');
+    }
+}
+
 function runNapTimer() {
     unlockAudio(); 
+    if (napInterval) clearInterval(napInterval);
+    if (napAlarmRepeatInterval) { clearInterval(napAlarmRepeatInterval); napAlarmRepeatInterval = null; }
+    hasPlayedBreakEndVoice = false;
+    lastBreakEndMessage = "";
+
     const ns = document.getElementById('nap-setup'); if(ns) ns.classList.add('hidden'); 
     const nr = document.getElementById('nap-running'); if(nr) { nr.classList.remove('hidden'); nr.classList.add('flex'); }
-    const ea = document.getElementById('explanation-area'); if(ea) { ea.classList.add('hidden'); ea.classList.remove('flex'); }
-    const se = document.getElementById('self-eval-area-takuitsu'); if(se) se.classList.add('hidden');
+    const nc = document.getElementById('nap-countdown'); if(nc) nc.classList.remove('animate-ping', 'text-red-500');
+
+    if (isRestFromProposal) {
+        const ea = document.getElementById('explanation-area'); if(ea) { ea.classList.add('hidden'); ea.classList.remove('flex'); }
+        const se = document.getElementById('self-eval-area-takuitsu'); if(se) se.classList.add('hidden');
+    }
+
+    ensureBreakChatUI();
     updateNapDisplay();
+
     napInterval = setInterval(() => {
         napSecondsLeft--; updateNapDisplay();
         if(napSecondsLeft <= 0) { 
-            clearInterval(napInterval); playAlarmSound(); 
-            const nc = document.getElementById('nap-countdown'); if(nc) nc.classList.add('animate-ping', 'text-red-500'); 
+            clearInterval(napInterval); 
+            playAlarmSound(); 
+            const ncEl = document.getElementById('nap-countdown'); 
+            if(ncEl) ncEl.classList.add('animate-ping', 'text-red-500'); 
+
+            if (isChatBreakMode) {
+                // ☕ 5分休憩・提案休憩は00:00になった瞬間に自動でゆっくり開始合図（音声あり）
+                hasPlayedBreakEndVoice = true;
+                if (typeof triggerBreakTimeUpVoice === "function") triggerBreakTimeUpVoice();
+            } else {
+                // 💤 仮眠は「起きた！」ボタンを押すまでアラームを鳴らし、ボタンを押した瞬間に声をかける
+                napAlarmRepeatInterval = setInterval(() => {
+                    playAlarmSound();
+                }, 3000);
+            }
         }
     }, 1000);
 }
@@ -2195,6 +2360,7 @@ function updateNapDisplay() {
 }
 function playAlarmSound() {
     if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume().catch(e=>{});
     const osc = audioCtx.createOscillator(); const gain = audioCtx.createGain();
     osc.type = 'square'; osc.frequency.setValueAtTime(880, audioCtx.currentTime);
     gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
@@ -2203,15 +2369,62 @@ function playAlarmSound() {
 }
 
 function stopNap() {
+    unlockAudio();
     clearInterval(napInterval);
+    if (napAlarmRepeatInterval) { clearInterval(napAlarmRepeatInterval); napAlarmRepeatInterval = null; }
+
+    const wasChatBreak = isChatBreakMode;
+    const wasProposal = isRestFromProposal;
+    const alreadySpoke = hasPlayedBreakEndVoice;
+    const savedEndMsg = lastBreakEndMessage;
+
+    isChatBreakMode = false;
+    isRestFromProposal = false;
+    hasPlayedBreakEndVoice = false;
+
     const nc = document.getElementById('nap-countdown'); if(nc) nc.classList.remove('animate-ping', 'text-red-500');
     const no = document.getElementById('nap-overlay'); if(no) { no.classList.add('hidden'); no.classList.remove('flex'); }
     const ns = document.getElementById('nap-setup'); if(ns) ns.classList.remove('hidden');
     const nr = document.getElementById('nap-running'); if(nr) { nr.classList.add('hidden'); nr.classList.remove('flex'); }
     
-    continuousStudyTimeSec = 0;
-    finishAllPlaylists();
-    if (typeof generateAiMessage === "function") generateAiMessage("nap_end", { textOnly: true }); 
+    const ma = document.getElementById('main-area');
+    const isOnStartScreen = (!ma || ma.classList.contains('hidden'));
+
+    if (wasProposal) {
+        continuousStudyTimeSec = 0;
+        suppressNextEndAllMessage = true;
+        finishAllPlaylists();
+        if (!wasChatBreak) {
+            if (typeof generateAiMessage === "function") generateAiMessage("nap_end", { textOnly: false });
+        } else if (!alreadySpoke) {
+            if (typeof generateAiMessage === "function") generateAiMessage("break_end", { textOnly: false });
+        } else if (savedEndMsg) {
+            setAiBubbleVisible(true);
+            const aiEl = document.getElementById('ai-message');
+            if (aiEl) aiEl.textContent = savedEndMsg;
+        }
+    } else if (isOnStartScreen) {
+        if (!wasChatBreak) {
+            if (typeof generateAiMessage === "function") generateAiMessage("nap_end", { textOnly: false });
+        } else if (!alreadySpoke) {
+            if (typeof generateAiMessage === "function") generateAiMessage("break_end", { textOnly: false });
+        }
+    } else {
+        if (!wasChatBreak) {
+            continuousStudyTimeSec = 0;
+            resumeTimer();
+            if (typeof generateAiMessage === "function") generateAiMessage("nap_end", { textOnly: false });
+        } else {
+            resumeTimer();
+            if (!alreadySpoke) {
+                if (typeof generateAiMessage === "function") generateAiMessage("break_end", { textOnly: false });
+            } else if (savedEndMsg) {
+                setAiBubbleVisible(true);
+                const aiEl = document.getElementById('ai-message');
+                if (aiEl) aiEl.textContent = savedEndMsg;
+            }
+        }
+    }
 }
 
 function showHintTakuitsu() {
